@@ -1,4 +1,4 @@
-import { BASE_CAP, COLS } from '../config/constants.js';
+import { BASE_CAP, COLS, SPAWN_FIRST } from '../config/constants.js';
 
 export let S, blds, occ, nextId, sticks, corpses, parts, beltBlood, floorBlood;
 
@@ -17,7 +17,7 @@ export function freshState() {
     cat: 'halle',
     tool: null,
     sel: null,
-    spawnTimer: 3,
+    spawnTimer: SPAWN_FIRST,
     kills: 0,
     sold: 0,
     escaped: 0,

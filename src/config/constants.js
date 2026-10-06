@@ -46,9 +46,23 @@ export const PRESS_SPEED = 1.2, // Phasentempo
   PRESS_WINDOW = 0.5; // Taktfenster, in dem die Presse schlägt
 
 export const SPAWN_FIRST = 3,
-  SPAWN_BASE = 4.4,
-  SPAWN_MIN = 1.6,
+  SPAWN_BASE = 3.2,
+  SPAWN_MIN = 1.4,
   SPAWN_RAMP = 150;
 export const CORPSE_CAP = 60,
   CORPSE_LIFE = 120,
   CORPSE_FLOOR_LIFE = 90;
+
+/* ------------------------------ Anatomie ------------------------------ */
+export const MAX_HP = 100,
+  HIT_WINDOW = 0.5, // Trefferabstand der Spikes-Walze
+  SPIKE_HITS = 3, // Treffer bis der Stick zusammenbricht
+  CRUSH_DMG = 60, // Direktschaden der Presse
+  DRIP_TIME = 0.35, // Bluttropfen-Intervall verwundeter Sticks
+  STAND_TIME = 0.42; // Aufstehen aus dem Stuhl
+export const BLEED = { head: 26, torso: 14, armL: 9, armR: 9, legL: 11, legR: 11 };
+export const CHAIRS = 3,
+  RELEASE_TIME = 4.0, // Freigabe-Intervall der Warteschlange
+  ENTER_SPEED = 78, // Gehgeschwindigkeit zum Stuhl
+  SIT_SHUFFLE = 60; // Rutschen im Stuhl nach vorn
+

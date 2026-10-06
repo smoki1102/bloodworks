@@ -4,6 +4,7 @@ import {
   BELT_SPEED,
   BELT_Y,
   CELL,
+  CHAIRS,
   COLS,
   H,
   KELLER_FLOOR,
@@ -11,11 +12,12 @@ import {
   OBEN_FLOOR,
   OBEN_TOP,
   PW,
+  STAND_TIME,
   W,
   X0,
 } from '../config/constants.js';
 import { bloodColor } from '../core/effects.js';
-import { bldRect, canPlace } from '../core/placement.js';
+import { bldRect, canPlace, chairX } from '../core/placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
 import { $, clamp, colX, lerp } from '../utils/helpers.js';
 
@@ -85,7 +87,8 @@ export function buildBackground() {
   return c;
 }
 
-export function drawCorpseShape(x, y, rot, alpha) {
+export function drawCorpseShape(x, y, rot, alpha, missing, part) {
+  const miss = (p) => (missing ? missing.indexOf(p) >= 0 : false);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot * 0.12);
@@ -94,51 +97,182 @@ export function drawCorpseShape(x, y, rot, alpha) {
   ctx.fillStyle = C.dim;
   ctx.lineWidth = 2.6;
   ctx.lineCap = 'round';
+  if (part && part !== 'torso' && part !== 'head') {
+    drawLimbShape(part, 0, 0);
+    ctx.restore();
+    return;
+  }
   ctx.beginPath();
   ctx.moveTo(-11, 0);
   ctx.lineTo(9, 0);
-  ctx.moveTo(-11, 0);
-  ctx.lineTo(-19, -5);
-  ctx.moveTo(-11, 0);
-  ctx.lineTo(-19, 5);
-  ctx.moveTo(4, 0);
-  ctx.lineTo(0, -8);
-  ctx.moveTo(4, 0);
-  ctx.lineTo(0, 8);
+  if (!miss('legL')) {
+    ctx.moveTo(-11, 0);
+    ctx.lineTo(-19, -5);
+  }
+  if (!miss('legR')) {
+    ctx.moveTo(-11, 0);
+    ctx.lineTo(-19, 5);
+  }
+  if (!miss('armL')) {
+    ctx.moveTo(4, 0);
+    ctx.lineTo(0, -8);
+  }
+  if (!miss('armR')) {
+    ctx.moveTo(4, 0);
+    ctx.lineTo(0, 8);
+  }
   ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(13, -1, 5.4, 0, 7);
-  ctx.fill();
+  if (!miss('head')) {
+    ctx.beginPath();
+    ctx.arc(13, -1, 5.4, 0, 7);
+    ctx.fill();
+  }
   ctx.restore();
 }
-export function drawStick(x, y, anim) {
-  const sw = Math.sin(anim * 13) * 5;
+
+/** Einzelne abgerissene Gliedmaße. */
+export function drawLimbShape(part, x, y) {
+  ctx.beginPath();
+  if (part === 'legL' || part === 'legR') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 9, y - 3);
+    ctx.lineTo(x - 13, y + 2);
+  } else if (part === 'head') {
+    ctx.arc(x, y, 5.4, 0, 7);
+    ctx.fill();
+    return;
+  } else {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 7, y - 4);
+    ctx.lineTo(x - 11, y + 1);
+  }
+  ctx.stroke();
+}
+
+export function drawStick(s) {
+  if (s.state === 'sit') return drawSeated(s);
+  const body = s.body,
+    has = (p) => !body || body.limbs[p],
+    x = s.x,
+    y = s.y,
+    stand = s.state === 'stand';
+  const sw = stand ? 0 : Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
   ctx.strokeStyle = C.bright;
   ctx.fillStyle = C.bright;
   ctx.lineWidth = 2.6;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(x, y - 12);
-  ctx.lineTo(x - 5 + sw * 0.7, y);
-  ctx.moveTo(x, y - 12);
-  ctx.lineTo(x + 5 - sw * 0.7, y);
+  if (has('legL')) {
+    ctx.moveTo(x, y - 12);
+    ctx.lineTo(x - 5 + sw * 0.7, y);
+  } else {
+    ctx.moveTo(x, y - 12);
+    ctx.lineTo(x - 4, y - 6);
+  }
+  if (has('legR')) {
+    ctx.moveTo(x, y - 12);
+    ctx.lineTo(x + 5 - sw * 0.7, y);
+  } else {
+    ctx.moveTo(x, y - 12);
+    ctx.lineTo(x + 4, y - 6);
+  }
   ctx.moveTo(x, y - 24);
   ctx.lineTo(x, y - 12);
-  ctx.moveTo(x, y - 21);
-  ctx.lineTo(x - 7, y - 14 + sw);
-  ctx.moveTo(x, y - 21);
-  ctx.lineTo(x + 7, y - 14 - sw);
+  if (has('armL')) {
+    ctx.moveTo(x, y - 21);
+    ctx.lineTo(x - 7, y - 14 + sw);
+  } else {
+    ctx.moveTo(x, y - 21);
+    ctx.lineTo(x - 5, y - 18);
+  }
+  if (has('armR')) {
+    ctx.moveTo(x, y - 21);
+    ctx.lineTo(x + 7, y - 14 - sw);
+  } else {
+    ctx.moveTo(x, y - 21);
+    ctx.lineTo(x + 5, y - 18);
+  }
   ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x, y - 29, 5.2, 0, 7);
-  ctx.fill();
+  if (has('head')) {
+    ctx.beginPath();
+    ctx.arc(x, y - 29, 5.2, 0, 7);
+    ctx.fill();
+  }
+  if (body && body.bleeding > 0 && !stand) {
+    ctx.fillStyle = bloodColor();
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.arc(x - 3, y - 1, 1.8, 0, 7);
+    ctx.arc(x + 4, y - 3, 1.4, 0, 7);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
 }
+
+/** Wartende Sticks: sitzen angekettet im Eingang. */
+function drawSeated(s) {
+  const body = s.body,
+    has = (p) => !body || body.limbs[p],
+    x = s.x,
+    y = s.y,
+    rise = s.state === 'stand' ? clamp(1 - s.standT / STAND_TIME, 0, 1) : 0;
+  ctx.save();
+  ctx.translate(0, -rise * 8);
+  ctx.strokeStyle = C.steel;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 9, y - 18);
+  ctx.lineTo(x + 15, y - 6);
+  ctx.stroke();
+  ctx.strokeStyle = C.bright;
+  ctx.fillStyle = C.bright;
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round';
+  const breathe = Math.sin(s.anim * 2.2) * 1.2;
+  ctx.beginPath();
+  ctx.moveTo(x - 2, y - 18);
+  ctx.lineTo(x, y - 44 + breathe);
+  ctx.moveTo(x - 2, y - 18);
+  ctx.lineTo(x + 11, y - 16);
+  ctx.lineTo(x + 12, y - 1);
+  if (has('armL') || has('armR')) {
+    ctx.moveTo(x, y - 40 + breathe);
+    ctx.lineTo(x + 6, y - 30);
+    ctx.lineTo(x + 11, y - 19);
+  }
+  ctx.stroke();
+  if (has('head')) {
+    ctx.beginPath();
+    ctx.arc(x + 1, y - 51 + breathe, 5.2, 0, 7);
+    ctx.fill();
+  }
+  if (body && body.bleeding > 0) {
+    ctx.fillStyle = bloodColor();
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(x + 9, y - 4, 1.8, 0, 7);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
 export function drawCorpse(c) {
   const air = c.state === 'fall';
   ctx.save();
   ctx.translate(c.x, c.y - (air ? 12 : 4));
   if (air) ctx.rotate(c.rot);
-  drawCorpseShape(0, 0, 0, clamp(c.life / 12, 0, 1));
+  if (c.kind === 'limb') {
+    ctx.globalAlpha = clamp(c.life / 12, 0, 1);
+    ctx.strokeStyle = C.dim;
+    ctx.fillStyle = C.dim;
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    drawLimbShape(c.part || 'armL', 0, 0);
+    ctx.globalAlpha = 1;
+  } else {
+    drawCorpseShape(0, 0, 0, clamp(c.life / 12, 0, 1), c.missing);
+  }
   ctx.restore();
 }
 
@@ -219,14 +353,31 @@ export function drawMachine(b, r) {
       break;
     }
     case 'spawn': {
-      ctx.fillStyle = 'rgba(150,150,150,' + (0.2 + 0.12 * Math.sin(S.t * 3)) + ')';
-      ctx.fillRect(r.x + 9, r.y + 20, r.w - 18, r.h - 26);
+      // Eingangstür links, Sitzreihe mittig, Ausgang aufs Band rechts
+      ctx.fillStyle = 'rgba(150,150,150,' + (0.16 + 0.1 * Math.sin(S.t * 3)) + ')';
+      ctx.fillRect(r.x + 7, r.y + 18, 26, r.h - 24);
+      ctx.strokeStyle = C.steel;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(r.x + 7, r.y + 18, 26, r.h - 24);
       ctx.fillStyle = C.bright;
       ctx.beginPath();
-      ctx.moveTo(cx - 6, r.y + r.h / 2 - 8);
-      ctx.lineTo(cx + 6, r.y + r.h / 2);
-      ctx.lineTo(cx - 6, r.y + r.h / 2 + 8);
+      ctx.moveTo(r.x + 15, r.y + r.h / 2 - 8);
+      ctx.lineTo(r.x + 27, r.y + r.h / 2);
+      ctx.lineTo(r.x + 15, r.y + r.h / 2 + 8);
       ctx.fill();
+      for (let i = 0; i < CHAIRS; i++) {
+        const x = chairX(b, i);
+        ctx.strokeStyle = C.steel;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(x - 8, BELT_Y - 36);
+        ctx.lineTo(x - 8, BELT_Y - 2);
+        ctx.moveTo(x - 8, BELT_Y - 18);
+        ctx.lineTo(x + 13, BELT_Y - 18);
+        ctx.moveTo(x + 12, BELT_Y - 18);
+        ctx.lineTo(x + 14, BELT_Y - 2);
+        ctx.stroke();
+      }
       break;
     }
     case 'tank': {
@@ -240,14 +391,21 @@ export function drawMachine(b, r) {
     case 'bin': {
       ctx.fillStyle = '#111';
       ctx.fillRect(r.x + 8, r.y + 20, r.w - 16, r.h - 28);
-      b.items.forEach((it, i) =>
-        drawCorpseShape(
-          r.x + 26 + (i % 4) * 30,
-          r.y + r.h - 18 - Math.floor(i / 4) * 16,
-          it.rot * 1.5 + i,
-          0.85 - clamp(it.rot / 9, 0, 1) * 0.3,
-        ),
-      );
+      b.items.forEach((it, i) => {
+        const ix = r.x + 26 + (i % 4) * 30,
+          iy = r.y + r.h - 18 - Math.floor(i / 4) * 16;
+        if (it.kind === 'limb') {
+          ctx.strokeStyle = C.dim;
+          ctx.fillStyle = C.dim;
+          ctx.lineWidth = 2.4;
+          ctx.save();
+          ctx.translate(ix, iy);
+          ctx.rotate(it.rot * 1.5);
+          drawLimbShape(it.part || 'armL', 0, 0);
+          ctx.restore();
+        } else
+          drawCorpseShape(ix, iy, it.rot * 1.5 + i, 0.85 - clamp(it.rot / 9, 0, 1) * 0.3);
+      });
       const f = b.items.length / 9;
       ctx.fillStyle = '#111';
       ctx.fillRect(r.x + 10, r.y - 8, r.w - 20, 5);
@@ -278,7 +436,19 @@ export function drawMachine(b, r) {
         ctx.lineTo(r.x + 10 + i, lvl + Math.sin(S.t * 3.2 + i * 0.13) * 2.6);
       ctx.lineTo(r.x + r.w - 10, r.y + r.h - 6);
       ctx.fill();
-      b.items.forEach((it, i) => drawCorpseShape(r.x + 30 + i * 26, lvl + 10, S.t * 2 + i, 0.7));
+      b.items.forEach((it, i) => {
+        const ix = r.x + 30 + i * 26;
+        if (it.kind === 'limb') {
+          ctx.strokeStyle = '#7f9f7f';
+          ctx.fillStyle = '#7f9f7f';
+          ctx.lineWidth = 2.4;
+          ctx.save();
+          ctx.translate(ix, lvl + 10);
+          ctx.rotate(S.t * 2 + i);
+          drawLimbShape(it.part || 'armL', 0, 0);
+          ctx.restore();
+        } else drawCorpseShape(ix, lvl + 10, S.t * 2 + i, 0.7);
+      });
       if (b.items.length) {
         ctx.fillStyle = '#111';
         ctx.fillRect(r.x + 12, r.y + 6, r.w - 24, 5);
@@ -398,10 +568,12 @@ export function render() {
   }
   ctx.globalAlpha = 1;
   for (const c of corpses) if (c.state === 'belt') drawCorpse(c);
-  for (const s of sticks) if (s.state === 'walk') drawStick(s.x, BELT_Y, s.anim);
+  for (const s of sticks) if (s.state === 'walk') drawStick(s);
   for (const b of blds) if (DEF[b.t].band === 'over') drawBuilding(b);
+  for (const s of sticks)
+    if (s.state === 'sit' || s.state === 'stand' || s.state === 'enter') drawStick(s);
   for (const c of corpses) if (c.state !== 'belt') drawCorpse(c);
-  for (const s of sticks) if (s.state === 'fall') drawStick(s.x, s.y, s.anim);
+  for (const s of sticks) if (s.state === 'fall') drawStick(s);
   for (const p of parts) {
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
     ctx.fillStyle = p.color;

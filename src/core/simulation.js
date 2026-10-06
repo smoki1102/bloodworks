@@ -4,47 +4,144 @@ import {
   BASE_REGEN,
   BELT_SPEED,
   BELT_Y,
+  CHAIRS,
   COLS,
+  CRUSH_DMG,
+  DRIP_TIME,
   CORPSE_CAP,
   CORPSE_FLOOR_LIFE,
   CORPSE_LIFE,
+  ENTER_SPEED,
   GEN_BLOOD,
   GEN_GAIN,
+  HIT_WINDOW,
   KELLER_FLOOR,
   PW,
   PRESS_PERIOD,
   PRESS_WINDOW,
+  RELEASE_TIME,
+  SIT_SHUFFLE,
   SPAWN_BASE,
   SPAWN_MIN,
   SPAWN_RAMP,
+  SPIKE_HITS,
+  STAND_TIME,
   TANK_CAP,
   X0,
 } from '../config/constants.js';
 import { addBeltBlood, addFloorBlood, bloodColor, burst, nBurst } from './effects.js';
+import {
+  aliveLimbs,
+  bleedOut,
+  bodyToCorpse,
+  makeBody,
+  maxLimbs,
+  missingOf,
+  severLimb,
+} from './anatomy.js';
 import { capOf, machine } from './machines.js';
-import { bldRect } from './placement.js';
+import { bldRect, chairX } from './placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, occ, parts, sticks } from './state.js';
-import { colAt, colCX, rnd } from '../utils/helpers.js';
+import { colAt, colX, rnd } from '../utils/helpers.js';
 
 export { machine };
 
 export function killStick(i) {
   const s = sticks[i];
-  corpses.push({
-    x: s.x,
-    y: BELT_Y,
-    vx: 0,
-    vy: 0,
-    rot: 0,
-    state: 'belt',
-    bleed: 0.6,
-    life: CORPSE_LIFE,
-  });
+  corpses.push(s.body ? bodyToCorpse(s) : corpseAt(s.x, 'belt'));
   sticks.splice(i, 1);
   S.kills++;
   addBeltBlood(s.x, 6);
   addFloorBlood(s.x, 2.5);
   burst(s.x, BELT_Y - 16, bloodColor(), nBurst(9), 190);
+}
+
+const corpseAt = (x, state) => ({
+  x,
+  y: state === 'floor' ? KELLER_FLOOR : BELT_Y,
+  vx: 0,
+  vy: 0,
+  rot: 0,
+  state,
+  kind: 'corpse',
+  missing: [],
+  bleed: 0.6,
+  life: CORPSE_LIFE,
+});
+
+/* --------------------------- Warteschlange --------------------------- */
+const queueOf = () =>
+  sticks.filter((s) => s.state === 'sit' || s.state === 'stand' || s.state === 'enter');
+
+function seatStick(sp) {
+  const q = queueOf();
+  if (q.length >= CHAIRS) return false;
+  const taken = new Set(q.map((s) => s.chair));
+  let idx = 0;
+  while (taken.has(idx)) idx++;
+  sticks.push({
+    x: colX(sp.col) + 18,
+    y: BELT_Y,
+    vy: 0,
+    anim: rnd() * 9,
+    state: 'enter',
+    chair: idx,
+    targetX: chairX(sp, idx),
+    standT: 0,
+    dripT: 0,
+    body: makeBody(),
+  });
+  return true;
+}
+
+/** Der vorderste Stick steht auf, alle anderen rücken nach. */
+function releaseStick(sp) {
+  const q = queueOf();
+  if (!q.length) return;
+  const front = q.reduce((a, b) => (a.chair > b.chair ? a : b));
+  if (front.state === 'enter') return;
+  front.state = 'stand';
+  front.standT = STAND_TIME;
+  q
+    .filter((s) => s !== front)
+    .sort((a, b) => a.chair - b.chair)
+    .forEach((s, i) => {
+      s.chair = i;
+      s.targetX = chairX(sp, i);
+    });
+}
+
+/** Verliert der Eingang seine Besitzer, stehen sie auf und laufen weiter. */
+function releaseAll() {
+  for (const s of sticks)
+    if (s.state === 'sit' || s.state === 'enter') {
+      s.state = 'walk';
+      s.y = BELT_Y;
+    }
+}
+
+/**
+ * Treffer der Spikes-Walze: reißt Gliedmaßen ab, Blutung töet später.
+ * @returns {'kill'|'hit'|null}
+ */
+function spikeHit(b, s) {
+  const body = s.body;
+  if (!body) return 'kill';
+  if (S.gore === 0) return 'kill';
+  const last = body.hitAt[b.id] ?? -9;
+  if (S.t - last < HIT_WINDOW) return null;
+  body.hitAt[b.id] = S.t;
+  body.hits++;
+  const alive = aliveLimbs(body);
+  if (body.hits >= SPIKE_HITS || body.lost >= maxLimbs() || !alive.length) {
+    body.hp = 0;
+    return 'kill';
+  }
+  const part = alive[Math.floor(rnd() * alive.length)];
+  severLimb(s, part);
+  if (part === 'head') return 'kill';
+  body.hp -= 25;
+  return body.hp <= 0 ? 'kill' : 'hit';
 }
 
 export function fluids(dt) {
@@ -69,29 +166,53 @@ export function fluids(dt) {
 
 export function moveSticks(dt) {
   const sp = blds.find((b) => b.t === 'spawn');
-  if (sp && sp.clean <= 0) {
+  if (!sp) releaseAll();
+  else if (sp.clean <= 0) {
     S.spawnTimer -= dt;
     if (S.spawnTimer <= 0) {
       S.spawnTimer = Math.max(SPAWN_MIN, SPAWN_BASE - S.t / SPAWN_RAMP);
-      sticks.push({ x: colCX(sp.col), y: BELT_Y, vy: 0, anim: rnd() * 9, state: 'walk' });
+      seatStick(sp);
+    }
+    sp.rel = (sp.rel ?? RELEASE_TIME) - dt;
+    if (sp.rel <= 0) {
+      sp.rel = RELEASE_TIME;
+      if (S.pf > 0.2) releaseStick(sp);
     }
   }
   for (let i = sticks.length - 1; i >= 0; i--) {
     const s = sticks[i];
     s.anim += dt;
+    if (s.state === 'enter') {
+      const dx = s.targetX - s.x;
+      if (Math.abs(dx) < 1.5) {
+        s.state = 'sit';
+        s.x = s.targetX;
+      } else s.x += Math.sign(dx) * ENTER_SPEED * dt;
+      continue;
+    }
+    if (s.state === 'sit') {
+      if (sp && s.targetX != null) {
+        const dx = s.targetX - s.x;
+        if (Math.abs(dx) > 0.5) s.x += Math.sign(dx) * Math.min(SIT_SHUFFLE * dt, Math.abs(dx));
+      }
+      continue;
+    }
+    if (s.state === 'stand') {
+      s.standT -= dt;
+      if (s.standT <= 0) {
+        s.state = 'walk';
+        s.y = BELT_Y;
+      }
+      continue;
+    }
     if (s.state === 'fall') {
       s.vy += 1500 * dt;
       s.y += s.vy * dt;
       s.x += 12 * dt;
       if (s.y >= KELLER_FLOOR - 2) {
         corpses.push({
-          x: s.x,
-          y: KELLER_FLOOR,
-          vx: 0,
-          vy: 0,
-          rot: 0,
-          state: 'floor',
-          bleed: 1,
+          ...corpseAt(s.x, 'floor'),
+          missing: missingOf(s.body),
           life: CORPSE_FLOOR_LIFE,
         });
         addFloorBlood(s.x, 9);
@@ -99,6 +220,18 @@ export function moveSticks(dt) {
         sticks.splice(i, 1);
       }
       continue;
+    }
+    if (s.body && bleedOut(s, dt)) {
+      addBeltBlood(s.x, 3);
+      killStick(i);
+      continue;
+    }
+    if (s.body && s.body.bleeding > 0) {
+      s.dripT -= dt;
+      if (s.dripT <= 0) {
+        s.dripT = DRIP_TIME;
+        addBeltBlood(s.x, Math.min(1.2, s.body.bleeding / 12));
+      }
     }
     const c = colAt(s.x);
     if (!(c >= 0 && c < COLS && occ.belt[c] > 0)) {
@@ -118,7 +251,15 @@ export function moveSticks(dt) {
       if (!d.kill || b.clean > 0) continue;
       const r = bldRect(b);
       if (s.x < r.x + 6 || s.x > r.x + r.w - 6) continue;
-      if (d.kill === 'contact' || b.phase % PRESS_PERIOD < PRESS_WINDOW) {
+      if (d.kill === 'contact') {
+        const res = spikeHit(b, s);
+        if (res === 'kill') {
+          killStick(i);
+          break;
+        }
+        if (res === 'hit') break;
+      } else if (b.phase % PRESS_PERIOD < PRESS_WINDOW) {
+        if (s.body) s.body.hp -= CRUSH_DMG;
         killStick(i);
         break;
       }
@@ -140,6 +281,8 @@ export function catcher(c, needY) {
   }
   return null;
 }
+const itemOf = (c) => ({ rot: 0, kind: c.kind || 'corpse', part: c.part });
+
 export function moveCorpses(dt) {
   for (let i = corpses.length - 1; i >= 0; i--) {
     const c = corpses[i];
@@ -152,10 +295,12 @@ export function moveCorpses(dt) {
       } else {
         c.x += BELT_SPEED * dt;
         c.y = BELT_Y;
-        c.bleed -= dt;
-        if (c.bleed <= 0) {
-          c.bleed = 1.3;
-          addBeltBlood(c.x, 1.1);
+        if (c.bleed > 0) {
+          c.bleed -= dt;
+          if (c.bleed <= 0) {
+            c.bleed = c.kind === 'limb' ? 0 : 1.3;
+            addBeltBlood(c.x, c.kind === 'limb' ? 0.5 : 1.1);
+          }
         }
         if (c.x > X0 + PW - 4) {
           corpses.splice(i, 1);
@@ -166,11 +311,12 @@ export function moveCorpses(dt) {
     if (c.state === 'fall') {
       c.vy += 1500 * dt;
       c.y += c.vy * dt;
-      c.x += 14 * dt;
+      c.x += (c.vx ?? 14) * dt;
+      if (c.vx) c.vx *= 1 - dt * 1.2;
       c.rot += dt * 2.4;
       const b = catcher(c, true);
       if (b) {
-        b.items.push({ rot: 0 });
+        b.items.push(itemOf(c));
         burst(c.x, c.y, bloodColor(), nBurst(5), 120);
         corpses.splice(i, 1);
         continue;
@@ -178,6 +324,7 @@ export function moveCorpses(dt) {
       if (c.y >= KELLER_FLOOR - 2) {
         c.y = KELLER_FLOOR;
         c.vy = 0;
+        c.vx = 0;
         c.state = 'floor';
         c.rot = 0;
         addFloorBlood(c.x, 7);
@@ -190,7 +337,7 @@ export function moveCorpses(dt) {
       addFloorBlood(c.x, dt * 0.5);
       const b = catcher(c, false);
       if (b) {
-        b.items.push({ rot: 0 });
+        b.items.push(itemOf(c));
         corpses.splice(i, 1);
         continue;
       }

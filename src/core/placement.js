@@ -47,6 +47,9 @@ export function sellBuilding(b) {
   removeBuilding(b);
   toast('Verkauft · +' + r + ' €');
 }
+/** Sitzpositionen im Wartebereich des Eingangs. */
+export const chairX = (sp, i) => colX(sp.col) + 52 + i * 30;
+
 export function bldRect(b) {
   const d = DEF[b.t],
     x = colX(b.col),
