@@ -27,7 +27,7 @@ export function toast(msg, kind) {
   $('toasts').appendChild(el);
   setTimeout(() => el.remove(), 2400);
 }
-export const bloodColor = () => (S.gore === 0 ? '#666' : S.gore === 50 ? '#8e2a22' : '#d63a2c');
+export const bloodColor = () => (S.gore === 0 ? '#36424f' : S.gore === 50 ? '#8e2a22' : '#cf3020');
 export const nBurst = (a) => (S.gore === 0 ? 3 : S.gore === 50 ? Math.ceil(a * 0.6) : a);
 
 export const addBeltBlood = (x, a) => {

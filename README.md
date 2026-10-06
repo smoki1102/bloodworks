@@ -19,6 +19,13 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 
 ## Steuerung
 
-Leertaste Start/Pause · 1/2/3 Kategorie · Rechtsklick/Esc Abbrechen · Entf Verkaufen.
+Leertaste Start/Pause · 1/2/3 Kategorie · Rechtsklick/Esc Abbrechen · Entf Verkaufen · E An/Aus · Strg/Cmd+Z Undo.
+
+## Features
+
+- **Anatomie:** Sticks verlieren abtrennbare Gliedmaßen (Gore-Level 0/50/100), bluten tropfenweise, fallen durch Bandlücken.
+- **Echte Warenflüsse:** Container leeren Blut auf den Boden, Abfluss/Markt/Generator brauchen Tank-Anschluss, Ofen/Säure ziehen aus dem Container. Auslastung steuert den Energieverbrauch.
+- **Geräte-Panel:** Status, Auslastung, Durchsatz, Verbindung und An/Aus pro Maschine.
+- **Clean-Tech-Design:** helle Laborhallen mit Chrom-Schienen, blaue LED-Akzente und animierte Blutrohre.
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

@@ -30,15 +30,18 @@ export let vScale = 1,
   DPR = 1,
   bgCanvas;
 export const C = {
-  bg: '#151515',
-  dark: '#202020',
-  body: '#3a3a3a',
-  steel: '#6d6d6d',
-  light: '#aaa',
-  bright: '#f2f2f2',
-  dim: '#8f8f8f',
-  accent: '#c0392b',
-  accent2: '#e5483a',
+  bg: '#e6ebf2',
+  dark: '#c8d2de',
+  body: '#d7dfe9',
+  steel: '#7c8a9a',
+  light: '#3c4a5a',
+  bright: '#111c2a',
+  dim: '#5d6b7a',
+  accent: '#1d7fd6',
+  accent2: '#2f81f8',
+  err: '#e5483a',
+  warn: '#e0a040',
+  ok: '#2f9e44',
 };
 
 export function buildBackground() {
@@ -49,42 +52,56 @@ export function buildBackground() {
   g.scale(2, 2);
   g.fillStyle = C.bg;
   g.fillRect(0, 0, W, H);
-  const room = (y0, y1, fill) => {
-    g.fillStyle = fill;
+  // zarte Boden-/Wandplatten der drei Hallen
+  const panel = (y0, y1) => {
+    g.fillStyle = '#dfe5ee';
     g.fillRect(X0 - 14, y0, PW + 28, y1 - y0);
+    g.strokeStyle = 'rgba(120,138,158,.16)';
+    g.lineWidth = 1;
+    for (let x = X0; x <= X0 + PW; x += 96) {
+      g.beginPath();
+      g.moveTo(x, y0);
+      g.lineTo(x, y1);
+      g.stroke();
+    }
+    for (let y = y0 + 32; y < y1; y += 32) {
+      g.beginPath();
+      g.moveTo(X0 - 14, y);
+      g.lineTo(X0 + PW + 14, y);
+      g.stroke();
+    }
   };
-  room(OBEN_TOP, OBEN_FLOOR, '#1a1a1a');
-  room(OBEN_FLOOR + 16, BELT_Y, '#1c1c1c');
-  room(KELLER_TOP, KELLER_FLOOR, '#121212');
-  g.strokeStyle = '#262626';
-  g.lineWidth = 2;
-  for (let x = X0; x <= X0 + PW; x += 72) {
-    g.beginPath();
-    g.moveTo(x, OBEN_FLOOR + 30);
-    g.lineTo(x, BELT_Y);
-    g.stroke();
-  }
-  for (let x = X0; x <= X0 + PW; x += 96) {
-    g.beginPath();
-    g.moveTo(x, KELLER_TOP);
-    g.lineTo(x, KELLER_FLOOR);
-    g.stroke();
-  }
-  g.fillStyle = C.body;
-  g.fillRect(X0 - 14, OBEN_FLOOR, PW + 28, 3);
-  g.fillRect(X0 - 14, KELLER_TOP - 4, PW + 28, 4);
-  g.fillRect(X0 - 14, KELLER_FLOOR, PW + 28, 3);
-  g.fillRect(X0 - 14, OBEN_TOP, 14, BELT_Y - OBEN_TOP);
-  g.fillRect(X0 + PW, OBEN_TOP, 14, BELT_Y - OBEN_TOP);
-  g.fillStyle = '#181818';
-  g.fillRect(X0 - 14, OBEN_FLOOR + 3, PW + 28, 13);
-  g.fillRect(X0 - 14, BELT_Y + BELT_H, PW + 28, KELLER_TOP - BELT_Y - BELT_H - 4);
-  g.fillRect(X0 - 14, KELLER_FLOOR + 3, PW + 28, H);
+  panel(OBEN_TOP, OBEN_FLOOR);
+  panel(OBEN_FLOOR + 16, BELT_Y - 4);
+  panel(KELLER_TOP, KELLER_FLOOR);
+  // Flure öffnen – dunklere Zwischenzonen
+  g.fillStyle = '#c4cfdb';
+  g.fillRect(X0 - 14, OBEN_FLOOR, PW + 28, 16);
+  g.fillRect(X0 - 14, BELT_Y + BELT_H, PW + 28, KELLER_TOP - BELT_Y - BELT_H);
+  // Decken-/Boden-Schienen in Chrom
   g.fillStyle = C.steel;
-  g.font = 'bold 10px ui-monospace,monospace';
-  g.fillText('OBERGESCHOSS', X0 + 6, OBEN_TOP + 16);
-  g.fillText('HALLE', X0 + 6, OBEN_FLOOR + 30);
-  g.fillText('KELLER', X0 + 6, KELLER_TOP + 20);
+  g.fillRect(X0 - 16, OBEN_FLOOR - 2, PW + 32, 3);
+  g.fillRect(X0 - 16, KELLER_TOP, PW + 32, 3);
+  g.fillRect(X0 - 16, KELLER_FLOOR, PW + 32, 3);
+  g.fillRect(X0 - 16, OBEN_TOP, 16, BELT_Y - OBEN_TOP);
+  g.fillRect(X0 + PW, OBEN_TOP, 16, BELT_Y - OBEN_TOP);
+  // blaue LED-Leiste am Obergeschoss
+  g.fillStyle = C.accent2;
+  g.fillRect(X0, OBEN_TOP, PW, 3);
+  g.fillStyle = 'rgba(47,129,248,.18)';
+  for (let x = X0 + 24; x < X0 + PW; x += 40) g.fillRect(x, OBEN_TOP - 4, 16, 7);
+  g.strokeStyle = C.light;
+  g.lineWidth = 1;
+  g.strokeRect(X0 - 14, OBEN_FLOOR + 15, PW + 28, BELT_Y - OBEN_FLOOR - 15);
+  g.fillStyle = 'rgba(47,129,248,.1)';
+  g.fillRect(X0 - 14, OBEN_FLOOR + 15, PW + 28, BELT_Y - OBEN_FLOOR - 15);
+  g.fillStyle = C.light;
+  g.font = '700 10.5px ui-monospace,monospace';
+  g.fillText('OBERGESCHOSS · BLUTMARKT', X0 + 8, OBEN_TOP + 15);
+  g.fillText('HALLE · FERTIGUNG', X0 + 8, OBEN_FLOOR + 30);
+  g.fillStyle = C.dim;
+  g.font = '500 10.5px ui-monospace,monospace';
+  g.fillText('KELLER · ROHRLEITUNG', X0 + 8, KELLER_TOP + 16);
   return c;
 }
 
@@ -278,12 +295,15 @@ export function drawCorpse(c) {
 }
 
 export function drawBelt(b, r) {
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = C.dark;
   ctx.fillRect(r.x, r.y, r.w, BELT_H);
   ctx.fillStyle = C.body;
-  ctx.fillRect(r.x, r.y, r.w, 3);
+  ctx.fillRect(r.x, r.y + 1.5, r.w, BELT_H - 3);
+  ctx.fillStyle = C.steel;
+  ctx.fillRect(r.x, r.y, r.w, 1.5);
+  ctx.fillRect(r.x, r.y + BELT_H - 1.5, r.w, 1.5);
   const off = (S.t * BELT_SPEED) % 18;
-  ctx.strokeStyle = C.steel;
+  ctx.strokeStyle = C.light;
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = -1; i < r.w / 18 + 1; i++) {
@@ -295,7 +315,7 @@ export function drawBelt(b, r) {
   }
   ctx.stroke();
   if (b.dirt > 4) {
-    ctx.fillStyle = 'rgba(30,30,30,' + Math.min(0.5, b.dirt / 200) + ')';
+    ctx.fillStyle = 'rgba(70,40,25,' + Math.min(0.42, b.dirt / 260) + ')';
     ctx.fillRect(r.x, r.y, r.w, BELT_H);
   }
 }
@@ -304,14 +324,14 @@ export function drawMachine(b, r) {
   const d = DEF[b.t],
     on = S.pf > 0.15 && b.clean <= 0,
     cx = r.x + r.w / 2;
-  ctx.fillStyle = '#262626';
+  ctx.fillStyle = '#eef3f9';
   ctx.fillRect(r.x + 3, r.y + 4, r.w - 6, r.h - 4);
   ctx.fillStyle = d.col;
   ctx.fillRect(r.x + 3, r.y + 4, r.w - 6, 12);
   ctx.strokeStyle = C.steel;
   ctx.lineWidth = 2;
   ctx.strokeRect(r.x + 3, r.y + 4, r.w - 6, r.h - 4);
-  ctx.fillStyle = C.light;
+  ctx.fillStyle = C.steel;
   for (const x of [r.x + 9, r.x + r.w - 9]) {
     ctx.beginPath();
     ctx.arc(x, r.y + 10, 1.8, 0, 7);
@@ -322,7 +342,7 @@ export function drawMachine(b, r) {
       ctx.save();
       ctx.translate(cx, r.y + 66);
       ctx.rotate(S.running && on ? S.t * 3 : 0);
-      ctx.fillStyle = C.steel;
+      ctx.fillStyle = C.bright;
       ctx.beginPath();
       for (let i = 0; i < 32; i++) {
         const a = (i * Math.PI) / 16,
@@ -336,7 +356,7 @@ export function drawMachine(b, r) {
       ctx.beginPath();
       ctx.arc(0, 0, 17, 0, 7);
       ctx.stroke();
-      ctx.fillStyle = C.bright;
+      ctx.fillStyle = '#f4f8fc';
       ctx.beginPath();
       ctx.arc(0, 0, 6, 0, 7);
       ctx.fill();
@@ -355,7 +375,7 @@ export function drawMachine(b, r) {
     }
     case 'spawn': {
       // Eingangstür links, Sitzreihe mittig, Ausgang aufs Band rechts
-      ctx.fillStyle = 'rgba(150,150,150,' + (0.16 + 0.1 * Math.sin(S.t * 3)) + ')';
+      ctx.fillStyle = 'rgba(45,64,90,' + (0.12 + 0.08 * Math.sin(S.t * 3)) + ')';
       ctx.fillRect(r.x + 7, r.y + 18, 26, r.h - 24);
       ctx.strokeStyle = C.steel;
       ctx.lineWidth = 2;
@@ -383,14 +403,17 @@ export function drawMachine(b, r) {
     }
     case 'tank': {
       const fh = (r.h - 34) * clamp(S.blood / S.bloodCap, 0, 1);
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = 'rgba(30,48,62,.28)';
       ctx.fillRect(r.x + 13, r.y + 20, r.w - 26, r.h - 30);
       ctx.fillStyle = bloodColor();
       ctx.fillRect(r.x + 13, r.y + r.h - 12 - fh, r.w - 26, fh);
+      ctx.strokeStyle = C.steel;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(r.x + 13, r.y + 20, r.w - 26, r.h - 30);
       break;
     }
     case 'bin': {
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = 'rgba(30,48,62,.35)';
       ctx.fillRect(r.x + 8, r.y + 20, r.w - 16, r.h - 28);
       b.items.forEach((it, i) => {
         const ix = r.x + 26 + (i % 4) * 30,
@@ -408,19 +431,19 @@ export function drawMachine(b, r) {
           drawCorpseShape(ix, iy, it.rot * 1.5 + i, 0.85 - clamp(it.rot / 9, 0, 1) * 0.3);
       });
       const f = b.items.length / 9;
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = 'rgba(20,32,45,.4)';
       ctx.fillRect(r.x + 10, r.y - 8, r.w - 20, 5);
       ctx.fillStyle = f > 0.75 ? C.accent2 : C.dim;
       ctx.fillRect(r.x + 10, r.y - 8, (r.w - 20) * f, 5);
       break;
     }
     case 'oven': {
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = 'rgba(30,48,62,.35)';
       ctx.fillRect(r.x + 14, r.y + 30, r.w - 28, r.h - 50);
       if (b.items.length && b.clean <= 0) {
         ctx.fillStyle = 'rgba(229,120,50,' + (0.5 + 0.25 * Math.sin(S.t * 9)) + ')';
         ctx.fillRect(r.x + 18, r.y + 40, r.w - 36, r.h - 70);
-        ctx.fillStyle = '#111';
+        ctx.fillStyle = 'rgba(20,32,45,.4)';
         ctx.fillRect(r.x + 12, r.y - 8, r.w - 24, 5);
         ctx.fillStyle = C.light;
         ctx.fillRect(r.x + 12, r.y - 8, (r.w - 24) * clamp(b.prog / 1.4, 0, 1), 5);
@@ -437,6 +460,9 @@ export function drawMachine(b, r) {
         ctx.lineTo(r.x + 10 + i, lvl + Math.sin(S.t * 3.2 + i * 0.13) * 2.6);
       ctx.lineTo(r.x + r.w - 10, r.y + r.h - 6);
       ctx.fill();
+      ctx.strokeStyle = C.steel;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(r.x + 6, r.y + 14, r.w - 12, r.h - 20);
       b.items.forEach((it, i) => {
         const ix = r.x + 30 + i * 26;
         if (it.kind === 'limb') {
@@ -451,7 +477,7 @@ export function drawMachine(b, r) {
         } else drawCorpseShape(ix, lvl + 10, S.t * 2 + i, 0.7);
       });
       if (b.items.length) {
-        ctx.fillStyle = '#111';
+        ctx.fillStyle = 'rgba(20,32,45,.4)';
         ctx.fillRect(r.x + 12, r.y + 6, r.w - 24, 5);
         ctx.fillStyle = C.dim;
         ctx.fillRect(r.x + 12, r.y + 6, (r.w - 24) * clamp(b.prog / 1.7, 0, 1), 5);
@@ -503,9 +529,9 @@ export function drawBuilding(b) {
   }
   if (d.dirt && b.dirt > 4 && b.clean <= 0) {
     const w = r.w - 12;
-    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillStyle = 'rgba(15,25,40,.35)';
     ctx.fillRect(r.x + 6, r.y - 9, w, 5);
-    ctx.fillStyle = b.dirt > 70 ? C.accent2 : b.dirt > 40 ? C.light : C.dim;
+    ctx.fillStyle = b.dirt > 70 ? C.err : b.dirt > 40 ? C.warn : C.ok;
     ctx.fillRect(r.x + 6, r.y - 9, w * (1 - b.dirt / 100), 5);
   }
   if (S.pf < 0.4 && d.e > 0 && b.clean <= 0) {
@@ -589,9 +615,9 @@ export function drawGhost() {
     ctx.lineTo(colX(c), H);
   }
   ctx.stroke();
-  ctx.fillStyle = ok ? 'rgba(150,150,150,.22)' : 'rgba(229,72,58,.2)';
+  ctx.fillStyle = ok ? 'rgba(47,129,248,.12)' : 'rgba(229,72,58,.16)';
   ctx.fillRect(r.x, r.y, r.w, r.h);
-  ctx.strokeStyle = ok ? C.dim : C.accent2;
+  ctx.strokeStyle = ok ? C.accent : C.err;
   ctx.lineWidth = 2.5;
   ctx.setLineDash([6, 4]);
   ctx.strokeRect(r.x, r.y, r.w, r.h);
