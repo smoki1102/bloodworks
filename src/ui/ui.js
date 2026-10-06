@@ -96,10 +96,13 @@ export const TUT = [
     () => has('bin'),
   ],
   [
-    'Baue im Keller einen <b>Abfluss</b> und einen <b>Bluttank</b>.',
+    'Baue im Keller einen <b>Abfluss</b> und einen <b>Bluttank daneben</b> – der Abfluss pumpt nur mit angeschlossenem Tank.',
     () => has('drain') && has('tank'),
   ],
-  ['Baue im Obergeschoss einen <b>Blutmarkt</b>.', () => has('market')],
+  [
+    'Baue im Obergeschoss einen <b>Blutmarkt</b> – er verkauft nur mit einem <b>Bluttank direkt darunter</b> (dieselben Spalten).',
+    () => has('market'),
+  ],
   ['Drücke <b>Start</b> und lass die Anlage laufen.', () => S.running || S.t > 1],
 ];
 export let lastHint = null;
@@ -270,7 +273,7 @@ export function save(silent) {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
-        v: 6,
+        v: 7,
         money: S.money,
         energy: S.energy,
         blood: S.blood,
@@ -286,7 +289,9 @@ export function save(silent) {
           t: b.t,
           col: b.col,
           dirt: b.dirt,
-          items: b.items.map((i) => ({ rot: i.rot })),
+          on: b.on,
+          buf: b.buf,
+          items: b.items.map((i) => ({ rot: i.rot, kind: i.kind, part: i.part })),
         })),
       }),
     );
@@ -298,7 +303,7 @@ export function save(silent) {
 export const hasSave = () => {
   try {
     const r = JSON.parse(localStorage.getItem(SAVE_KEY));
-    return !!r && r.v === 6;
+    return !!r && r.v === 7;
   } catch (e) {
     return false;
   }
@@ -308,7 +313,7 @@ export function load() {
   try {
     raw = JSON.parse(localStorage.getItem(SAVE_KEY));
   } catch (e) {}
-  if (!raw || raw.v !== 6) return toast('Kein Spielstand', 'bad');
+  if (!raw || raw.v !== 7) return toast('Kein Spielstand', 'bad');
   const run = S.running;
   if (run) toggleRun();
   initSim();
@@ -332,7 +337,9 @@ export function load() {
     const b = addBuilding(o.t, o.col, true);
     if (b) {
       b.dirt = o.dirt || 0;
-      b.items = (o.items || []).map((i) => ({ rot: i.rot || 0 }));
+      b.on = o.on !== false;
+      b.buf = o.buf || 0;
+      b.items = (o.items || []).map((i) => ({ rot: i.rot || 0, kind: i.kind, part: i.part }));
     }
   }
   document

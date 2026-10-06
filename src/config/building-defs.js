@@ -79,6 +79,7 @@ export const DEF = {
     h: 172,
     cost: 220,
     e: 0.1,
+    cap: 9,
     d: 'Fängt Leichen. Sie verrotten zu Blut und Asche.',
   },
   oven: {
@@ -91,6 +92,7 @@ export const DEF = {
     h: 142,
     cost: 380,
     e: 0.8,
+    cap: 3,
     d: 'Verbrennt Leichen: +Energie, +Asche.',
   },
   acid: {
@@ -103,6 +105,7 @@ export const DEF = {
     h: 112,
     cost: 460,
     e: 0.5,
+    cap: 3,
     d: 'Löst Leichen auf: +Geld.',
   },
   tank: {

@@ -46,3 +46,55 @@ describe('Simulation', () => {
     expect(state.S.kills).toBeGreaterThan(0);
   });
 });
+
+describe('Warenflüsse', () => {
+  beforeEach(() => {
+    setupWorld();
+    state.S.gore = 0;
+    state.S.money = 20000;
+  });
+
+  it('Container leert Blut auf den Boden statt in den Tank', () => {
+    addBuilding('spike', 6, true);
+    addBuilding('bin', 13, true);
+    for (let i = 0; i < 900; i++) tick(0.033);
+    expect(state.S.blood).toBe(0);
+    expect(state.floorBlood.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+  });
+  it('Abfluss ohne angeschlossenen Tank puffert nur', () => {
+    addBuilding('spike', 6, true);
+    addBuilding('bin', 13, true);
+    addBuilding('drain', 16, true);
+    addBuilding('tank', 17, true);
+    addBuilding('drain', 20, true);
+    for (let i = 0; i < 900; i++) tick(0.033);
+    const d = state.blds.find((b) => b.t === 'drain' && b.col === 16);
+    const alone = state.blds.find((b) => b.t === 'drain' && b.col === 20);
+    expect(d.link).toBe('ok');
+    expect(alone.link).toBe('none');
+    expect(state.S.blood).toBeGreaterThan(0);
+    expect(alone.buf).toBe(0);
+  });
+  it('Blutmarkt verkauft nur mit Tank direkt darunter', () => {
+    addBuilding('tank', 10, true);
+    addBuilding('market', 10, true);
+    addBuilding('tank', 15, true);
+    addBuilding('market', 20, true);
+    state.S.blood = 500;
+    for (let i = 0; i < 400; i++) tick(0.033);
+    const withTank = state.blds.find((b) => b.t === 'market' && b.col === 10);
+    const without = state.blds.find((b) => b.t === 'market' && b.col === 20);
+    expect(withTank.link).toBe('ok');
+    expect(without.link).toBe('none');
+    expect(state.S.sold).toBeGreaterThan(0);
+  });
+  it('Ofen zieht Leichen aus dem angrenzenden Container', () => {
+    addBuilding('spike', 6, true);
+    addBuilding('bin', 13, true);
+    addBuilding('oven', 11, true);
+    for (let i = 0; i < 900; i++) tick(0.033);
+    const oven = state.blds.find((b) => b.t === 'oven');
+    expect(oven.outCount).toBeGreaterThan(0);
+    expect(state.S.energy).toBeGreaterThan(0);
+  });
+});

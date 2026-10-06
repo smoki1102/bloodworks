@@ -30,6 +30,16 @@ export function addBuilding(t, col, free) {
     phase: hash(nextId) * 1.4,
     items: [],
     glow: 0,
+    on: true,
+    buf: 0,
+    link: '-',
+    util: 0,
+    rate: 0,
+    outCount: 0,
+    lastOut: null,
+    pullCd: 0,
+    pulse: 0,
+    worked: false,
   };
   blds.push(b);
   for (let c = col; c < col + d.w; c++) occ[d.band][c] = b.id;

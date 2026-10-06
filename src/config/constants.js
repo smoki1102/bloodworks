@@ -14,7 +14,7 @@ export const BELT_SPEED = 54,
   BASE_CAP = 100,
   TANK_CAP = 250,
   BASE_REGEN = 4,
-  SAVE_KEY = 'bloodworks_v6';
+  SAVE_KEY = 'bloodworks_v7';
 
 /* ------------------------------ Balance ------------------------------ */
 /* Aufgabe 0: alle Regler an einem Ort statt verstreuter Magic Numbers. */
@@ -26,7 +26,12 @@ export const CLEAN_COST_BASE = 15,
 export const MARKET_PRICE = 1.4, // € je Blut
   MARKET_RATE = 9; // Blut/s je Markt
 export const DRAIN_RATE = 34, // Blut/s aus dem Boden
-  DRAIN_REACH = 1; // Spaltenradius um den Abfluss
+  DRAIN_REACH = 1, // Spaltenradius um den Abfluss
+  DRAIN_BUF = 30; // Puffer ohne angeschlossenen Tank
+export const PULL_TIME = 1.5; // Übergabe Container → Ofen/Säure
+export const DIRT_IDLE = 0.25, // Verschmutzung im Leerlauf
+  DIRT_WORK = 2.4; // Verschmutzung bei echter Arbeit
+export const UTIL_TAU = 1.5; // Glättung der Auslastung (s)
 export const BIN_ROT_TIME = 9, // Sekunden bis eine Leiche verrottet
   BIN_BLOOD = 22,
   BIN_ASH = 4,

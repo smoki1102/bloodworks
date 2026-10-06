@@ -40,6 +40,7 @@ import {
   severLimb,
 } from './anatomy.js';
 import { capOf, machine } from './machines.js';
+import { flow, noteRate } from './flow.js';
 import { bldRect, chairX } from './placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, occ, parts, sticks } from './state.js';
 import { colAt, colX, rnd } from '../utils/helpers.js';
@@ -359,17 +360,23 @@ export function tick(dt) {
   S.blood = Math.min(S.blood, cap);
   let gen = BASE_REGEN;
   for (const b of blds) {
-    if (b.t !== 'gen' || b.clean > 0) continue;
-    if (S.blood > 0.01) {
+    if (b.t !== 'gen' || b.clean > 0 || b.on === false) continue;
+    if (b.link === 'ok' && S.blood > 0.01) {
       const q = Math.min(S.blood, GEN_BLOOD * dt);
       S.blood -= q;
       gen += (q * GEN_GAIN) / GEN_BLOOD;
       b.glow = Math.min(1, b.glow + dt * 3);
-    } else b.glow = Math.max(0, b.glow - dt * 2);
+      b.worked = true;
+      noteRate(b, q / dt, dt);
+    } else {
+      b.glow = Math.max(0, b.glow - dt * 2);
+      b.worked = false;
+    }
   }
   S.energy = Math.min(S.energyMax, S.energy + gen * dt);
   let demand = 0;
-  for (const b of blds) if (b.clean <= 0) demand += DEF[b.t].e;
+  for (const b of blds)
+    if (b.clean <= 0 && b.on !== false) demand += DEF[b.t].e * (0.25 + 0.75 * (b.util || 0));
   let pf = 1;
   if (demand > 1e-4) {
     const need = demand * dt;
@@ -380,6 +387,7 @@ export function tick(dt) {
   }
   S.pf = pf;
   for (const b of blds) machine(b, dt, pf);
+  flow(dt);
   fluids(dt);
   moveSticks(dt);
   moveCorpses(dt);

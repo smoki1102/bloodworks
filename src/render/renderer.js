@@ -17,6 +17,7 @@ import {
   X0,
 } from '../config/constants.js';
 import { bloodColor } from '../core/effects.js';
+import { horizontal, vertical } from '../core/flow.js';
 import { bldRect, canPlace, chairX } from '../core/placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
 import { $, clamp, colX, lerp } from '../utils/helpers.js';
@@ -509,6 +510,58 @@ export function drawBuilding(b) {
     ctx.fillText('!', r.x + r.w / 2, r.y - 17);
     ctx.textAlign = 'left';
   }
+  if (b.link === 'none' && b.clean <= 0) {
+    ctx.fillStyle = 'rgba(229,72,58,.9)';
+    ctx.fillRect(r.x + r.w / 2 - 5, r.y - 31, 10, 10);
+    ctx.fillStyle = C.bg;
+    ctx.font = '700 10px ui-monospace,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', r.x + r.w / 2, r.y - 22);
+    ctx.textAlign = 'left';
+  }
+}
+
+/** Verbindungsrohre angezeigter Systeme – sichtbar, wenn eine Verbindung steht. */
+function drawPipes() {
+  for (const b of blds) {
+    if (b.link !== 'ok') continue;
+    const target = b.t === 'drain' ? horizontal(b, 'tank') : vertical(b, 'tank');
+    if (!target) continue;
+    const r = bldRect(b),
+      c = bldRect(target);
+    let x1,
+      y1,
+      x2,
+      y2;
+    if (b.t === 'drain') {
+      const hy = r.y + r.h / 2;
+      if (c.x < r.x) [x1, y1, x2, y2] = [r.x, hy, c.x + c.w, hy];
+      else [x1, y1, x2, y2] = [r.x + r.w, hy, c.x, hy];
+    } else {
+      const cx = (Math.max(r.x, c.x) + Math.min(r.x + r.w, c.x + c.w)) / 2;
+      if (c.y < r.y) [x1, y1, x2, y2] = [cx, r.y, cx, c.y + c.h];
+      else [x1, y1, x2, y2] = [cx, r.y + r.h, cx, c.y];
+    }
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(120,140,165,.45)';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    if (b.worked || b.pulse > 0) {
+      ctx.strokeStyle = 'rgba(214,64,48,.85)';
+      ctx.setLineDash([9, 13]);
+      ctx.lineDashOffset = -((S.t * 70) % 22);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 export const snapCol = (mx, w) => clamp(Math.floor((mx - X0) / CELL - (w - 1) / 2), 0, COLS - w);
@@ -547,6 +600,7 @@ export function render() {
   ctx.drawImage(bgCanvas, 0, 0, W, H);
   for (const b of blds) if (DEF[b.t].band === 'oben') drawBuilding(b);
   for (const b of blds) if (DEF[b.t].band === 'keller') drawBuilding(b);
+  drawPipes();
   const bc = bloodColor();
   for (let i = 0; i < COLS; i++) {
     const v = floorBlood[i];
