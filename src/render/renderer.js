@@ -18,7 +18,7 @@ import {
 } from '../config/constants.js';
 import { bloodColor } from '../core/effects.js';
 import { horizontal, vertical } from '../core/flow.js';
-import { bldRect, canPlace, chairX } from '../core/placement.js';
+import { bldRect, chairX, placeReason } from '../core/placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
 import { $, clamp, colX, lerp } from '../utils/helpers.js';
 
@@ -472,7 +472,7 @@ export function drawMachine(b, r) {
       ctx.textAlign = 'left';
     }
   }
-  ctx.fillStyle = S.running && on ? C.accent2 : C.steel;
+  ctx.fillStyle = S.running && on && b.on !== false ? C.accent2 : C.steel;
   ctx.beginPath();
   ctx.arc(r.x + r.w - 14, r.y + 10, 2.5, 0, 7);
   ctx.fill();
@@ -483,6 +483,15 @@ export function drawBuilding(b) {
     d = DEF[b.t];
   if (d.band === 'belt') drawBelt(b, r);
   else drawMachine(b, r);
+  if (b.on === false && d.band !== 'belt') {
+    ctx.fillStyle = 'rgba(0,0,0,.38)';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = C.steel;
+    ctx.font = 'bold 10px ui-monospace,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('AUS', r.x + r.w / 2, r.y + r.h / 2 + 3);
+    ctx.textAlign = 'left';
+  }
   if (b.clean > 0) {
     ctx.fillStyle = 'rgba(190,190,190,.18)';
     ctx.fillRect(r.x, r.y, r.w, r.h);
@@ -569,7 +578,8 @@ export function drawGhost() {
   const t = S.tool,
     d = DEF[t],
     col = snapCol(S.mx, d.w),
-    ok = canPlace(t, col) && S.money >= d.cost,
+    reason = placeReason(t, col),
+    ok = !reason,
     r = bldRect({ t, col, w: d.w });
   ctx.strokeStyle = 'rgba(255,255,255,.04)';
   ctx.lineWidth = 1;
@@ -590,6 +600,21 @@ export function drawGhost() {
   ctx.textAlign = 'center';
   ctx.fillStyle = ok ? C.light : C.bright;
   ctx.fillText(d.n.toUpperCase() + ' · ' + d.cost + ' €', r.x + r.w / 2, r.y - 16);
+  if (!ok) {
+    ctx.fillStyle = 'rgba(229,72,58,.95)';
+    ctx.fillRect(r.x + r.w / 2 - 90, r.y - 34, 180, 17);
+    ctx.fillStyle = '#ffe';
+    ctx.font = '600 10px ui-monospace,monospace';
+    ctx.fillText(reason.toUpperCase(), r.x + r.w / 2, r.y - 22);
+  } else if (t === 'drain' || t === 'market' || t === 'gen') {
+    ctx.fillStyle = C.dim;
+    ctx.font = '500 10px ui-monospace,monospace';
+    ctx.fillText(
+      t === 'drain' ? '⇒ TANK DANEBEN NÖTIG' : '⇒ TANK DARUNTER NÖTIG',
+      r.x + r.w / 2,
+      r.y - 26,
+    );
+  }
   ctx.textAlign = 'left';
 }
 

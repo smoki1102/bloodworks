@@ -1,10 +1,12 @@
 import { BAND_LABEL, CATS, DEF } from '../config/building-defs.js';
 import { SAVE_KEY } from '../config/constants.js';
 import { toast } from '../core/effects.js';
-import { addBuilding, bldAt, canPlace, has, sellBuilding } from '../core/placement.js';
+import { addBuilding, bldAt, canPlace, has, undo, clearHistory } from '../core/placement.js';
 import { S, blds, corpses, freshState, initSim, setState } from '../core/state.js';
 import { cv, snapCol, vOffX, vOffY, vScale } from '../render/renderer.js';
-import { $, clamp, fmt } from '../utils/helpers.js';
+import { $, fmt } from '../utils/helpers.js';
+import { renderInspector, toggleSelected, cleanSelected, sellSelected } from './inspector.js';
+export { renderInspector };
 
 export function renderTabs() {
   $('tabs').innerHTML = CATS.map(
@@ -40,52 +42,6 @@ export function renderHUD() {
   $('stats').textContent =
     `SEKTOR 01 · ${S.kills} erledigt · ${S.escaped} entkommen · ${fmt(S.sold)} Blut verkauft`;
 }
-export let lastInsp = null;
-export function renderInspector() {
-  const p = $('inspector'),
-    b = S.sel;
-  if (!b || !blds.includes(b)) {
-    p.style.display = 'none';
-    lastInsp = null;
-    return;
-  }
-  p.style.display = 'block';
-  const d = DEF[b.t],
-    clean = clamp(100 - b.dirt, 0, 100),
-    cost = Math.round(15 + b.dirt * 0.8);
-  let st = 'Aktiv',
-    cls = '';
-  if (b.clean > 0) {
-    st = 'Reinigung läuft';
-    cls = 'warn';
-  } else if (d.e > 0 && S.pf < 0.4) {
-    st = 'Kein Strom';
-    cls = 'err';
-  } else if (b.dirt >= 70) {
-    st = 'Verschmutzt';
-    cls = 'warn';
-  }
-  const extra =
-    b.t === 'bin'
-      ? `<div class="kv"><span>Leichen</span><b>${b.items.length} / 9</b></div>`
-      : b.t === 'oven' || b.t === 'acid'
-        ? `<div class="kv"><span>Leichen</span><b>${b.items.length} / 3</b></div>`
-        : b.t === 'tank'
-          ? `<div class="kv"><span>Füllstand</span><b>${fmt(S.blood)} / ${fmt(S.bloodCap)}</b></div>`
-          : '';
-  const html = `<h3>${d.g} ${d.n}<button class="close" data-a="close" title="Schließen">✕</button></h3><div class="panel">
-    <div class="kv"><span>Status</span><b class="${cls}">${st}</b></div>
-    <div class="kv"><span>Sauberkeit</span><b>${clean.toFixed(0)}%</b></div>
-    <div class="bar"><i style="width:${clean}%;background:${clean > 60 ? '#8f8f8f' : clean > 30 ? '#e0a040' : '#e5483a'}"></i></div>${extra}
-    <div class="kv"><span>Verbrauch</span><b>${d.e ? d.e.toFixed(2) + ' E/s' : '—'}</b></div>
-    <div class="acts"><button data-a="clean" ${b.dirt < 3 || b.clean > 0 ? 'disabled' : ''}>✦ Reinigen · ${cost} €</button>
-    <button class="danger" data-a="sell">Verkaufen · +${Math.round(d.cost * 0.5)} €</button></div></div>`;
-  if (html !== lastInsp) {
-    lastInsp = html;
-    p.innerHTML = html;
-  }
-}
-
 export const TUT = [
   [
     'Baue eine <b>Spikes-Walze</b> oder <b>Presse</b> über dem Band (Halle).',
@@ -189,8 +145,17 @@ addEventListener('keydown', (e) => {
     renderInspector();
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) {
     e.preventDefault();
-    sellBuilding(S.sel);
+    sellSelected(S.sel);
     renderList();
+    renderInspector();
+  } else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    undo();
+    renderList();
+    renderInspector();
+    renderHUD();
+  } else if (e.key === 'e' || e.key === 'E') {
+    toggleSelected();
     renderInspector();
   } else if (e.key >= '1' && e.key <= '3') {
     S.cat = CATS[e.key - 1][0];
@@ -223,17 +188,16 @@ document.addEventListener('click', (e) => {
   if (a === 'close') {
     S.sel = null;
     renderInspector();
-  } else if (a === 'sell' && b) {
-    sellBuilding(b);
+  } else if (a === 'sell') {
+    sellSelected(b);
     renderList();
     renderInspector();
-  } else if (a === 'clean' && b && b.dirt >= 3) {
-    const cost = Math.round(15 + b.dirt * 0.8);
-    if (S.money < cost) return toast('Nicht genug Geld', 'bad');
-    S.money -= cost;
-    b.clean = 2;
+  } else if (a === 'clean') {
+    cleanSelected(b);
     renderInspector();
     renderHUD();
+  } else if (a === 'toggle') {
+    toggleSelected();
   }
 });
 
@@ -376,6 +340,7 @@ export function newGame() {
   const g = S ? S.gore : 100;
   setState(freshState());
   S.gore = g;
+  clearHistory();
   initSim();
   setupWorld();
   $('btnPlay').textContent = '▶ Start';

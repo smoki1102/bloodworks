@@ -495,8 +495,13 @@ canvas {
     font-size: 11px;
   }
   #inspector {
-    width: 210px;
+    width: min(100vw - 20px, 340px);
     right: 10px;
+    bottom: 10px;
+    top: auto;
+    max-height: 62vh;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
   }
   #btnSave,
   #btnLoad {
