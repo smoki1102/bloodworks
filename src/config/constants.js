@@ -1,0 +1,17 @@
+export const CELL = 48,
+  COLS = 24,
+  X0 = 64,
+  PW = COLS * CELL,
+  W = X0 * 2 + PW,
+  H = 620;
+export const BELT_Y = 392,
+  BELT_H = 14,
+  OBEN_FLOOR = 190,
+  OBEN_TOP = 44,
+  KELLER_TOP = 406,
+  KELLER_FLOOR = 590;
+export const BELT_SPEED = 54,
+  BASE_CAP = 100,
+  TANK_CAP = 250,
+  BASE_REGEN = 4,
+  SAVE_KEY = 'bloodworks_v6';

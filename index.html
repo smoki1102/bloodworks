@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1d1d1d" />
+    <title>BloodWorks: Stick Factory</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <main id="view">
+        <canvas id="cv"></canvas>
+        <div id="title">
+          <h1>BLOOD<span>WORKS</span></h1>
+          <p id="stats"></p>
+        </div>
+        <div id="hint"></div>
+        <div id="inspector"></div>
+        <div id="toasts"></div>
+      </main>
+      <header id="top">
+        <div class="res" title="Geld">€ <b id="rMoney">0</b></div>
+        <div class="res blood" title="Blut">
+          Blut <b id="rBlood">0</b><small id="rBloodCap"></small>
+        </div>
+        <div class="res" id="rEnergyBox" title="Energie">⚡ <b id="rEnergy">0</b></div>
+        <div class="res" title="Asche">Asche <b id="rAsh">0</b></div>
+        <div class="res" title="Leichen">Leichen <b id="rCorpse">0</b></div>
+        <div class="gap"></div>
+        <div class="seg" id="speed">
+          <button data-s="1" class="on">1×</button><button data-s="2">2×</button
+          ><button data-s="4">4×</button>
+        </div>
+        <button id="btnPlay">▶ Start</button>
+        <button id="btnSave" title="Speichern">Speichern</button>
+        <button id="btnLoad" title="Laden">Laden</button>
+        <button id="btnNew" title="Neues Spiel">Neu</button>
+      </header>
+      <aside id="side">
+        <div id="tabs"></div>
+        <div id="list"></div>
+      </aside>
+    </div>
+    <div id="modal">
+      <div class="box">
+        <h1>BLOOD<span>WORKS</span></h1>
+        <p class="sub">Stick Factory</p>
+        <p class="warn">
+          Abstrakte Cartoon-Darstellung von Strichmännchen und Maschinen. Keine realistische Gewalt.
+          Alle Abläufe sind rein mechanisch.
+        </p>
+        <div class="lbl">Gore-Level</div>
+        <div class="segs" id="goreSeg">
+          <button data-g="0">Öl</button><button data-g="50">Mittel</button
+          ><button data-g="100" class="on">Cartoon</button>
+        </div>
+        <button class="big" id="btnStart">Halle eröffnen</button>
+        <button class="big alt" id="btnContinue" hidden>Spielstand laden</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
