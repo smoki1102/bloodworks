@@ -36,9 +36,8 @@ export const runFactor = (b, pf) => pf * clamp(1 - b.dirt / 150, 0.2, 1);
  * Rückgabe: true, wenn das Gerät in diesem Tick gearbeitet hat.
  */
 export function machine(b, dt, pf) {
-  const d = DEF[b.t],
-    r = bldRect(b),
-    mx = r.x + r.w / 2;
+  const d = DEF[b.t];
+  const r = bldRect(b);
   if (b.clean > 0) {
     b.clean -= dt;
     if (b.clean <= 0) {
