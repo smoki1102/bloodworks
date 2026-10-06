@@ -5,101 +5,46 @@ import {
   BELT_SPEED,
   BELT_Y,
   COLS,
+  CORPSE_CAP,
+  CORPSE_FLOOR_LIFE,
+  CORPSE_LIFE,
+  GEN_BLOOD,
+  GEN_GAIN,
   KELLER_FLOOR,
   PW,
+  PRESS_PERIOD,
+  PRESS_WINDOW,
+  SPAWN_BASE,
+  SPAWN_MIN,
+  SPAWN_RAMP,
   TANK_CAP,
   X0,
 } from '../config/constants.js';
-import { addBeltBlood, addFloorBlood, bloodColor, burst, floatText, nBurst } from './effects.js';
+import { addBeltBlood, addFloorBlood, bloodColor, burst, nBurst } from './effects.js';
+import { capOf, machine } from './machines.js';
 import { bldRect } from './placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, occ, parts, sticks } from './state.js';
-import { clamp, colAt, colCX, rnd } from '../utils/helpers.js';
+import { colAt, colCX, rnd } from '../utils/helpers.js';
+
+export { machine };
 
 export function killStick(i) {
   const s = sticks[i];
-  corpses.push({ x: s.x, y: BELT_Y, vx: 0, vy: 0, rot: 0, state: 'belt', bleed: 0.6, life: 120 });
+  corpses.push({
+    x: s.x,
+    y: BELT_Y,
+    vx: 0,
+    vy: 0,
+    rot: 0,
+    state: 'belt',
+    bleed: 0.6,
+    life: CORPSE_LIFE,
+  });
   sticks.splice(i, 1);
   S.kills++;
   addBeltBlood(s.x, 6);
   addFloorBlood(s.x, 2.5);
   burst(s.x, BELT_Y - 16, bloodColor(), nBurst(9), 190);
-}
-
-export function machine(b, dt, pf) {
-  const d = DEF[b.t],
-    r = bldRect(b),
-    mx = r.x + r.w / 2;
-  if (b.clean > 0) {
-    b.clean -= dt;
-    if (b.clean <= 0) {
-      b.clean = 0;
-      b.dirt = 0;
-    }
-    return;
-  }
-  const run = pf * clamp(1 - b.dirt / 150, 0.2, 1);
-  if (d.dirt) b.dirt = Math.min(100, b.dirt + d.dirt * dt * 0.55);
-  if (b.t === 'press') b.phase += dt * 1.2 * run;
-  if (b.t === 'market' && S.blood > 0.01 && pf > 0.15) {
-    const q = Math.min(S.blood, 9 * dt * run);
-    S.blood -= q;
-    S.money += q * 1.4;
-    S.sold += q;
-  }
-  if (b.t === 'drain' && pf > 0.1 && S.bloodCap > S.blood) {
-    let got = 0;
-    for (let c = b.col; c < b.col + b.w; c++) {
-      const take = Math.min(floorBlood[c], (34 * dt * run) / b.w);
-      floorBlood[c] -= take;
-      got += take;
-    }
-    got = Math.min(got, S.bloodCap - S.blood);
-    S.blood += got;
-    b.glow = got > 0.2 ? Math.min(1, b.glow + dt * 4) : Math.max(0, b.glow - dt * 2);
-  }
-  if (b.t === 'bin') {
-    for (let i = b.items.length - 1; i >= 0; i--) {
-      const it = b.items[i];
-      it.rot += dt * run;
-      if (it.rot >= 9) {
-        b.items.splice(i, 1);
-        S.blood = Math.min(S.bloodCap, S.blood + 22);
-        S.ash += 4;
-        burst(mx, KELLER_FLOOR - 20, bloodColor(), nBurst(4), 90);
-        floatText(mx, KELLER_FLOOR - 60, '+22', bloodColor());
-      }
-    }
-    if (b.items.length) b.dirt = Math.min(100, b.dirt + dt * 0.5);
-  }
-  if (b.t === 'oven') {
-    if (b.items.length) {
-      b.prog += dt * run;
-      b.glow = Math.min(1, b.glow + dt * 2);
-      if (b.prog >= 1.4) {
-        b.prog = 0;
-        b.items.pop();
-        S.energy = Math.min(S.energyMax, S.energy + 32);
-        S.ash += 6;
-        burst(mx, KELLER_FLOOR - 60, '#eee', 6, 100);
-        floatText(mx, KELLER_FLOOR - 90, '+32 ⚡', '#ddd');
-      }
-    } else b.glow = Math.max(0, b.glow - dt * 1.5);
-  }
-  if (b.t === 'acid' && b.items.length) {
-    b.prog += dt * run;
-    if (b.prog >= 1.7) {
-      b.prog = 0;
-      b.items.pop();
-      S.money += 22;
-      burst(mx, KELLER_FLOOR - 30, '#9b9', 5, 90);
-      floatText(mx, KELLER_FLOOR - 70, '+22 €', '#ddd');
-    }
-  }
-  if (b.t === 'lab' && pf > 0.1) {
-    for (const o of blds)
-      if (o.dirt > 0 && o.clean <= 0) o.dirt = Math.max(0, o.dirt - 7 * dt * pf);
-    b.glow = 0.5;
-  }
 }
 
 export function fluids(dt) {
@@ -127,7 +72,7 @@ export function moveSticks(dt) {
   if (sp && sp.clean <= 0) {
     S.spawnTimer -= dt;
     if (S.spawnTimer <= 0) {
-      S.spawnTimer = Math.max(1.6, 4.4 - S.t / 150);
+      S.spawnTimer = Math.max(SPAWN_MIN, SPAWN_BASE - S.t / SPAWN_RAMP);
       sticks.push({ x: colCX(sp.col), y: BELT_Y, vy: 0, anim: rnd() * 9, state: 'walk' });
     }
   }
@@ -147,7 +92,7 @@ export function moveSticks(dt) {
           rot: 0,
           state: 'floor',
           bleed: 1,
-          life: 90,
+          life: CORPSE_FLOOR_LIFE,
         });
         addFloorBlood(s.x, 9);
         burst(s.x, KELLER_FLOOR - 10, bloodColor(), nBurst(8), 150);
@@ -173,7 +118,7 @@ export function moveSticks(dt) {
       if (!d.kill || b.clean > 0) continue;
       const r = bldRect(b);
       if (s.x < r.x + 6 || s.x > r.x + r.w - 6) continue;
-      if (d.kill === 'contact' || b.phase % 1.4 < 0.5) {
+      if (d.kill === 'contact' || b.phase % PRESS_PERIOD < PRESS_WINDOW) {
         killStick(i);
         break;
       }
@@ -189,7 +134,7 @@ export function catcher(c, needY) {
       c.x > r.x + 4 &&
       c.x < r.x + r.w - 4 &&
       (!needY || c.y >= r.y) &&
-      b.items.length < (b.t === 'bin' ? 9 : 3)
+      b.items.length < capOf(b.t)
     )
       return b;
   }
@@ -256,7 +201,7 @@ export function moveCorpses(dt) {
       }
     }
   }
-  if (corpses.length > 60) corpses.splice(0, corpses.length - 60);
+  if (corpses.length > CORPSE_CAP) corpses.splice(0, corpses.length - CORPSE_CAP);
 }
 
 export function tick(dt) {
@@ -269,9 +214,9 @@ export function tick(dt) {
   for (const b of blds) {
     if (b.t !== 'gen' || b.clean > 0) continue;
     if (S.blood > 0.01) {
-      const q = Math.min(S.blood, 8 * dt);
+      const q = Math.min(S.blood, GEN_BLOOD * dt);
       S.blood -= q;
-      gen += (q * 15) / 8;
+      gen += (q * GEN_GAIN) / GEN_BLOOD;
       b.glow = Math.min(1, b.glow + dt * 3);
     } else b.glow = Math.max(0, b.glow - dt * 2);
   }
