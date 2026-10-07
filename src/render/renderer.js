@@ -167,7 +167,7 @@ export function drawLimbShape(part, x, y) {
   ctx.stroke();
 }
 
-export function drawStick(s) {
+export function drawStick(s, glow) {
   if (s.state === 'sit') return drawSeated(s);
   const body = s.body,
     has = (p) => !body || body.limbs[p],
@@ -175,9 +175,10 @@ export function drawStick(s) {
     y = s.y,
     stand = s.state === 'stand';
   const sw = stand ? 0 : Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
-  ctx.strokeStyle = C.bright;
-  ctx.fillStyle = C.bright;
-  ctx.lineWidth = 2.6;
+  const ink = glow ? 'rgba(255,255,255,.92)' : C.bright;
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  ctx.lineWidth = glow ? 7.6 : 2.6;
   ctx.lineCap = 'round';
   ctx.beginPath();
   if (has('legL')) {
@@ -213,10 +214,10 @@ export function drawStick(s) {
   ctx.stroke();
   if (has('head')) {
     ctx.beginPath();
-    ctx.arc(x, y - 29, 5.2, 0, 7);
+    ctx.arc(x, y - 29, glow ? 7.8 : 5.2, 0, 7);
     ctx.fill();
   }
-  if (body && body.bleeding > 0 && !stand) {
+  if (!glow && body && body.bleeding > 0 && !stand) {
     ctx.fillStyle = bloodColor();
     ctx.globalAlpha = 0.9;
     ctx.beginPath();
@@ -644,6 +645,16 @@ export function drawGhost() {
   ctx.textAlign = 'left';
 }
 
+/** True, wenn x (plus Körperbreite) unter einem Gerät über dem Band liegt. */
+function overAt(x) {
+  for (const b of blds) {
+    if (DEF[b.t].band !== 'over') continue;
+    const r = bldRect(b);
+    if (x >= r.x - 20 && x <= r.x + r.w + 20) return true;
+  }
+  return false;
+}
+
 export function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
@@ -672,9 +683,15 @@ export function render() {
     ctx.fillRect(colX(i), BELT_Y - h + 2, CELL + 0.5, h);
   }
   ctx.globalAlpha = 1;
-  for (const c of corpses) if (c.state === 'belt') drawCorpse(c);
-  for (const s of sticks) if (s.state === 'walk') drawStick(s);
+  // Geräte über dem Band zuerst – Sticks/Leichen laufen davor, sonst verschluckt
+  // das Gehäuse alles, was hineinkommt.
   for (const b of blds) if (DEF[b.t].band === 'over') drawBuilding(b);
+  for (const c of corpses) if (c.state === 'belt') drawCorpse(c);
+  for (const s of sticks)
+    if (s.state === 'walk') {
+      if (overAt(s.x)) drawStick(s, true);
+      drawStick(s);
+    }
   for (const s of sticks)
     if (s.state === 'sit' || s.state === 'stand' || s.state === 'enter') drawStick(s);
   for (const c of corpses) if (c.state !== 'belt') drawCorpse(c);
