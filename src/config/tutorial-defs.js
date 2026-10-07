@@ -130,7 +130,7 @@ export const TUT_STEPS = [
   },
   {
     id: 'skill',
-    text: 'Der <b>Skill-Tree</b> verbessert deine Anlage. Präzision kostet Blut, alles andere Körperteile – hier ist ein Startvorrat.',
+    text: 'Die <b>Forschung</b> öffnet das große Fenster mit dem <b>Skill-Netz</b>. Präzision kostet Blut, alles andere Körperteile – hier ist ein Startvorrat.',
     need: { custom: 'skill' },
     cells: [],
     gift: true,

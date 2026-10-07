@@ -14,8 +14,15 @@ import {
   takeBlood,
 } from '../src/core/pipes.js';
 import { setReserve, sellable, reserveValue, priceOf } from '../src/core/market.js';
-import { floorBlood } from '../src/core/state.js';
+import { beltBlood, floorBlood } from '../src/core/state.js';
 import { BASE_CAP, TANK_CAP, MARKET_PRICE, MARKET_RESERVE } from '../src/config/constants.js';
+
+/** Bodenblut einer Spalte (Blut sickert nach unten, deshalb zeilenweise). */
+const colBlood = (x) => {
+  let v = 0;
+  for (let y = 0; y < 64; y++) v += floorBlood[idx(x, y)];
+  return v;
+};
 
 /** Tank – Pipes – Abfluss – Pipes – Markt, optional Generator. */
 function netWorld(withGen = false) {
@@ -121,6 +128,29 @@ describe('Pipe-Netze', () => {
     expect(suctionCells(24, 40, 1).length).toBe(9);
     run(0.5);
     expect(nets[0].v).toBeGreaterThan(0);
+  });
+
+  it('angeschlossene Absaugung saugt Bandblut ins Netz statt auf den Boden', () => {
+    put('tank', 20, 40);
+    put('pipe', 19, 40);
+    put('belt', 18, 40, { dir: 0 });
+    run(0.1);
+    expect(nets.length).toBe(1);
+    beltBlood[idx(18, 40)] = 6;
+    run(1);
+    expect(colBlood(18)).toBe(0);
+    expect(beltBlood[idx(18, 40)]).toBeLessThan(6);
+    expect(nets[0].v).toBeGreaterThan(0);
+  });
+
+  it('ohne Anschluss tropft Bandblut weiterhin auf den Boden', () => {
+    put('tank', 20, 40);
+    put('belt', 18, 40, { dir: 0 });
+    run(0.1);
+    beltBlood[idx(18, 40)] = 6;
+    run(1);
+    expect(colBlood(18)).toBeGreaterThan(0);
+    expect(nets.length).toBe(0);
   });
 
   it('hält die Verkaufsreserve ein', () => {

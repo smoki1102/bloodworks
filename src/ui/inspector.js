@@ -2,7 +2,7 @@ import { DEF } from '../config/building-defs.js';
 import { TARGETS } from '../config/constants.js';
 import { toast } from '../core/effects.js';
 import { hitChance } from '../core/machines.js';
-import { netOf } from '../core/pipes.js';
+import { netOf, suctionNetOf } from '../core/pipes.js';
 import { sellBuilding } from '../core/placement.js';
 import { S, blds } from '../core/state.js';
 import { sellable, setReserve } from '../core/market.js';
@@ -27,15 +27,22 @@ function queueMax(b) {
   return cap ? ' / ' + cap : '';
 }
 function linkLabel(b) {
+  let html = '';
+  const k = DEF[b.t].kind;
+  if (!['pipe', 'tank', 'drain', 'market', 'gen'].includes(k)) {
+    const sn = suctionNetOf(b);
+    if (sn >= 0)
+      html += `<div class="kv"><span>Absaugung</span><b class="good">Verbunden · Netz #${sn}</b></div>`;
+  }
   if (b.link === 'ok' || b.link === 'none') {
     const n = netOf(b);
     const net =
       n && n.id >= 0
         ? `<div class="kv"><span>Netz</span><b>#${n.id} · ${fmt(n.v)} / ${fmt(n.cap)}</b></div>`
         : '';
-    return `<div class="kv"><span>Verbindung</span>${LINK_TXT[b.link]}</div>${net}`;
+    html += `<div class="kv"><span>Verbindung</span>${LINK_TXT[b.link]}</div>${net}`;
   }
-  return '';
+  return html;
 }
 function progressBar(b) {
   if (b.t === 'tank') {
@@ -180,6 +187,10 @@ export function renderInspector() {
     <div class="acts">${onBtn}<button data-a="clean" ${b.dirt < 3 || b.clean > 0 ? 'disabled' : ''}>✦ Reinigen · ${cost} €</button>
     <button class="danger" data-a="sell">Verkaufen · +${Math.round((d.cost || 0) * 0.5)} €</button></div></div>`;
   if (html !== lastInsp) {
+    // Eingaben (Select/Number) nicht zerstören, solange sie fokussiert sind –
+    // sonst schließt sich die Zielauswahl sofort wieder.
+    const ae = document.activeElement;
+    if (ae && p.contains(ae) && ['INPUT', 'SELECT', 'TEXTAREA'].includes(ae.tagName)) return;
     lastInsp = html;
     p.innerHTML = html;
   }

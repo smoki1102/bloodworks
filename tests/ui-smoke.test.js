@@ -4,7 +4,9 @@ import '../src/main.js';
 import { S, blds, corpses, sticks } from '../src/core/state.js';
 import { CELL } from '../src/config/constants.js';
 import { costOf } from '../src/core/placement.js';
-import { save, load, hasSave, newGame, toggleRun } from '../src/ui/ui.js';
+import { save, load, hasSave, newGame, toggleRun, renderInspector } from '../src/ui/ui.js';
+import { addBuilding } from '../src/core/placement.js';
+import { rebuildNets } from '../src/core/pipes.js';
 
 const step = (n) => frames(n);
 /** Ziel mit `data`-Attributen, das `closest()` wie im Browser beantwortet. */
@@ -30,7 +32,9 @@ describe('UI im DOM (Smoke)', () => {
   it('lädt ohne fehlende Elemente und rendert Frames', () => {
     expect(el('cv')).toBeTruthy();
     expect(el('btnPlay')).toBeTruthy();
-    expect(el('btnSkill')).toBeTruthy();
+    expect(el('btnResearch')).toBeTruthy();
+    expect(el('forschung')).toBeTruthy();
+    expect(el('fNet')).toBeTruthy();
     expect(el('hint')).toBeTruthy();
     expect(el('rParts')).toBeTruthy();
     expect(el('rParts').textContent).toMatch(/^\d+$/);
@@ -104,7 +108,7 @@ describe('UI im DOM (Smoke)', () => {
     expect(hasSave()).toBe(false);
   });
 
-  it('Startmenü, Skill-Panel und Forschung lassen sich öffnen', () => {
+  it('Startmenü und das große Forschungsfenster lassen sich öffnen', () => {
     el('btnNew').click();
     expect(el('modal').classList.contains('hide')).toBe(false);
     el('btnStart').click();
@@ -112,12 +116,16 @@ describe('UI im DOM (Smoke)', () => {
     expect(el('modal').classList.contains('hide')).toBe(true);
     expect(el('btnSkipTut').hidden).toBe(false);
     step(3);
-    fireDoc('click', { target: fake({ a: 'skill' }) });
-    expect(el('skill').classList.contains('hide')).toBe(false);
-    fireDoc('click', { target: fake({ a: 'closeSkill' }) });
-    expect(el('skill').classList.contains('hide')).toBe(true);
-    fireDoc('click', { target: fake({ a: 'research' }) });
-    expect(el('research').classList.contains('hide')).toBe(false);
+    fireDoc('click', { target: fake({ a: 'openForschung' }) });
+    expect(el('forschung').classList.contains('hide')).toBe(false);
+    expect(el('fNet').classList.contains('hide')).toBe(false);
+    expect(el('fUpg').classList.contains('hide')).toBe(true);
+    expect(el('fBlood').textContent).toMatch(/^\d/);
+    fireDoc('click', { target: fake({ ftab: 'upg' }) });
+    expect(el('fUpg').classList.contains('hide')).toBe(false);
+    expect(el('fNet').classList.contains('hide')).toBe(true);
+    fireDoc('click', { target: fake({ a: 'closeForschung' }) });
+    expect(el('forschung').classList.contains('hide')).toBe(true);
     step(3);
     el('btnSave').click();
     expect(hasSave()).toBe(true);
@@ -128,17 +136,34 @@ describe('UI im DOM (Smoke)', () => {
     expect(el('hint').style.display).toBe('none');
   });
 
-  it('Skill-Tree pausiert das Spiel, solange er offen ist', () => {
+  it('Forschung pausiert das Spiel, solange das Fenster offen ist', () => {
     el('btnFree').click();
     el('btnPlay').click();
     expect(S.running).toBe(true);
-    fireDoc('click', { target: fake({ a: 'skill' }) });
-    expect(el('skill').classList.contains('hide')).toBe(false);
+    fireDoc('click', { target: fake({ a: 'openForschung' }) });
+    expect(el('forschung').classList.contains('hide')).toBe(false);
     expect(S.running).toBe(false);
-    fireDoc('click', { target: fake({ a: 'closeSkill' }) });
-    expect(el('skill').classList.contains('hide')).toBe(true);
+    fireDoc('click', { target: fake({ a: 'closeForschung' }) });
+    expect(el('forschung').classList.contains('hide')).toBe(true);
     expect(S.running).toBe(true);
     toggleRun();
     expect(S.running).toBe(false);
+  });
+
+  it('Inspektor zeigt eine angeschlossene Absaugung und hält die Zielauswahl', () => {
+    addBuilding('tank', 44, 18, { free: true });
+    addBuilding('pipe', 43, 18, { free: true });
+    const belt = addBuilding('belt', 42, 18, { free: true, dir: 0 });
+    addBuilding('spike', 40, 18, { free: true });
+    rebuildNets();
+    S.sel = belt;
+    renderInspector();
+    expect(el('inspector').innerHTML).toContain('Absaugung');
+    const cut = blds.find((b) => b.t === 'spike');
+    S.sel = cut;
+    renderInspector();
+    expect(el('inspector').innerHTML).toContain('Zielkörperteil');
+    S.sel = null;
+    renderInspector();
   });
 });

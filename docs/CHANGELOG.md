@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.7.1 – Forschungsfenster, Absaugung, Zielauswahl (07.10.2026)
+
+### Neu: Funktionen
+
+- **Großes Forschungsfenster:** Skill-Tree und bestehendes Forschungs-Panel sind ein Fenster
+  (`index.html` `#forschung`, `ui/research.js`, `ui/skill.js`) mit Kopfzeile (Geld, Blut,
+  Körperteile), Schließen-Button und zwei Reitern. Es liegt über der Halle und pausiert beim
+  Öffnen wie zuvor (Setzen beim Schließen, `K` als Tastenkürzel, HUD-Button `data-a="openForschung"`).
+- **Skill-Netz als Diagramm:** statt Baumliste ein Netz aus Knoten und Verbindungslinien
+  (`renderSkill()`, Layout nach Ast und Verzweigungstiefe, SVG-Elbow-Kanten mit Stufen-Label
+  „×N“), Ast-Tags, Zustände gesperrt/kaufbar/gekauft mit Erfüllungsfortschritt der Voraussetzungen.
+- **Absaugung saugt Bandblut:** orthogonaler Nachbar von Band- bzw. Maschinenzelle zu einer
+  Pipe-Zelle eines Netzes mit Tank → das Blut fließt ins Netz statt auf den Boden
+  (`buildSuction()`/`suckNet` in `pipes.js`, `fluids()` in `effects.js`); volles Netz führt
+  zu Kammer-Rückstau. Der Inspektor zeigt „Absaugung: Verbunden · Netz #n“.
+
+### Behobene Fehler
+
+- Blut troppte trotz angeschlossener Absaugung vom Fließband auf den Boden.
+- Das Zielförperteil-Select im Inspektor schloss unmittelbar nach dem Öffnen wieder – der
+  Inspektor ersetzt das Markup nicht mehr, solange ein `INPUT`/`SELECT`/`TEXTAREA` im Panel
+  den Fokus hat (die stündliche Auslastungs-/Status-Aktualisierung zerstörte das Dropdown).
+- `markDirty()` ohne Argumente setzte `S.netDirty` nicht mehr (Bänder und Maschinen veränderten
+  die Absaugungs-Nachbarschaft), und `rebuildNets()` ließ alte `netId`s an Bauten stehen.
+
+### Änderungen an bestehendem Code
+
+- `#btnSkill` entfallen; HUD-Button heißt „Forschung“ (`openForschungUI`/`closeForschungUI`
+  in `ui.js`, Pausen-Flag nur fortsetzen, wenn wir selbst pausiert haben).
+- `renderForschung()` löst `renderResearch()` aus `main.js` ab; Upgrades rendern nach `#fUpg`.
+- Tutorialschritt zum Skill-Baum beschreibt nun das große Forschungsfenster.
+
+### Annahmen
+
+1. Rohre belegen Zellen (`occ`) und liegen daher nie auf Bändern; „angeschlossene Absaugung“
+   ist die orthogonale Nachbarschaft Band/Maschine ↔ Pipe-Zelle eines nutzbaren Netzes.
+2. Ohne Absaugung bleibt das bisherige Tropfen exakt unverhalten (Regel aus §6 des Prompts).
+3. Der Diagramm-Layout ist rein optisch (Knoten automatisch nach Tiefe), Spielstände (v9)
+   bleiben unverändert gültig.
+4. Pausieren beim Öffnen gilt weiterhin; schließt man ohne laufendes Spiel, wird nichts
+   erneut gestartet.
+
+### Qualität
+
+- `npm run check` = ESLint + 67 Vitest-Tests (7 Dateien) + Vite-Build, fehlerfrei.
+- Neue Tests: Absaugung (mit/ohne Anschluss, Blut im Netz) in `tests/pipes.test.js`;
+  Forschungsfenster öffnen/Reiter schließen, Inspektor „Absaugung“ und Zielauswahl
+  in `tests/ui-smoke.test.js`.
+- Sichtprüfung per Headless-Chrome (CDP): 20 Skill-Knoten, 13 Kanten, 6 Ast-Tags, Reiterwechsel,
+  Pause/Resume über `K`, Select ohne Node-Swaps, 0 JS-Fehler.
+
+
 ## 0.7.0 – Freie Bauwelt, Körperteile, Skill-Tree, Blut-Pipes (07.10.2026)
 
 ### Ursprüngliche Anforderung

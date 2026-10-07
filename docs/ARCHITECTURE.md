@@ -20,19 +20,20 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
 | `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint` |
-| `src/core/pipes.js`       | Rohrnetze: `rebuildNets`, `addBlood`/`takeBlood`/`spendBlood`, `bloodTotal` |
+| `src/core/pipes.js`       | Rohrnetze: `rebuildNets`, Absaug-Indiz (`suckNet`, `suctionNetOf`), `addBlood`/`takeBlood`/`spendBlood`, `bloodTotal` |
 | `src/core/skill.js`       | Skill-Stufen, `buySkill`, `recomputeFx` (setzt `S.fx`), `giveSkillGift` |
 | `src/core/market.js`      | Blutmarkt: Verkauf, Reserve (`setReserve`, `sellable`)                  |
 | `src/core/machines.js`    | Geräte-Tick: Spawn, Senken, Weiche/Filter, Schneiden (`bladeCut`, `hitChance`), Dreck |
 | `src/core/flow.js`        | Bestehende Warenübergaben (Ofen/Säure) und Statistik                    |
-| `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Blut-Sickerung), `reducedMotion()`        |
+| `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz), `reducedMotion()` |
 | `src/core/simulation.js`  | `tick(dt)`: Netze, Energie, Maschinen, Flow, Bänder, Flüssigkeiten, Sticks, Leichen, Partikel |
 | `src/core/upgrades.js`, `quests.js` | Bestehende Forschung und Auftragskette                  |
 | `src/render/renderer.js`  | Canvas: Kamera, Culling, Gebäude, Waren, Sticks, Rohre, Hinweise        |
-| `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts  |
+| `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`) |
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
-| `src/ui/skill.js`         | Skill-Tree-Bildschirm (DOM)                                             |
-| `src/ui/research.js`, `quests.js` | Bestehende Panels                                           |
+| `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster (Knoten, Kanten, Kauf)      |
+| `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
+| `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
 | `src/main.js`             | Spielschleife, HUD- und Tutorial-Intervalle                             |
 | `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belts`, `machines`, `pipes`, `skill`, `simulation`, `ui-smoke` |
 
@@ -71,6 +72,14 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 - Netze: `rebuildNets()` verbindet Pipe-Zellen zu Netzen; Tanks und Geräte hängen nur an, wenn
   sie **eine Pipe-Zelle berühren**. Mehrere Tanks können dasselbe Netz speisen. Ohne Pipe gilt
   der globale Pool (`bloodTotal`, `globalCap`).
+- Absaugung: `buildSuction()` (aus `rebuildNets`, triggert über `S.netDirty`, das
+  `markDirty()` bei jeder Platzierung/Änderung setzt) schreibt für jede Band- und
+  Maschinenzelle den Index eines **nutzbaren** Netzes (mit mindestens einem Tank) in
+  `suckNet[i]` – nur wenn eine orthogonale Nachbarschaftszelle zur Pipe-Zelle dieses Netzes
+  gehört. `fluids()` (`effects.js`) saugt Blut in `net.cap - net.v` statt auf den Boden;
+  volles Netz führt zu Kammer-Rückstau. Röhren selbst belegen Zellen als `occ` und sind deshalb
+  nie auf Bändern. Ohne Anschluss bleibt das bisherige Tropfen unverändert. Der Inspektor zeigt
+  `suctionNetOf()` als „Absaugung: Verbunden · Netz #n“.
 - Der Blutmarkt hält eine eigene Reserve pro Markt (`market.js`); er verkauft nur oberhalb davon.
 
 ### Maschinen und Treffer
@@ -113,14 +122,18 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
    `pipes.js`, `belts.js`).
 4. Test ergänzen: Kauf + `recomputeFx()` in `tests/skill.test.js`, Wirkung im passenden
    Systemtest (z. B. `tests/machines.test.js`).
+5. Das Diagramm in `src/ui/skill.js` positioniert Knoten automatisch nach Ast/Verzweigungstiefe
+   (`depths`, `NODE_W`/`STEP_X`/`ROW_H`) – bei Knoten ohne `req` wächst das Netz um eine Spalte.
 
 ## Eingabe
 
-- `1–5` Kategorie, `R` Drehen, `Escape`/Rechtsklick abwählen, `K` Skill-Tree (pausiert),
+- `1–5` Kategorie, `R` Drehen, `Escape`/Rechtsklick abwählen, `K` Forschung (pausiert),
   Pfeiltasten/`±` Kamera, Rad zoomen.
 - `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo.
 - Inspektor zeigt Status, Auslastung, Zielkörperteil mit Trefferquote, Filterregel,
-  Marktreserve und Verbindung.
+  Marktreserve und Absaugung/Verbindung; der Inhalt wird nur ersetzt, solange kein
+  `INPUT`/`SELECT`/`TEXTAREA` darin den Fokus hat (sonst wäre das Zielauswahl-Dropdown sofort
+  geschlossen).
 
 ## Spielstand
 
@@ -132,7 +145,7 @@ verworfen und im Spiel als Toast gemeldet (`load()` in `src/ui/ui.js`). Bei Form
 
 ## Tests
 
-- `npm test` – 64 Tests, reines Node (kein DOM nötig).
+- `npm test` – 67 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
 - `tests/dom-stub.js`: minimaler DOM-/Canvas-Stub; `getElementById` liefert nur IDs, die
   tatsächlich in `index.html` stehen – **fehlt ein Element, fällt der Test auf**.

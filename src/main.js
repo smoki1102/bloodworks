@@ -12,7 +12,7 @@ import {
   setupWorld,
   updateTutorial,
 } from './ui/ui.js';
-import { renderResearch } from './ui/research.js';
+import { renderForschung } from './ui/research.js';
 import { updateQuest } from './ui/quests.js';
 import { $ } from './utils/helpers.js';
 
@@ -37,7 +37,7 @@ function loop(ts) {
     renderHUD();
     renderList();
     renderInspector();
-    renderResearch();
+    renderForschung();
   }
   if ((tutTimer -= dt) <= 0) {
     tutTimer = 0.4;

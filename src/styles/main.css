@@ -478,15 +478,13 @@ canvas {
   margin-top: 3px;
   text-align: right;
 }
-#research,
-#skill {
+#forschung {
   position: absolute;
-  left: 292px;
+  left: 16px;
+  right: 16px;
   top: 14px;
-  width: 320px;
-  max-height: calc(100% - 240px);
-  overflow: auto;
-  padding: 12px;
+  bottom: 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -495,30 +493,62 @@ canvas {
   border-top: 2px solid var(--tech);
   border-radius: 3px;
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
-  z-index: 5;
+  z-index: 6;
 }
-#research.hide,
-#skill.hide {
+#forschung.hide {
   display: none;
 }
-#research .resHead,
-#skill .resHead {
-  font: 600 11px var(--mono);
-  color: var(--bright);
+#forschung .resHead {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  font: 600 11px var(--mono);
+  color: var(--bright);
+  flex: 0 0 auto;
 }
-#research .resHead b,
-#skill .resHead b {
+#forschung .resHead .ftitle {
+  color: var(--tech);
+  letter-spacing: 0.08em;
+}
+#forschung .resHead .fcur {
+  font-weight: 500;
+  color: var(--dim);
+}
+#forschung .resHead b {
   color: var(--accent2);
 }
-#research .resHead .close,
-#skill .resHead .close {
-  margin-left: auto;
+#forschung .resHead .close {
   padding: 0 6px;
   background: none;
   border: 0;
+}
+.ftabs {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.ftabs button {
+  font: 600 11px var(--mono);
+  padding: 5px 11px;
+}
+.ftabs button.on {
+  background: var(--tech);
+  border-color: var(--tech);
+  color: #fff;
+}
+.fpane {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+}
+.fpane.hide {
+  display: none;
+}
+#fUpg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-content: flex-start;
 }
 .upg {
   background: #202020;
@@ -700,8 +730,7 @@ canvas {
     top: 10px;
     width: min(250px, 62vw);
   }
-  #research,
-#skill {
+  #forschung {
     left: 10px;
     right: 10px;
     top: 10px;
@@ -717,51 +746,66 @@ canvas {
   }
 }
 
-/* ------------------------------ Skill-Tree ------------------------------ */
-#skill {
-  left: auto;
-  right: 16px;
-  top: 62px;
-  width: 336px;
-  max-height: calc(100% - 260px);
+/* --------------------------- Skill-Netz (Forschung) --------------------------- */
+.snet {
+  position: relative;
 }
-#acts #btnSkill {
-  background: transparent;
-  border-color: var(--line);
-  color: var(--dim);
+.snode {
+  position: absolute;
+  width: 240px;
 }
-#acts #btnSkill:hover,
-#acts #btnSkill.on {
-  background: var(--panel2);
-  border-color: var(--tech);
-  color: var(--bright);
+.snode .ds {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.brHead {
+.snode.can {
+  border-left: 2px solid #2f9e44;
+}
+.snode.lock {
+  opacity: 0.5;
+}
+.snode.max {
+  opacity: 0.6;
+}
+.brTag {
+  position: absolute;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   gap: 8px;
+  align-items: baseline;
+  width: 600px;
   font: 700 11px var(--mono);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--tech);
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 4px;
+  text-transform: uppercase;
 }
-.brHead span {
+.brTag span {
   font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--dim);
-  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.brDs {
-  font-size: 10.5px;
-  color: var(--dim);
-  margin-top: -6px;
+svg.sline {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+svg.sline path {
+  fill: none;
+  stroke: var(--line2);
+  stroke-width: 1.5;
+}
+svg.sline text {
+  font: 600 9px var(--mono);
+  fill: var(--dim);
 }
 .upg.node {
   background: #1b1f26;
-}
-.upg.node.lock {
-  opacity: 0.55;
 }
 .upg .unlock {
   font: 600 10px var(--mono);

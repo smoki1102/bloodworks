@@ -13,6 +13,23 @@ export const markNetsDirty = () => {
 };
 export const netsDirty = () => dirty || S.netDirty;
 
+/**
+ * Absaugung je Zelle: Netz-Index der Pipe, die an die Zelle grenzt, sonst -1.
+ * Wird in `rebuildNets()` neu berechnet; `fluids()` tropft auf diesen Zellen
+ * kein Blut mehr auf den Boden, sondern es geht ins Netz.
+ */
+export const suckNet = new Int16Array(GRID_W * GRID_H).fill(-1);
+
+/** Netz, das die Absaugung eines Gebäudes übernimmt (oder -1). */
+export function suctionNetOf(b) {
+  let n = -1;
+  eachCell(b, (x, y) => {
+    const v = suckNet[idx(x, y)];
+    if (v > n) n = v;
+  });
+  return n;
+}
+
 const parent = [];
 const find = (a) => {
   while (parent[a] !== a) {
@@ -35,6 +52,7 @@ export function rebuildNets() {
   dirty = false;
   S.netDirty = false;
   const prev = nets.map((n) => ({ v: n.v, ids: n.ids.slice(), used: false }));
+  for (const b of blds) b.netId = -1;
 
   const comp = new Int32Array(GRID_W * GRID_H).fill(-1);
   let nc = 0;
@@ -116,8 +134,46 @@ export function rebuildNets() {
     }
     nets.push(net);
   }
-  for (const b of blds) if (b.netId == null) b.netId = -1;
   for (const n of nets) n.cap = netCap(n);
+  buildSuction(comp, nc);
+}
+
+/**
+ * Zellen, die an ein nutzbares Pipe-Netz (mit Tank) grenzen: deren Blut wird
+ * eingesaugt statt auf den Boden zu tropfen. Nur bis zur Netzkammer gefüllt –
+ * ist das Netz voll, bleibt das Blut liegen (Rückstau).
+ */
+function buildSuction(comp, nc) {
+  suckNet.fill(-1);
+  const compNet = new Int32Array(nc).fill(-1);
+  for (const b of blds) {
+    const n = b.netId == null ? -1 : b.netId;
+    if (n < 0 || !netHasTank(nets[n])) continue;
+    eachCell(b, (x, y) => {
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DX[d],
+          ny = y + DY[d];
+        if (!inGrid(nx, ny)) continue;
+        const c = comp[idx(nx, ny)];
+        if (c >= 0) compNet[c] = n;
+      }
+    });
+  }
+  for (const b of blds) {
+    if (b.t !== 'pipe') continue;
+    eachCell(b, (x, y) => {
+      const netId = compNet[comp[idx(x, y)]];
+      if (netId < 0) return;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DX[d],
+          ny = y + DY[d];
+        if (!inGrid(nx, ny)) continue;
+        const j = idx(nx, ny);
+        if (comp[j] >= 0) continue;
+        suckNet[j] = netId;
+      }
+    });
+  }
 }
 
 function netCap(n) {

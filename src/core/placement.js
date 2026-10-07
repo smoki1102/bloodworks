@@ -127,7 +127,7 @@ export function addBuilding(t, x, y, opts = {}) {
   blds.push(b);
   bmap.set(id, b);
   eachCell(b, (cx, cy) => (occ[idx(cx, cy)] = id));
-  markDirty(b);
+  markDirty();
   if (!opts.free) pushHistory(true, b, costOf(t));
   return b;
 }
@@ -138,7 +138,7 @@ export function removeBuilding(b) {
   });
   bmap.delete(b.id);
   blds.splice(blds.indexOf(b), 1);
-  markDirty(b);
+  markDirty();
   if (S.sel === b) S.sel = null;
 }
 
@@ -150,8 +150,9 @@ export function sellBuilding(b) {
   toast('Verkauft · +' + r + ' €', 'good');
 }
 
-function markDirty(b) {
-  if (DEF[b.t].kind === 'pipe' || DEF[b.t].kind === 'tank') S.netDirty = true;
+function markDirty() {
+  // Auch Bänder/Maschinen ändern die Absaugung ihrer Nachbarschaft.
+  S.netDirty = true;
 }
 
 /* Rückgängig machen */

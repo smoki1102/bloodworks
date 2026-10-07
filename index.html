@@ -37,8 +37,9 @@
             ><button data-s="2">2×</button><button data-s="4">4×</button>
           </div>
           <button id="btnPlay">▶ Start</button>
-          <button id="btnResearch" title="Forschung für Blut">Forschung</button>
-          <button id="btnSkill" data-a="skill" title="Skill-Tree">Skill</button>
+          <button id="btnResearch" data-a="openForschung" title="Skill-Netz und Upgrades">
+            Forschung
+          </button>
           <button id="btnSave" title="Speichern">Speichern</button>
           <button id="btnLoad" title="Laden">Laden</button>
           <button id="btnSkipTut" hidden title="Tutorial überspringen">Überspringen</button>
@@ -49,8 +50,19 @@
         <canvas id="cv"></canvas>
         <div id="hint"></div>
         <div id="quest"></div>
-        <div id="research" class="hide"></div>
-        <div id="skill" class="hide"></div>
+        <div id="forschung" class="hide">
+          <div class="resHead">
+            <b class="ftitle">FORSCHUNG</b>
+            <span class="fcur">Blut <b id="fBlood">0</b> · Teile <b id="fParts">0</b></span>
+            <span class="ftabs">
+              <button data-ftab="net" class="on">Skill-Netz</button>
+              <button data-ftab="upg">Upgrades</button>
+            </span>
+            <button class="close" data-a="closeForschung" title="Schließen">✕</button>
+          </div>
+          <div id="fNet" class="fpane"></div>
+          <div id="fUpg" class="fpane hide"></div>
+        </div>
         <div id="inspector"></div>
         <div id="toasts"></div>
       </main>

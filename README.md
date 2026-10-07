@@ -31,7 +31,7 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 | E                    | Gewähltes Gerät an/aus                              |
 | Entf                 | Gewähltes Gerät verkaufen                           |
 | Strg/Cmd+Z           | Rückgängig                                          |
-| K                    | Skill-Tree öffnen (pausiert das Spiel)              |
+| K                    | Forschung öffnen: Skill-Netz & Upgrades (pausiert)   |
 
 ## Features
 
@@ -50,22 +50,27 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Verkauf, Verbrenner, Säurebad oder Behälter.
 - **Gezielte Treffer:** Im Inspektor jede Schneidemaschine wählt man das Zielkörperteil;
   die Trefferquote (45 % + Skill) wird mit angezeigt.
-- **Skill-Tree:** eigener Bildschirm (HUD-Button oder `K`), pausiert das Spiel. Sechs Äste
-  mit je mehreren Stufen – **Präzision** kostet Blut aus den Tanks, alle anderen Äste
-  kosten abgetrennte Körperteile. Gesperrt/verfügbar/gekauft sind klar unterscheidbar,
-  Voraussetzungen und Kosten stehen direkt am Knoten. Wirkung sofort, auch für gebaute Maschinen.
+- **Forschung (Skill-Netz & Upgrades):** ein großes Fenster über der Halle, geöffnet per
+  HUD-Button oder `K`, pausiert das Spiel. Reiter **Skill-Netz**: Sechs Äste als Diagramm
+  mit Knoten und Verbindungslinien – **Präzision** kostet Blut aus den Tanks, alle anderen
+  Äste kosten abgetrennte Körperteile; gesperrt/verfügbar/gekauft sind klar unterscheidbar,
+  Voraussetzungen und Kosten stehen direkt am Knoten, Wirkung sofort, auch für gebaute
+  Maschinen. Reiter **Upgrades**: bestehende Forschungsumfragen mit Blut und Körperteilen.
 - **Blut-Pipes und Netze:** frei verlegbare Rohre, Tanks und Geräte bilden Netze mit eigener
-  Kapazität; Absaugung verhindert, dass Blut vom Band tropft. Ohne Pipe gilt weiterhin der
-  globale Blutpool.
+  Kapazität. Steht eine nutzbare Absaugung (Pipe-Zelle mit Tank, orthogonal neben Band oder
+  Maschine), saugt das Blut ins Netz, statt vom Band zu tropfen – der Inspektor zeigt
+  „Absaugung: Verbunden“. Ohne Anschluss tropft das Blut wie bisher auf den Boden; ohne Pipe
+  gilt weiterhin der globale Blutpool.
 - **Blutmarkt mit Reserve:** pro Markt einstellbar (absolut oder als Anteil der Tankkapazität);
   verkauft nur oberhalb der Reserve, zeigt „Reserve gehalten“ und schützt so den Generator.
 - **Start und Tutorial:** Startmenü „Tutorial spielen? Ja / Nein / Spielstand laden“.
   Im Tutorial ist nichts vorgebaut – man baut die komplette Kette selbst, jeder Schritt
   markiert Item, Zielzelle und Begründung; jederzeit überspringbar. Am Ende gibt es einen
   Startvorrat an Blut und Körperteilen für den ersten Skill-Knoten.
-- **Aufträge & Forschung:** bestehende Quest-Kette und Forschungs-Panel bleiben erhalten.
+- **Aufträge:** die bestehende Quest-Kette bleibt erhalten; die Forschungsumfragen stehen
+  im großen Forschungsfenster (Reiter Upgrades).
 - **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
-- **Qualität:** 64 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Qualität:** 67 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

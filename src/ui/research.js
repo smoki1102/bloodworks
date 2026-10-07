@@ -1,12 +1,41 @@
 import { UPG } from '../config/upgrade-defs.js';
+import { partPoints } from '../core/parts.js';
+import { bloodTotal } from '../core/pipes.js';
 import { S } from '../core/state.js';
 import { buyUpgrade, upgCost, upgLevel } from '../core/upgrades.js';
 import { $, fmt } from '../utils/helpers.js';
+import { renderSkill } from './skill.js';
 
 export let lastRes = null;
+let tab = 'net';
+
+export const forschungOpen = () => !$('forschung').classList.contains('hide');
+export const forschungTab = () => tab;
+
+function setTab(next) {
+  tab = next === 'upg' ? 'upg' : 'net';
+  $('fNet').classList.toggle('hide', tab !== 'net');
+  $('fUpg').classList.toggle('hide', tab !== 'upg');
+  for (const b of $('forschung').querySelectorAll('[data-ftab]'))
+    b.classList.toggle('on', b.dataset.ftab === tab);
+}
+
+/** Fenster öffnen (Tab wechseln, wenn es schon offen ist). */
+export function openForschung(which = tab) {
+  const opening = !forschungOpen();
+  $('forschung').classList.remove('hide');
+  setTab(which);
+  S.skillSeen = true;
+  renderForschung();
+  return opening;
+}
+
+export function closeForschung() {
+  $('forschung').classList.add('hide');
+}
 
 export function renderResearch() {
-  const el = $('research');
+  const el = $('fUpg');
   if (!el || el.classList.contains('hide')) return;
   const rows = UPG.map((u) => {
     const lv = upgLevel(u.id),
@@ -25,21 +54,21 @@ export function renderResearch() {
         </button>
       </div></div>`;
   }).join('');
-  const html = `<div class="resHead">FORSCHUNG · <b>${fmt(S.blood)}</b> Blut verfügbar
-    <button class="close" data-a="closeRes" title="Schließen">✕</button></div>${rows}`;
-  if (html !== lastRes) {
-    lastRes = html;
-    el.innerHTML = html;
+  if (rows !== lastRes) {
+    lastRes = rows;
+    el.innerHTML = rows;
   }
 }
 
-export function toggleResearch() {
-  const el = $('research');
-  el.classList.toggle('hide');
-  if (!el.classList.contains('hide')) {
-    lastRes = null;
-    renderResearch();
-  }
+/** Kopfzeile + aktiver Reiter des Forschungsfensters. */
+export function renderForschung() {
+  if (!forschungOpen()) return;
+  const b = $('fBlood'),
+    p = $('fParts');
+  if (b) b.textContent = fmt(bloodTotal());
+  if (p) p.textContent = fmt(partPoints());
+  if (tab === 'net') renderSkill();
+  else renderResearch();
 }
 
 document.addEventListener('click', (e) => {
@@ -47,8 +76,12 @@ document.addEventListener('click', (e) => {
   if (buy) {
     buyUpgrade(buy.dataset.upg);
     lastRes = null;
-    renderResearch();
+    renderForschung();
     return;
   }
-  if (e.target.closest('[data-a="closeRes"]')) toggleResearch();
+  const t = e.target.closest('[data-ftab]');
+  if (t) {
+    setTab(t.dataset.ftab);
+    renderForschung();
+  }
 });

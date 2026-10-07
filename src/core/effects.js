@@ -1,6 +1,7 @@
 import { CELL, GRID_H, GRID_W, PH, PW } from '../config/constants.js';
 import { idx } from './grid.js';
-import { S, beltBlood, floorBlood, occ, parts } from './state.js';
+import { suckNet } from './pipes.js';
+import { nets, S, beltBlood, floorBlood, occ, parts } from './state.js';
 import { $, rnd } from '../utils/helpers.js';
 
 /* Effekte */
@@ -66,8 +67,10 @@ export const addFloorBlood = (x, y, a) => {
 };
 
 /**
- * Blut bewegt sich: Bandblut tropft auf den Boden, Bodenblut sickert
- * nach unten, bis es auf ein Gebäude trifft, und breitet sich dann seitlich aus.
+ * Blut bewegt sich: Bandblut tropft auf den Boden – außer die Zelle grenzt an
+ * ein angeschlossenes Pipe-Netz, dann wird es dort eingesaugt (kein Tropfen).
+ * Bodenblut sickert nach unten, bis es auf ein Gebäude trifft, und breitet
+ * sich dann seitlich aus.
  */
 export function fluids(dt) {
   const n = GRID_W * GRID_H;
@@ -75,8 +78,16 @@ export function fluids(dt) {
     const b0 = beltBlood[i];
     if (b0 > 0.001) {
       const dr = Math.min(b0, b0 * dt * 0.55 + dt * 0.02);
-      beltBlood[i] -= dr;
-      floorBlood[i] = Math.min(11, floorBlood[i] + dr);
+      const netId = suckNet[i];
+      const net = netId >= 0 ? nets[netId] : null;
+      if (net) {
+        const take = Math.min(dr, Math.max(0, net.cap - net.v));
+        net.v += take;
+        beltBlood[i] -= take;
+      } else {
+        beltBlood[i] -= dr;
+        floorBlood[i] = Math.min(11, floorBlood[i] + dr);
+      }
     }
     if (beltBlood[i] > 0) beltBlood[i] = Math.max(0, beltBlood[i] - dt * 0.05);
   }

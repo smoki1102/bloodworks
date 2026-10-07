@@ -25,8 +25,7 @@ import {
   sellSelected,
   toggleSelected,
 } from './inspector.js';
-import { toggleResearch } from './research.js';
-import './skill.js';
+import { closeForschung, forschungOpen, openForschung } from './research.js';
 export { renderInspector };
 
 /* ------------------------------ Karten / HUD ------------------------------ */
@@ -280,7 +279,7 @@ addEventListener('keydown', (e) => {
       toast('Richtung: ' + ['Rechts', 'Runter', 'Links', 'Hoch'][S.dir], 'good');
     }
   } else if (e.key === 'k' || e.key === 'K') {
-    document.querySelector('[data-a="skill"]')?.click();
+    document.querySelector('[data-a="openForschung"]')?.click();
   } else if (e.key >= '1' && e.key <= '5') {
     S.cat = CATS[+e.key - 1][0];
     S.tool = null;
@@ -336,19 +335,10 @@ document.addEventListener('click', (e) => {
     lastList = null;
     renderList();
     renderHUD();
-  } else if (a === 'research') toggleResearch();
-  else if (a === 'skill' || a === 'closeSkill') {
-    // Skill-Tree pausiert das Spiel, solange er offen ist (die Panels haben
-    // den Zustand bereits umgeschaltet, weil sie zuerst zugehört haben).
-    const open = !$('skill').classList.contains('hide');
-    if (open && S.running) {
-      skillPaused = true;
-      toggleRun();
-    } else if (!open && skillPaused) {
-      skillPaused = false;
-      toggleRun();
-    }
-  }
+  } else if (a === 'openForschung') {
+    if (forschungOpen()) closeForschungUI();
+    else openForschungUI('net');
+  } else if (a === 'closeForschung') closeForschungUI();
 });
 
 document.addEventListener('change', (e) => {
@@ -446,6 +436,26 @@ export function save(silent) {
   }
 }
 
+/**
+ * Forschungsfenster öffnen/schließen – pausiert die Simulation, solange es
+ * offen ist (wie früher der Skill-Tree).
+ */
+function openForschungUI(which) {
+  openForschung(which);
+  if (S.running) {
+    skillPaused = true;
+    toggleRun();
+  }
+}
+function closeForschungUI() {
+  if (!forschungOpen()) return;
+  closeForschung();
+  // Nur fortsetzen, wenn wir selbst pausiert haben und noch pausiert ist.
+  const resume = skillPaused && !S.running;
+  skillPaused = false;
+  if (resume) toggleRun();
+}
+
 export const hasSave = () => {
   try {
     const r = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -527,7 +537,6 @@ $('btnSkipTut').onclick = () => {
   renderList();
   toast('Tutorial übersprungen', 'good');
 };
-$('btnResearch').onclick = toggleResearch;
 $('btnContinue').onclick = () => {
   if (load() !== false) $('modal').classList.add('hide');
 };
@@ -579,9 +588,7 @@ export function newGame(mode = 'tutorial') {
   lastList = null;
   lastHint = null;
   skillPaused = false;
-  $('skill').classList.add('hide');
-  $('research').classList.add('hide');
-  $('btnSkill').classList.remove('on');
+  closeForschung();
   renderTabs();
   renderList();
   renderInspector();
