@@ -12,6 +12,8 @@ import {
   setupWorld,
   updateTutorial,
 } from './ui/ui.js';
+import { renderResearch } from './ui/research.js';
+import { updateQuest } from './ui/quests.js';
 import { $ } from './utils/helpers.js';
 
 let lastTS = 0,
@@ -35,10 +37,12 @@ function loop(ts) {
     renderHUD();
     renderList();
     renderInspector();
+    renderResearch();
   }
   if ((tutTimer -= dt) <= 0) {
     tutTimer = 0.4;
     updateTutorial();
+    updateQuest();
   }
   requestAnimationFrame(loop);
 }

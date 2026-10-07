@@ -4,14 +4,15 @@ import {
   BASE_REGEN,
   BELT_SPEED,
   BELT_Y,
-  CHAIRS,
   COLS,
   CRUSH_DMG,
   DRIP_TIME,
   CORPSE_CAP,
   CORPSE_FLOOR_LIFE,
   CORPSE_LIFE,
-  ENTER_SPEED,
+  EJECT_KICK,
+  EJECT_LIFT,
+  EJECT_SPIN,
   GEN_BLOOD,
   GEN_GAIN,
   HIT_WINDOW,
@@ -19,13 +20,12 @@ import {
   PW,
   PRESS_PERIOD,
   PRESS_WINDOW,
-  RELEASE_TIME,
-  SIT_SHUFFLE,
+  SCHLEUDER_KICK,
   SPAWN_BASE,
+  SPAWN_GAP,
   SPAWN_MIN,
   SPAWN_RAMP,
   SPIKE_HITS,
-  STAND_TIME,
   TANK_CAP,
   X0,
 } from '../config/constants.js';
@@ -41,7 +41,8 @@ import {
 } from './anatomy.js';
 import { capOf, machine } from './machines.js';
 import { flow, noteRate } from './flow.js';
-import { bldRect, chairX } from './placement.js';
+import { upgEff } from './upgrades.js';
+import { bldRect } from './placement.js';
 import { S, beltBlood, blds, corpses, floorBlood, occ, parts, sticks } from './state.js';
 import { colAt, colX, rnd } from '../utils/helpers.js';
 
@@ -52,6 +53,7 @@ export function killStick(i) {
   corpses.push(s.body ? bodyToCorpse(s) : corpseAt(s.x, 'belt'));
   sticks.splice(i, 1);
   S.kills++;
+  if (s.chair) chairBits(s.x, s.y);
   addBeltBlood(s.x, 6);
   addFloorBlood(s.x, 2.5);
   burst(s.x, BELT_Y - 16, bloodColor(), nBurst(9), 190);
@@ -70,55 +72,60 @@ const corpseAt = (x, state) => ({
   life: CORPSE_LIFE,
 });
 
-/* --------------------------- Warteschlange --------------------------- */
-const queueOf = () =>
-  sticks.filter((s) => s.state === 'sit' || s.state === 'stand' || s.state === 'enter');
+/** Der Stuhl wird weggeschleudert – kleines Trümmerstück fliegt mit. */
+function chairBits(x, y) {
+  parts.push({
+    x,
+    y: y - 10,
+    vx: (rnd() - 0.5) * 180,
+    vy: -140 - rnd() * 90,
+    life: 0.9,
+    max: 0.9,
+    color: '#7c8a9a',
+    size: 5,
+    grav: 1,
+    chair: 1,
+  });
+}
 
-function seatStick(sp) {
-  const q = queueOf();
-  if (q.length >= CHAIRS) return false;
-  const taken = new Set(q.map((s) => s.chair));
-  let idx = 0;
-  while (taken.has(idx)) idx++;
+/**
+ * Dynamischer Abwurf: der Stuhl kippt weg, der Stick wird über die Bandkante
+ * geschleudert und segelt in den Keller.
+ */
+function ejectStick(s, kick) {
+  s.state = 'fall';
+  s.vy = EJECT_LIFT;
+  s.vx = (rnd() < 0.8 ? 1 : -1) * (kick || EJECT_KICK) * (0.6 + rnd() * 0.7);
+  s.rot = 0;
+  s.spin = (rnd() - 0.5) * EJECT_SPIN * 2;
+  if (s.chair) {
+    s.chair = false;
+    chairBits(s.x, s.y);
+  }
+  S.ejected++;
+  burst(s.x, s.y - 14, bloodColor(), nBurst(4), 120);
+}
+
+/** Der Eingang setzt einen frischen Stick auf einen Stuhl am Band. */
+function spawnRider(sp) {
+  const x = colX(sp.col) + 18;
+  const c = colAt(x);
+  if (!(c >= 0 && c < COLS && occ.belt[c] > 0)) return false;
+  if (sticks.some((s) => s.state === 'ride' && Math.abs(s.x - x) < SPAWN_GAP)) return false;
   sticks.push({
-    x: colX(sp.col) + 18,
+    x,
     y: BELT_Y,
+    vx: 0,
     vy: 0,
+    rot: 0,
+    spin: 0,
     anim: rnd() * 9,
-    state: 'enter',
-    chair: idx,
-    targetX: chairX(sp, idx),
-    standT: 0,
+    state: 'ride',
+    chair: true,
     dripT: 0,
     body: makeBody(),
   });
   return true;
-}
-
-/** Der vorderste Stick steht auf, alle anderen rücken nach. */
-function releaseStick(sp) {
-  const q = queueOf();
-  if (!q.length) return;
-  const front = q.reduce((a, b) => (a.chair > b.chair ? a : b));
-  if (front.state === 'enter') return;
-  front.state = 'stand';
-  front.standT = STAND_TIME;
-  q
-    .filter((s) => s !== front)
-    .sort((a, b) => a.chair - b.chair)
-    .forEach((s, i) => {
-      s.chair = i;
-      s.targetX = chairX(sp, i);
-    });
-}
-
-/** Verliert der Eingang seine Besitzer, stehen sie auf und laufen weiter. */
-function releaseAll() {
-  for (const s of sticks)
-    if (s.state === 'sit' || s.state === 'enter') {
-      s.state = 'walk';
-      s.y = BELT_Y;
-    }
 }
 
 /**
@@ -166,50 +173,24 @@ export function fluids(dt) {
 }
 
 export function moveSticks(dt) {
+  const beltSpeed = BELT_SPEED * upgEff('speed');
   const sp = blds.find((b) => b.t === 'spawn');
-  if (!sp) releaseAll();
-  else if (sp.clean <= 0) {
+  if (sp && sp.clean <= 0) {
     S.spawnTimer -= dt;
     if (S.spawnTimer <= 0) {
-      S.spawnTimer = Math.max(SPAWN_MIN, SPAWN_BASE - S.t / SPAWN_RAMP);
-      seatStick(sp);
-    }
-    sp.rel = (sp.rel ?? RELEASE_TIME) - dt;
-    if (sp.rel <= 0) {
-      sp.rel = RELEASE_TIME;
-      if (S.pf > 0.2) releaseStick(sp);
+      S.spawnTimer = Math.max(SPAWN_MIN, SPAWN_BASE - S.t / SPAWN_RAMP) * upgEff('spawn');
+      if (S.pf > 0.2) spawnRider(sp);
     }
   }
   for (let i = sticks.length - 1; i >= 0; i--) {
     const s = sticks[i];
     s.anim += dt;
-    if (s.state === 'enter') {
-      const dx = s.targetX - s.x;
-      if (Math.abs(dx) < 1.5) {
-        s.state = 'sit';
-        s.x = s.targetX;
-      } else s.x += Math.sign(dx) * ENTER_SPEED * dt;
-      continue;
-    }
-    if (s.state === 'sit') {
-      if (sp && s.targetX != null) {
-        const dx = s.targetX - s.x;
-        if (Math.abs(dx) > 0.5) s.x += Math.sign(dx) * Math.min(SIT_SHUFFLE * dt, Math.abs(dx));
-      }
-      continue;
-    }
-    if (s.state === 'stand') {
-      s.standT -= dt;
-      if (s.standT <= 0) {
-        s.state = 'walk';
-        s.y = BELT_Y;
-      }
-      continue;
-    }
     if (s.state === 'fall') {
       s.vy += 1500 * dt;
       s.y += s.vy * dt;
-      s.x += 12 * dt;
+      s.x += (s.vx || 12) * dt;
+      s.vx = (s.vx || 0) * (1 - Math.min(1, dt * 0.7));
+      s.rot = (s.rot || 0) + (s.spin || 0) * dt;
       if (s.y >= KELLER_FLOOR - 2) {
         corpses.push({
           ...corpseAt(s.x, 'floor'),
@@ -236,12 +217,11 @@ export function moveSticks(dt) {
     }
     const c = colAt(s.x);
     if (!(c >= 0 && c < COLS && occ.belt[c] > 0)) {
-      s.state = 'fall';
-      s.vy = 40;
+      ejectStick(s);
       continue;
     }
     s.y = BELT_Y;
-    s.x += BELT_SPEED * dt;
+    s.x += beltSpeed * dt;
     if (s.x > X0 + PW - 6) {
       sticks.splice(i, 1);
       S.escaped++;
@@ -259,6 +239,9 @@ export function moveSticks(dt) {
           break;
         }
         if (res === 'hit') break;
+      } else if (d.kill === 'eject') {
+        ejectStick(s, SCHLEUDER_KICK);
+        break;
       } else if (b.phase % PRESS_PERIOD < PRESS_WINDOW) {
         if (s.body) s.body.hp -= CRUSH_DMG;
         killStick(i);
@@ -285,6 +268,7 @@ export function catcher(c, needY) {
 const itemOf = (c) => ({ rot: 0, kind: c.kind || 'corpse', part: c.part });
 
 export function moveCorpses(dt) {
+  const beltSpeed = BELT_SPEED * upgEff('speed');
   for (let i = corpses.length - 1; i >= 0; i--) {
     const c = corpses[i];
     c.life -= dt;
@@ -294,7 +278,7 @@ export function moveCorpses(dt) {
         c.state = 'fall';
         c.vy = 30;
       } else {
-        c.x += BELT_SPEED * dt;
+        c.x += beltSpeed * dt;
         c.y = BELT_Y;
         if (c.bleed > 0) {
           c.bleed -= dt;
@@ -318,6 +302,7 @@ export function moveCorpses(dt) {
       const b = catcher(c, true);
       if (b) {
         b.items.push(itemOf(c));
+        S.caught++;
         burst(c.x, c.y, bloodColor(), nBurst(5), 120);
         corpses.splice(i, 1);
         continue;
@@ -339,6 +324,7 @@ export function moveCorpses(dt) {
       const b = catcher(c, false);
       if (b) {
         b.items.push(itemOf(c));
+        S.caught++;
         corpses.splice(i, 1);
         continue;
       }
@@ -354,7 +340,7 @@ export function moveCorpses(dt) {
 
 export function tick(dt) {
   S.t += dt;
-  let cap = BASE_CAP;
+  let cap = BASE_CAP + upgEff('tank');
   for (const b of blds) if (b.t === 'tank') cap += TANK_CAP;
   S.bloodCap = cap;
   S.blood = Math.min(S.blood, cap);

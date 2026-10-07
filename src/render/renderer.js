@@ -4,7 +4,6 @@ import {
   BELT_SPEED,
   BELT_Y,
   CELL,
-  CHAIRS,
   COLS,
   H,
   KELLER_FLOOR,
@@ -12,13 +11,13 @@ import {
   OBEN_FLOOR,
   OBEN_TOP,
   PW,
-  STAND_TIME,
   W,
   X0,
 } from '../config/constants.js';
 import { bloodColor } from '../core/effects.js';
 import { horizontal, vertical } from '../core/flow.js';
-import { bldRect, chairX, placeReason } from '../core/placement.js';
+import { bldRect, placeReason } from '../core/placement.js';
+import { upgEff } from '../core/upgrades.js';
 import {
   S,
   beltBlood,
@@ -231,16 +230,20 @@ export function drawLimbShape(part, x, y) {
 }
 
 export function drawStick(s, glow) {
-  if (s.state === 'sit') return drawSeated(s);
+  if (s.state === 'ride') return drawSeated(s, glow);
   const body = s.body,
     has = (p) => !body || body.limbs[p],
     x = s.x,
     y = s.y,
-    stand = s.state === 'stand';
-  const sw = stand
-    ? 0
-    : Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
+    air = s.state === 'fall';
+  const sw = Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
   const ink = glow ? 'rgba(255,255,255,.92)' : C.bright;
+  ctx.save();
+  if (air) {
+    ctx.translate(x, y);
+    ctx.rotate(s.rot || 0);
+    ctx.translate(-x, -y);
+  }
   ctx.strokeStyle = ink;
   ctx.fillStyle = ink;
   ctx.lineWidth = glow ? 7.6 : 2.6;
@@ -282,7 +285,7 @@ export function drawStick(s, glow) {
     ctx.arc(x, y - 29, glow ? 7.8 : 5.2, 0, 7);
     ctx.fill();
   }
-  if (!glow && body && body.bleeding > 0 && !stand) {
+  if (!glow && body && body.bleeding > 0 && !air) {
     ctx.fillStyle = bloodColor();
     ctx.globalAlpha = 0.9;
     ctx.beginPath();
@@ -291,50 +294,67 @@ export function drawStick(s, glow) {
     ctx.fill();
     ctx.globalAlpha = 1;
   }
+  ctx.restore();
 }
 
-/** Wartende Sticks: sitzen angekettet im Eingang. */
-function drawSeated(s) {
+/** Sticks auf mitfahrenden Stühlen: sitzen und fahren mit dem Band. */
+function drawSeated(s, glow) {
   const body = s.body,
     has = (p) => !body || body.limbs[p],
     x = s.x,
-    y = s.y,
-    rise = s.state === 'stand' ? clamp(1 - s.standT / STAND_TIME, 0, 1) : 0;
+    y = s.y;
+  const ink = glow ? 'rgba(255,255,255,.92)' : C.bright;
+  const steel = glow ? 'rgba(255,255,255,.8)' : C.steel;
   ctx.save();
-  ctx.translate(0, -rise * 8);
-  ctx.strokeStyle = C.steel;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x + 9, y - 18);
-  ctx.lineTo(x + 15, y - 6);
-  ctx.stroke();
-  ctx.strokeStyle = C.bright;
-  ctx.fillStyle = C.bright;
-  ctx.lineWidth = 2.6;
+  // kleines Rütteln auf dem laufenden Band
+  ctx.translate(0, Math.sin(s.anim * 17) * 0.6);
+  ctx.strokeStyle = steel;
+  ctx.lineWidth = glow ? 5.4 : 2.4;
   ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - 9, y - 40);
+  ctx.lineTo(x - 9, y - 15);
+  ctx.lineTo(x - 11, y - 1);
+  ctx.moveTo(x - 14, y - 1);
+  ctx.lineTo(x - 5, y - 1);
+  ctx.moveTo(x - 9, y - 15);
+  ctx.lineTo(x + 7, y - 15);
+  ctx.moveTo(x + 6, y - 15);
+  ctx.lineTo(x + 7, y - 1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x - 11, y + 3, 3, 0, 7);
+  ctx.arc(x + 8, y + 3, 3, 0, 7);
+  ctx.stroke();
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  ctx.lineWidth = glow ? 7.6 : 2.6;
   const breathe = Math.sin(s.anim * 2.2) * 1.2;
   ctx.beginPath();
-  ctx.moveTo(x - 2, y - 18);
-  ctx.lineTo(x, y - 44 + breathe);
-  ctx.moveTo(x - 2, y - 18);
-  ctx.lineTo(x + 11, y - 16);
-  ctx.lineTo(x + 12, y - 1);
+  ctx.moveTo(x, y - 16);
+  ctx.lineTo(x + 1, y - 42 + breathe);
+  ctx.moveTo(x, y - 16);
+  ctx.lineTo(x + 10, y - 15);
+  ctx.lineTo(x + 11, y - 2);
   if (has('armL') || has('armR')) {
-    ctx.moveTo(x, y - 40 + breathe);
-    ctx.lineTo(x + 6, y - 30);
-    ctx.lineTo(x + 11, y - 19);
+    ctx.moveTo(x + 1, y - 38 + breathe);
+    ctx.lineTo(x + 7, y - 30);
+    ctx.lineTo(x + 11, y - 20);
+  } else {
+    ctx.moveTo(x + 1, y - 38 + breathe);
+    ctx.lineTo(x + 5, y - 28);
   }
   ctx.stroke();
   if (has('head')) {
     ctx.beginPath();
-    ctx.arc(x + 1, y - 51 + breathe, 5.2, 0, 7);
+    ctx.arc(x + 2, y - 49 + breathe, glow ? 7.8 : 5.2, 0, 7);
     ctx.fill();
   }
   if (body && body.bleeding > 0) {
     ctx.fillStyle = bloodColor();
     ctx.globalAlpha = 0.85;
     ctx.beginPath();
-    ctx.arc(x + 9, y - 4, 1.8, 0, 7);
+    ctx.arc(x + 4, y - 3, 1.8, 0, 7);
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -368,7 +388,7 @@ export function drawBelt(b, r) {
   ctx.fillStyle = C.steel;
   ctx.fillRect(r.x, r.y, r.w, 1.5);
   ctx.fillRect(r.x, r.y + BELT_H - 1.5, r.w, 1.5);
-  const off = (S.t * BELT_SPEED) % 18;
+  const off = (S.t * BELT_SPEED * upgEff('speed')) % 18;
   ctx.strokeStyle = C.light;
   ctx.lineWidth = 2.5;
   ctx.beginPath();
@@ -474,8 +494,38 @@ export function drawMachine(b, r) {
       ctx.fillRect(r.x + 14, py, r.w - 28, 3);
       break;
     }
+    case 'schleuder': {
+      // rotierender Schleuderarm über dem Band
+      const sx = cx,
+        sy = r.y + r.h - 34,
+        a = S.running && on ? b.phase * 7 : 0.6;
+      ctx.strokeStyle = C.light;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(sx - Math.cos(a) * 30, sy - Math.sin(a) * 14);
+      ctx.lineTo(sx + Math.cos(a) * 30, sy + Math.sin(a) * 14);
+      ctx.stroke();
+      ctx.fillStyle = C.accent2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 7, 0, 7);
+      ctx.fill();
+      ctx.fillStyle = '#f4f8fc';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2.6, 0, 7);
+      ctx.fill();
+      // Wurf-Bogen nach rechts
+      ctx.strokeStyle = 'rgba(47,129,248,.55)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(sx + 26, sy - 8);
+      ctx.quadraticCurveTo(r.x + r.w + 34, sy - 62, r.x + r.w + 44, r.y + r.h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
     case 'spawn': {
-      // Eingangstür links, Sitzreihe mittig, Ausgang aufs Band rechts
+      // Eingangstür links, Ausgabe frischer Stühle aufs Band rechts
       ctx.fillStyle =
         'rgba(45,64,90,' + (0.12 + 0.08 * Math.sin(S.t * 3)) + ')';
       ctx.fillRect(r.x + 7, r.y + 18, 26, r.h - 24);
@@ -488,17 +538,15 @@ export function drawMachine(b, r) {
       ctx.lineTo(r.x + 27, r.y + r.h / 2);
       ctx.lineTo(r.x + 15, r.y + r.h / 2 + 8);
       ctx.fill();
-      for (let i = 0; i < CHAIRS; i++) {
-        const x = chairX(b, i);
-        ctx.strokeStyle = C.steel;
-        ctx.lineWidth = 2.4;
+      ctx.strokeStyle = C.steel;
+      ctx.lineWidth = 2.2;
+      for (let i = 0; i < 2; i++) {
+        const x = r.x + r.w - 30 + i * 12;
         ctx.beginPath();
-        ctx.moveTo(x - 8, BELT_Y - 36);
-        ctx.lineTo(x - 8, BELT_Y - 2);
-        ctx.moveTo(x - 8, BELT_Y - 18);
-        ctx.lineTo(x + 13, BELT_Y - 18);
-        ctx.moveTo(x + 12, BELT_Y - 18);
-        ctx.lineTo(x + 14, BELT_Y - 2);
+        ctx.moveTo(x, BELT_Y - 34);
+        ctx.lineTo(x, BELT_Y - 6);
+        ctx.moveTo(x - 7, BELT_Y - 18);
+        ctx.lineTo(x + 7, BELT_Y - 18);
         ctx.stroke();
       }
       break;
@@ -819,14 +867,10 @@ export function render() {
   // das Gehäuse alles, was hineinkommt.
   for (const b of blds) if (DEF[b.t].band === 'over') drawBuilding(b);
   for (const c of corpses) if (c.state === 'belt') drawCorpse(c);
-  for (const s of sticks)
-    if (s.state === 'walk') {
-      if (overAt(s.x)) drawStick(s, true);
-      drawStick(s);
-    }
-  for (const s of sticks)
-    if (s.state === 'sit' || s.state === 'stand' || s.state === 'enter')
-      drawStick(s);
+  for (const s of sticks) if (s.state === 'ride') {
+    if (overAt(s.x)) drawStick(s, true);
+    drawStick(s);
+  }
   for (const c of corpses) if (c.state !== 'belt') drawCorpse(c);
   for (const s of sticks) if (s.state === 'fall') drawStick(s);
   for (const p of parts) {
@@ -837,6 +881,21 @@ export function render() {
       ctx.textAlign = 'center';
       ctx.fillText(p.text, p.x, p.y);
       ctx.textAlign = 'left';
+    } else if (p.chair) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.life * 7);
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-4, -6);
+      ctx.lineTo(-4, 2);
+      ctx.lineTo(5, 2);
+      ctx.moveTo(-4, -1);
+      ctx.lineTo(5, -1);
+      ctx.lineTo(6, 6);
+      ctx.stroke();
+      ctx.restore();
     } else {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, 7);

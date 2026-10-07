@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { freshState, initSim, setState } from '../src/core/state.js';
-import { addBuilding, canPlace } from '../src/core/placement.js';
+import { addBuilding, canPlace, removeBuilding } from '../src/core/placement.js';
 import { tick } from '../src/core/simulation.js';
+import { buyUpgrade, upgEff } from '../src/core/upgrades.js';
+import { questStep } from '../src/core/quests.js';
 import { BASE_CAP, TANK_CAP } from '../src/config/constants.js';
 import * as state from '../src/core/state.js';
 
@@ -44,6 +46,43 @@ describe('Simulation', () => {
     addBuilding('spike', 6, true);
     for (let i = 0; i < 700; i++) tick(0.033);
     expect(state.S.kills).toBeGreaterThan(0);
+  });
+  it('Sticks fahren permanent sitzend auf Stühlen am Band', () => {
+    for (let i = 0; i < 200; i++) tick(0.033);
+    const riders = state.sticks.filter((s) => s.state === 'ride');
+    expect(riders.length).toBeGreaterThan(0);
+    const x0 = riders[0].x;
+    for (let i = 0; i < 20; i++) tick(0.033);
+    expect(state.sticks.find((s) => s.state === 'ride' && s.x > x0 + 10)).toBeTruthy();
+  });
+  it('Eine Bandlücke wirft Sticks dynamisch ab', () => {
+    const b = state.blds.find((x) => x.t === 'belt' && x.col === 8);
+    removeBuilding(b);
+    for (let i = 0; i < 500; i++) tick(0.033);
+    expect(state.S.ejected).toBeGreaterThan(0);
+  });
+  it('Der Abschleuderer schleudert Sticks vom Band', () => {
+    addBuilding('schleuder', 8, true);
+    for (let i = 0; i < 500; i++) tick(0.033);
+    expect(state.S.ejected).toBeGreaterThan(0);
+  });
+});
+
+describe('Forschung und Aufträge', () => {
+  beforeEach(setupWorld);
+
+  it('Forschung kostet Blut und erhöht die Bandgeschwindigkeit', () => {
+    state.S.blood = 200;
+    buyUpgrade('drive');
+    expect(state.S.blood).toBe(140);
+    expect(upgEff('speed')).toBeCloseTo(1.12);
+  });
+  it('Ein erreichtes Ziel zahlt die Belohnung aus', () => {
+    state.S.kills = 10;
+    const done = questStep();
+    expect(done).not.toBeNull();
+    expect(done.reward).toBe(150);
+    expect(state.S.quest).toBe(1);
   });
 });
 

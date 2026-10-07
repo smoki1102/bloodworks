@@ -31,6 +31,7 @@ export function floatText(x, y, t, c) {
   });
 }
 export function toast(msg, kind) {
+  if (typeof document === 'undefined') return;
   const el = document.createElement('div');
   el.className = 'toast ' + (kind || '');
   el.textContent = msg;

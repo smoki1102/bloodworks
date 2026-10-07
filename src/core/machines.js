@@ -24,6 +24,7 @@ import { bloodColor, burst, floatText, nBurst } from './effects.js';
 import { noteOut, noteRate } from './flow.js';
 import { bldRect } from './placement.js';
 import { S, blds, floorBlood } from './state.js';
+import { upgEff } from './upgrades.js';
 import { clamp, colAt } from '../utils/helpers.js';
 
 export const capOf = (t) => DEF[t].cap ?? 0;
@@ -58,12 +59,16 @@ export function machine(b, dt, pf) {
     worked = run > 0.05;
     b.phase += dt * PRESS_SPEED * run;
   }
+  if (b.t === 'schleuder') {
+    worked = run > 0.05;
+    b.phase += dt * 4 * run;
+  }
   if (b.t === 'market') {
     if (S.blood > 0.01 && pf > 0.15) {
       const q = Math.min(S.blood, MARKET_RATE * dt * run);
       if (q > 0) {
         S.blood -= q;
-        S.money += q * MARKET_PRICE;
+        S.money += q * MARKET_PRICE * upgEff('price');
         S.sold += q;
         worked = true;
         noteRate(b, q / dt, dt);

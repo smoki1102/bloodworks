@@ -106,9 +106,6 @@ export function undo() {
     toast('Verkauf rückgängig · +' + DEF[h.snap.t].n, 'good');
   }
 }
-/** Sitzpositionen im Wartebereich des Eingangs. */
-export const chairX = (sp, i) => colX(sp.col) + 52 + i * 30;
-
 export function bldRect(b) {
   const d = DEF[b.t],
     x = colX(b.col),

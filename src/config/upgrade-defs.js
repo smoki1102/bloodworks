@@ -1,0 +1,43 @@
+/* Forschungsbaum – Kosten in Blut, Effekte über `step` (siehe core/upgrades.js). */
+export const UPG = [
+  {
+    id: 'drive',
+    n: 'Bandantrieb',
+    g: '»',
+    d: 'Bandgeschwindigkeit +12 % pro Stufe.',
+    key: 'speed',
+    step: 0.12,
+    max: 3,
+    costs: [60, 120, 240],
+  },
+  {
+    id: 'market',
+    n: 'Marktkenntnis',
+    g: '€',
+    d: 'Verkaufspreis am Blutmarkt +10 % pro Stufe.',
+    key: 'price',
+    step: 0.1,
+    max: 3,
+    costs: [50, 100, 200],
+  },
+  {
+    id: 'feed',
+    n: 'Nachschub',
+    g: '▶',
+    d: 'Der Eingang setzt Sticks 12 % schneller aufs Band.',
+    key: 'spawn',
+    step: 0.12,
+    max: 3,
+    costs: [40, 90, 180],
+  },
+  {
+    id: 'tank',
+    n: 'Tanksystem',
+    g: '▮',
+    d: '+100 Blutkapazität pro Stufe.',
+    key: 'tank',
+    step: 100,
+    max: 3,
+    costs: [40, 80, 160],
+  },
+];

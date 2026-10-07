@@ -3,9 +3,11 @@ import { SAVE_KEY } from '../config/constants.js';
 import { toast } from '../core/effects.js';
 import { addBuilding, bldAt, canPlace, has, undo, clearHistory } from '../core/placement.js';
 import { S, blds, corpses, freshState, initSim, setState } from '../core/state.js';
+import { upgCount } from '../core/upgrades.js';
 import { cv, snapCol, vOffX, vOffY, vScale } from '../render/renderer.js';
 import { $, fmt } from '../utils/helpers.js';
 import { renderInspector, toggleSelected, cleanSelected, sellSelected } from './inspector.js';
+import { toggleResearch } from './research.js';
 export { renderInspector };
 
 export function renderTabs() {
@@ -40,7 +42,7 @@ export function renderHUD() {
   $('rCorpse').textContent = corpses.length + blds.reduce((a, b) => a + b.items.length, 0);
   $('rEnergyBox').classList.toggle('bad', S.pf < 0.4);
   $('stats').textContent =
-    `SEKTOR 01 · ${S.kills} erledigt · ${S.escaped} entkommen · ${fmt(S.sold)} Blut verkauft`;
+    `SEKTOR 01 · ${S.kills} erledigt · ${S.ejected} abgeworfen · ${S.escaped} entkommen · ${fmt(S.sold)} Blut verkauft`;
 }
 export const TUT = [
   [
@@ -48,7 +50,7 @@ export const TUT = [
     () => has('spike') || has('press'),
   ],
   [
-    'Reiße eine <b>Lücke ins Band</b> (Band verkaufen) und stelle im <b>Keller</b> einen <b>Container</b> darunter.',
+    'Reiße eine <b>Lücke ins Band</b> (Band verkaufen) – die Stühle werden abgeworfen. Stelle im <b>Keller</b> einen <b>Container</b> darunter.',
     () => has('bin'),
   ],
   [
@@ -60,6 +62,14 @@ export const TUT = [
     () => has('market'),
   ],
   ['Drücke <b>Start</b> und lass die Anlage laufen.', () => S.running || S.t > 1],
+  [
+    'Wähle ein Gerät an und drücke <b>E</b>, um es <b>aus- und einzuschalten</b>.',
+    () => S.toggled > 0,
+  ],
+  [
+    'Öffne <b>Forschung</b> und kaufe eine Verbesserung – sie kostet <b>Blut</b>.',
+    () => upgCount() > 0,
+  ],
 ];
 export let lastHint = null;
 export function updateTutorial() {
@@ -237,7 +247,7 @@ export function save(silent) {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
-        v: 7,
+        v: 8,
         money: S.money,
         energy: S.energy,
         blood: S.blood,
@@ -247,6 +257,11 @@ export function save(silent) {
         kills: S.kills,
         sold: S.sold,
         escaped: S.escaped,
+        ejected: S.ejected,
+        caught: S.caught,
+        toggled: S.toggled,
+        quest: S.quest,
+        up: S.up,
         done: S.done,
         tutStep: S.tutStep,
         blds: blds.map((b) => ({
@@ -267,7 +282,7 @@ export function save(silent) {
 export const hasSave = () => {
   try {
     const r = JSON.parse(localStorage.getItem(SAVE_KEY));
-    return !!r && r.v === 7;
+    return !!r && (r.v === 7 || r.v === 8);
   } catch (e) {
     return false;
   }
@@ -277,7 +292,7 @@ export function load() {
   try {
     raw = JSON.parse(localStorage.getItem(SAVE_KEY));
   } catch (e) {}
-  if (!raw || raw.v !== 7) return toast('Kein Spielstand', 'bad');
+  if (!raw || (raw.v !== 7 && raw.v !== 8)) return toast('Kein Spielstand', 'bad');
   const run = S.running;
   if (run) toggleRun();
   initSim();
@@ -291,6 +306,11 @@ export function load() {
     kills: raw.kills,
     sold: raw.sold,
     escaped: raw.escaped,
+    ejected: raw.ejected || 0,
+    caught: raw.caught || 0,
+    toggled: raw.toggled || 0,
+    quest: raw.quest || 0,
+    up: raw.up && raw.up.lv ? raw.up : { lv: {} },
     done: raw.done,
     tutStep: raw.tutStep,
     tool: null,
@@ -318,6 +338,7 @@ export function load() {
 }
 $('btnSave').onclick = () => save();
 $('btnLoad').onclick = load;
+$('btnResearch').onclick = toggleResearch;
 $('btnContinue').onclick = () => {
   load();
   $('modal').classList.add('hide');

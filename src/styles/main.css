@@ -427,6 +427,151 @@ canvas {
     opacity: 0;
   }
 }
+#acts #btnResearch {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--dim);
+}
+#acts #btnResearch:hover {
+  background: var(--panel2);
+  border-color: var(--line2);
+  color: var(--bright);
+}
+#quest {
+  position: absolute;
+  left: 20px;
+  top: 14px;
+  width: 250px;
+  padding: 9px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-top: 2px solid var(--accent2);
+  border-radius: 3px;
+  pointer-events: none;
+}
+#quest .qHead {
+  font: 600 9.5px var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--accent2);
+}
+#quest .qName {
+  font-weight: 600;
+  color: var(--bright);
+  margin: 2px 0;
+  font-size: 12.5px;
+}
+#quest .qDesc {
+  color: var(--dim);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+#quest .bar {
+  height: 5px;
+}
+#quest .bar i {
+  background: var(--accent2);
+  transition: width 0.3s;
+}
+#quest .qProg {
+  font: 10px var(--mono);
+  color: var(--dim);
+  margin-top: 3px;
+  text-align: right;
+}
+#research {
+  position: absolute;
+  left: 292px;
+  top: 14px;
+  width: 320px;
+  max-height: calc(100% - 240px);
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+  border-top: 2px solid var(--tech);
+  border-radius: 3px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+#research.hide {
+  display: none;
+}
+#research .resHead {
+  font: 600 11px var(--mono);
+  color: var(--bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#research .resHead b {
+  color: var(--accent2);
+}
+#research .resHead .close {
+  margin-left: auto;
+  padding: 0 6px;
+  background: none;
+  border: 0;
+}
+.upg {
+  background: #202020;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.upg .r1 {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.upg .g {
+  font-size: 16px;
+}
+.upg .nm {
+  font-weight: 600;
+  color: var(--bright);
+  font-size: 12px;
+}
+.upg .lv {
+  margin-left: auto;
+  font: 10px var(--mono);
+  color: var(--dim);
+}
+.upg .ds {
+  font-size: 11px;
+  color: var(--dim);
+}
+.upg .r2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.upg .pips {
+  display: flex;
+  gap: 3px;
+}
+.upg .pips i {
+  width: 14px;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+}
+.upg .pips i.on {
+  background: var(--tech);
+}
+.upg button {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 5px 9px;
+}
+.upg.max {
+  opacity: 0.55;
+}
 #modal {
   position: fixed;
   inset: 0;
@@ -544,6 +689,19 @@ canvas {
   #btnSave,
   #btnLoad {
     display: none;
+  }
+  #quest {
+    left: 10px;
+    top: 10px;
+    width: min(250px, 62vw);
+  }
+  #research {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    bottom: 10px;
+    max-height: none;
+    width: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
