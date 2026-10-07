@@ -23,6 +23,9 @@
             <div class="res" id="rEnergyBox" title="Energie">
               ⚡ <b id="rEnergy">0</b>
             </div>
+            <div class="res" title="Abgetrennte Körperteile (Skill-Währung)">
+              Teile <b id="rParts">0</b>
+            </div>
             <div class="res" title="Asche">Asche <b id="rAsh">0</b></div>
             <div class="res" title="Leichen">Leichen <b id="rCorpse">0</b></div>
           </div>
@@ -35,8 +38,10 @@
           </div>
           <button id="btnPlay">▶ Start</button>
           <button id="btnResearch" title="Forschung für Blut">Forschung</button>
+          <button id="btnSkill" data-a="skill" title="Skill-Tree">Skill</button>
           <button id="btnSave" title="Speichern">Speichern</button>
           <button id="btnLoad" title="Laden">Laden</button>
+          <button id="btnSkipTut" hidden title="Tutorial überspringen">Überspringen</button>
           <button id="btnNew" title="Neues Spiel">Neu</button>
         </div>
       </header>
@@ -45,6 +50,7 @@
         <div id="hint"></div>
         <div id="quest"></div>
         <div id="research" class="hide"></div>
+        <div id="skill" class="hide"></div>
         <div id="inspector"></div>
         <div id="toasts"></div>
       </main>
@@ -66,7 +72,8 @@
           <button data-g="0">Öl</button><button data-g="50">Mittel</button
           ><button data-g="100" class="on">Cartoon</button>
         </div>
-        <button class="big" id="btnStart">Halle eröffnen</button>
+        <button class="big" id="btnStart">Tutorial starten</button>
+        <button class="big alt" id="btnFree">Freier Start</button>
         <button class="big alt" id="btnContinue" hidden>
           Spielstand laden
         </button>

@@ -1,0 +1,174 @@
+import { DEF } from '../config/building-defs.js';
+import { BELT_SPEED, CELL, DX, DY } from '../config/constants.js';
+import { S, corpses, sticks } from './state.js';
+import { bldAtCell, inGrid, portsOf } from './grid.js';
+import { upgEff } from './upgrades.js';
+import { rnd } from '../utils/helpers.js';
+
+/** Mindestabstand zweier Waren auf einer Bandzelle (0..1 der Zelllänge). */
+export const MIN_GAP = 0.45;
+
+export const beltSpeed = () =>
+  BELT_SPEED * upgEff('speed') * (S.fx?.beltSpeed ?? 1);
+
+export const lenOf = (b, d) => ((d & 1) ? b.spanH : b.spanW);
+
+/** Eintritts-/Austrittspunkt einer Ware in der Längsachse. */
+export function edgePoint(b, d, lat, atExit) {
+  const cx = b.x * CELL,
+    cy = b.y * CELL;
+  if (d === 0) return { x: atExit ? cx + b.spanW * CELL : cx, y: cy + (lat + 0.5) * CELL };
+  if (d === 2) return { x: atExit ? cx : cx + b.spanW * CELL, y: cy + (lat + 0.5) * CELL };
+  if (d === 1) return { x: cx + (lat + 0.5) * CELL, y: atExit ? cy + b.spanH * CELL : cy };
+  return { x: cx + (lat + 0.5) * CELL, y: atExit ? cy : cy + b.spanH * CELL };
+}
+
+export function itemPos(b, it) {
+  if (it.p == null) return { x: (b.x + b.spanW / 2) * CELL, y: (b.y + b.spanH / 2) * CELL };
+  const d = b.dir;
+  const a = edgePoint(b, d, it.lat || 0, false);
+  const e = edgePoint(b, d, it.lat || 0, true);
+  return { x: a.x + (e.x - a.x) * it.p, y: a.y + (e.y - a.y) * it.p };
+}
+
+export function exitCellOf(b, d, lat) {
+  if (d === 0) return { x: b.x + b.spanW, y: b.y + lat };
+  if (d === 2) return { x: b.x - 1, y: b.y + lat };
+  if (d === 1) return { x: b.x + lat, y: b.y + b.spanH };
+  return { x: b.x + lat, y: b.y - 1 };
+}
+
+export const latOf = (b, d, cell) => (d & 1 ? cell.x - b.x : cell.y - b.y);
+
+/** Platz am Ende einer Warteschlange? */
+export function roomIn(t) {
+  const last = t.items[t.items.length - 1];
+  if (!last) return true;
+  if (last.p == null) return t.items.length < (DEF[t.t].cap || 3);
+  return last.p >= MIN_GAP;
+}
+
+/**
+ * Ware in ein Zielgebäude einspeisen.
+ * @param {object} t Zielgebäude
+ * @param {object} it Ware
+ * @param {number} d Bewegungsrichtung der Ware (absolut)
+ * @param {object} entry Zelle, in die die Ware hineinläuft
+ */
+export function feed(t, it, d, entry) {
+  const def = DEF[t.t];
+  if (t.on === false && def.kind !== 'sink') return false;
+  if (def.kind === 'sink') {
+    if (t.items.length >= (def.cap || 3)) return false;
+    it.p = 0;
+    it.lat = 0;
+    it.prog = 0;
+    t.items.push(it);
+    return true;
+  }
+  if (def.kind === 'route') {
+    if (!portsOf(t).in.includes(d)) return false;
+    if (t.items.length >= (def.cap || 3)) return false;
+    it.p = null;
+    it.held = false;
+    t.items.push(it);
+    return true;
+  }
+  if (def.kind === 'lift' || def.kind === 'pass') {
+    if (!portsOf(t).in.includes(d)) return false;
+    if (!roomIn(t)) return false;
+    it.lat = latOf(t, d, entry);
+    it.p = 0;
+    it.prog = 0;
+    it.held = !!def.cut;
+    t.items.push(it);
+    return true;
+  }
+  return false;
+}
+
+/** Ware fallen lassen (kein Ziel unter dem Band). */
+function dropItem(b, it, d) {
+  const pos = edgePoint(b, d, it.lat || 0, true);
+  const sp = beltSpeed();
+  const obj = {
+    ...it,
+    x: pos.x + DX[d] * 6,
+    y: pos.y + DY[d] * 6,
+    vx: DX[d] * sp * 0.7,
+    vy: DY[d] * sp * 0.7 - 30,
+    rot: it.rot || 0,
+    spin: (rnd() - 0.5) * 4,
+    state: 'fall',
+    p: undefined,
+    lat: undefined,
+    held: undefined,
+    prog: undefined,
+  };
+  if (it.kind === 'stick') sticks.push(obj);
+  else corpses.push(obj);
+}
+
+/**
+ * Ware am Ende der Kette übergeben: Band → Band/Maschine, sonst fallen.
+ * @returns {boolean} true, wenn die Ware das Gebäude verlassen hat
+ */
+export function tryHandoff(b, it) {
+  const d = portsOf(b).out[0] ?? b.dir;
+  const c = exitCellOf(b, d, it.lat || 0);
+  if (!inGrid(c.x, c.y)) {
+    S.escaped++;
+    return true;
+  }
+  const target = bldAtCell(c.x, c.y);
+  if (!target) {
+    dropItem(b, it, d);
+    return true;
+  }
+  if (target === b) return false;
+  const kind = DEF[target.t].kind;
+  if (kind === 'belt') {
+    if (!roomIn(target)) return false;
+    target.items.push({ ...it, p: 0, lat: 0, held: false });
+    return true;
+  }
+  return feed(target, it, d, c);
+}
+
+/**
+ * Waren in einem Gebäude bewern (Band, Lift, Durchlauf-Maschine).
+ * @param {(it: object, i: number, dt: number) => void} work Fortschritts-Callback
+ */
+export function stepTransport(b, dt, work) {
+  const items = b.items;
+  if (work) {
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i].held) continue;
+      const removed = work(items[i], i, dt);
+      if (removed) {
+        items.splice(i, 1);
+        i--;
+      }
+    }
+  }
+  const len = lenOf(b, b.dir) * CELL;
+  const dp = (beltSpeed() * dt * (b.on === false ? 0 : 1)) / Math.max(1, len);
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.p == null || it.held) continue;
+    if (i === 0) {
+      it.p = Math.min(1, it.p + dp);
+      continue;
+    }
+    const ahead = items[i - 1];
+    if (ahead.p == null) continue;
+    const cap = ahead.p - MIN_GAP;
+    if (cap <= it.p) continue;
+    it.p = Math.min(cap, it.p + dp);
+  }
+  let guard = 0;
+  while (items.length && items[0].p != null && items[0].p >= 1 - 1e-9 && guard++ < 12) {
+    if (!tryHandoff(b, items[0])) break;
+    items.shift();
+  }
+}

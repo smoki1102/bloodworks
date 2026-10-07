@@ -2,7 +2,7 @@ import './styles/main.css';
 import { ambient } from './core/effects.js';
 import { tick } from './core/simulation.js';
 import { S, freshState, initSim, setState } from './core/state.js';
-import { cv, initBackground, render, resize } from './render/renderer.js';
+import { cv, render, resize } from './render/renderer.js';
 import {
   hasSave,
   renderHUD,
@@ -46,10 +46,9 @@ function loop(ts) {
   }
   requestAnimationFrame(loop);
 }
-initBackground();
 setState(freshState());
 initSim();
-setupWorld();
+setupWorld('free');
 $('btnContinue').hidden = !hasSave();
 new ResizeObserver(resize).observe(cv.parentElement);
 resize();

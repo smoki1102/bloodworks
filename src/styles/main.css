@@ -478,7 +478,8 @@ canvas {
   margin-top: 3px;
   text-align: right;
 }
-#research {
+#research,
+#skill {
   position: absolute;
   left: 292px;
   top: 14px;
@@ -496,20 +497,24 @@ canvas {
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
-#research.hide {
+#research.hide,
+#skill.hide {
   display: none;
 }
-#research .resHead {
+#research .resHead,
+#skill .resHead {
   font: 600 11px var(--mono);
   color: var(--bright);
   display: flex;
   align-items: center;
   gap: 8px;
 }
-#research .resHead b {
+#research .resHead b,
+#skill .resHead b {
   color: var(--accent2);
 }
-#research .resHead .close {
+#research .resHead .close,
+#skill .resHead .close {
   margin-left: auto;
   padding: 0 6px;
   background: none;
@@ -695,7 +700,8 @@ canvas {
     top: 10px;
     width: min(250px, 62vw);
   }
-  #research {
+  #research,
+#skill {
     left: 10px;
     right: 10px;
     top: 10px;
@@ -709,4 +715,96 @@ canvas {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ------------------------------ Skill-Tree ------------------------------ */
+#skill {
+  left: auto;
+  right: 16px;
+  top: 62px;
+  width: 336px;
+  max-height: calc(100% - 260px);
+}
+#acts #btnSkill {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--dim);
+}
+#acts #btnSkill:hover,
+#acts #btnSkill.on {
+  background: var(--panel2);
+  border-color: var(--tech);
+  color: var(--bright);
+}
+.brHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font: 700 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--tech);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.brHead span {
+  font-weight: 500;
+  color: var(--dim);
+  text-align: right;
+}
+.brDs {
+  font-size: 10.5px;
+  color: var(--dim);
+  margin-top: -6px;
+}
+.upg.node {
+  background: #1b1f26;
+}
+.upg.node.lock {
+  opacity: 0.55;
+}
+.upg .unlock {
+  font: 600 10px var(--mono);
+  color: #2f9e44;
+}
+
+/* --------------------------- Baukarten / Tutorial --------------------------- */
+.card.locked {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.card .lock {
+  color: #e0a040;
+  font-weight: 600;
+}
+.card.tut {
+  border-color: #2f9e44;
+  box-shadow: 0 0 0 1px rgba(47, 158, 68, 0.35);
+}
+#inspector .res-row {
+  gap: 5px;
+  align-items: center;
+}
+#inspector input,
+#inspector select {
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  color: var(--bright);
+  font: 11.5px var(--mono);
+  padding: 4px 6px;
+  border-radius: 2px;
+  min-width: 0;
+}
+#inspector input {
+  width: 62px;
+}
+#inspector select {
+  flex: 1;
+}
+#inspector .kv select {
+  max-width: 130px;
+}
+#inspector .res-row button {
+  font-size: 11px;
+  padding: 4px 8px;
 }

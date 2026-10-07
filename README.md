@@ -9,7 +9,7 @@ npm install
 npm run dev       # Entwicklungsserver mit Hot Reload
 npm run build     # Produktions-Build nach dist/
 npm run preview   # Build lokal ansehen
-npm test          # Tests
+npm test          # Tests (Vitest, tests/)
 npm run lint      # ESLint
 npm run format    # Prettier
 npm run check     # Lint + Tests + Build
@@ -19,16 +19,54 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 
 ## Steuerung
 
-Leertaste Start/Pause · 1/2/3 Kategorie · Rechtsklick/Esc Abbrechen · Entf Verkaufen · E An/Aus · Strg/Cmd+Z Undo.
+| Eingabe              | Wirkung                                            |
+| -------------------- | -------------------------------------------------- |
+| Maus links           | Bauen (Werkzeug), Inspektor öffnen, Auswahl         |
+| Maus rechts / Esc    | Werkzeug abwählen                                   |
+| Maus mittel / Leertaste | Verschieben (Pan) / Start-Pause                 |
+| Rad                  | Zoomen an der Maus                                   |
+| Pfeiltasten / ±      | Kamera verschieben / zoomen                         |
+| 1–5                  | Bautaste: Bänder, Maschinen, Logistik, Rohre, Handel |
+| R                    | Baustein um 90° drehen                              |
+| E                    | Gewähltes Gerät an/aus                              |
+| Entf                 | Gewähltes Gerät verkaufen                           |
+| Strg/Cmd+Z           | Rückgängig                                          |
+| K                    | Skill-Tree öffnen (pausiert das Spiel)              |
 
 ## Features
 
-- **Stuhl-Pipeline:** Der Eingang setzt Sticks auf Stühle, die permanent sitzend mit dem Band fahren. Lücken reißen sie dynamisch ab und schleudern sie in den Keller; der **Abschleuderer** wirft sie mitsamt Stuhl vom Band.
-- **Anatomie:** Sticks verlieren abtrennbare Gliedmaßen (Gore-Level 0/50/100), bluten tropfenweise und landen als Leichen im Keller.
-- **Forschung:** Blutinvestitionen in Bandantrieb, Marktkenntnis, Nachschub und Tanksystem.
-- **Aufträge:** Feste Quest-Kette von der ersten Beute bis zum Serienausstoß – Belohnungen in Geld.
-- **Echte Warenflüsse:** Container leeren Blut auf den Boden, Abfluss/Markt/Generator brauchen Tank-Anschluss, Ofen/Säure ziehen aus dem Container. Auslastung steuert den Energieverbrauch.
-- **Geräte-Panel:** Status, Auslastung, Durchsatz, Verbindung und An/Aus pro Maschine.
-- **Clean-Tech-Design:** helle Laborhallen mit Chrom-Schienen, blaue LED-Akzente und animierte Blutrohre.
+- **Freie Bauwelt:** Keller, Obergeschoss und Halle entfallen – eine Halle auf einem Raster
+  (128 × 64 Zellen), überall baubar. Kamera frei verschiebbar und zoombar; große Anlagen
+  bleiben durch die zentrierte Ansicht vollständig sichtbar.
+- **Bänder in alle Richtungen:** links, rechts, oben, unten plus **Lift-Band** für
+  Höhenunterschiede (Spanne 1–8 Zellen). Angrenzende Bänder verbinden sich automatisch,
+  Waren fallen ohne Band nach unten und verrotten auf dem Boden.
+- **Sticks mit Körperteilen:** Kopf, Torso, Arme, Beine mit Lebenspunkten; Maschinen
+  verursachen Teilschaden, der Stick läuft weiter, bis Kopf/Torso weg sind oder die LP
+  auf 0 fallen. Abgetrennte Teile sind eigene Waren (Behälter, Verbrenner, Säurebad, Verkauf)
+  und fließen automatisch in den Körperteil-Vorrat.
+- **Werkzeug- und Sortierketten:** Spikes-Walze, Presse, **Presse mit Klingen**,
+  Abschleuderer, **Weiche**, **Zusammenführung** und **Filter** leiten Waren gezielt zu
+  Verkauf, Verbrenner, Säurebad oder Behälter.
+- **Gezielte Treffer:** Im Inspektor jede Schneidemaschine wählt man das Zielkörperteil;
+  die Trefferquote (45 % + Skill) wird mit angezeigt.
+- **Skill-Tree:** eigener Bildschirm (HUD-Button oder `K`), pausiert das Spiel. Sechs Äste
+  mit je mehreren Stufen – **Präzision** kostet Blut aus den Tanks, alle anderen Äste
+  kosten abgetrennte Körperteile. Gesperrt/verfügbar/gekauft sind klar unterscheidbar,
+  Voraussetzungen und Kosten stehen direkt am Knoten. Wirkung sofort, auch für gebaute Maschinen.
+- **Blut-Pipes und Netze:** frei verlegbare Rohre, Tanks und Geräte bilden Netze mit eigener
+  Kapazität; Absaugung verhindert, dass Blut vom Band tropft. Ohne Pipe gilt weiterhin der
+  globale Blutpool.
+- **Blutmarkt mit Reserve:** pro Markt einstellbar (absolut oder als Anteil der Tankkapazität);
+  verkauft nur oberhalb der Reserve, zeigt „Reserve gehalten“ und schützt so den Generator.
+- **Start und Tutorial:** Startmenü „Tutorial spielen? Ja / Nein / Spielstand laden“.
+  Im Tutorial ist nichts vorgebaut – man baut die komplette Kette selbst, jeder Schritt
+  markiert Item, Zielzelle und Begründung; jederzeit überspringbar. Am Ende gibt es einen
+  Startvorrat an Blut und Körperteilen für den ersten Skill-Knoten.
+- **Aufträge & Forschung:** bestehende Quest-Kette und Forschungs-Panel bleiben erhalten.
+- **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
+- **Qualität:** 64 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+  `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Änderungsverlauf: siehe [docs/CHANGELOG.md](docs/CHANGELOG.md).

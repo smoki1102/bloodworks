@@ -1,11 +1,6 @@
-import { CELL, X0 } from '../config/constants.js';
-
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const $ = (id) => document.getElementById(id);
-export const colAt = (x) => Math.floor((x - X0) / CELL),
-  colX = (c) => X0 + c * CELL,
-  colCX = (c) => X0 + c * CELL + CELL / 2;
 export let _seed = 12345;
 export const rnd = () => {
   _seed = (_seed * 1664525 + 1013904223) >>> 0;
