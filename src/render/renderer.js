@@ -19,7 +19,16 @@ import {
 import { bloodColor } from '../core/effects.js';
 import { horizontal, vertical } from '../core/flow.js';
 import { bldRect, chairX, placeReason } from '../core/placement.js';
-import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
+import {
+  S,
+  beltBlood,
+  blds,
+  corpses,
+  floorBlood,
+  occ,
+  parts,
+  sticks,
+} from '../core/state.js';
 import { $, clamp, colX, lerp } from '../utils/helpers.js';
 
 export const cv = $('cv'),
@@ -89,7 +98,8 @@ export function buildBackground() {
   g.fillStyle = C.accent2;
   g.fillRect(X0, OBEN_TOP, PW, 3);
   g.fillStyle = 'rgba(47,129,248,.18)';
-  for (let x = X0 + 24; x < X0 + PW; x += 40) g.fillRect(x, OBEN_TOP - 4, 16, 7);
+  for (let x = X0 + 24; x < X0 + PW; x += 40)
+    g.fillRect(x, OBEN_TOP - 4, 16, 7);
   g.strokeStyle = C.light;
   g.lineWidth = 1;
   g.strokeRect(X0 - 14, OBEN_FLOOR + 15, PW + 28, BELT_Y - OBEN_FLOOR - 15);
@@ -102,6 +112,59 @@ export function buildBackground() {
   g.fillStyle = C.dim;
   g.font = '500 10.5px ui-monospace,monospace';
   g.fillText('KELLER · ROHRLEITUNG', X0 + 8, KELLER_TOP + 16);
+  // Installationsleitung + Schaltschränke an der Hallenwand
+  g.strokeStyle = 'rgba(110,128,150,.55)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(X0, 252);
+  g.lineTo(X0 + PW, 252);
+  g.stroke();
+  for (let x = X0 + 74; x < X0 + PW - 60; x += 192) {
+    g.fillStyle = '#c8d2de';
+    g.fillRect(x, 245, 16, 15);
+    g.strokeStyle = 'rgba(110,128,150,.8)';
+    g.lineWidth = 1.5;
+    g.strokeRect(x, 245, 16, 15);
+    g.fillStyle = 'rgba(47,129,248,.6)';
+    g.fillRect(x + 3, 248, 4, 4);
+  }
+  // Manometer rechts
+  g.strokeStyle = 'rgba(110,128,150,.7)';
+  g.lineWidth = 1.5;
+  for (const gx of [X0 + PW - 72, X0 + PW - 46]) {
+    g.beginPath();
+    g.arc(gx, 300, 9, 0, 7);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(gx, 300);
+    g.lineTo(gx + 4, 295);
+    g.stroke();
+  }
+  // Warnstreifen an der linken Wandecke
+  g.save();
+  g.beginPath();
+  g.rect(X0 - 14, BELT_Y - 52, 14, 52);
+  g.clip();
+  g.fillStyle = '#e0a040';
+  g.fillRect(X0 - 14, BELT_Y - 52, 14, 52);
+  g.fillStyle = '#1d2430';
+  for (let i = 0; i < 6; i++) {
+    const px = X0 - 30 + i * 14;
+    g.beginPath();
+    g.moveTo(px, BELT_Y);
+    g.lineTo(px + 7, BELT_Y - 52);
+    g.lineTo(px + 14, BELT_Y - 52);
+    g.lineTo(px + 7, BELT_Y);
+    g.closePath();
+    g.fill();
+  }
+  g.restore();
+  // Ausgangsschild rechts
+  g.fillStyle = '#2f9e44';
+  g.fillRect(X0 + PW - 76, OBEN_FLOOR + 22, 66, 20);
+  g.fillStyle = '#eef7ee';
+  g.font = '700 10px ui-monospace,monospace';
+  g.fillText('AUSGANG →', X0 + PW - 71, OBEN_FLOOR + 36);
   return c;
 }
 
@@ -174,7 +237,9 @@ export function drawStick(s, glow) {
     x = s.x,
     y = s.y,
     stand = s.state === 'stand';
-  const sw = stand ? 0 : Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
+  const sw = stand
+    ? 0
+    : Math.sin(s.anim * 13) * (body && body.hp < 45 ? 7.5 : 5);
   const ink = glow ? 'rgba(255,255,255,.92)' : C.bright;
   ctx.strokeStyle = ink;
   ctx.fillStyle = ink;
@@ -319,6 +384,19 @@ export function drawBelt(b, r) {
     ctx.fillStyle = 'rgba(70,40,25,' + Math.min(0.42, b.dirt / 260) + ')';
     ctx.fillRect(r.x, r.y, r.w, BELT_H);
   }
+  // Rollen an den freien Bandenden
+  const roller = (px) => {
+    ctx.fillStyle = C.steel;
+    ctx.beginPath();
+    ctx.arc(px, r.y + BELT_H / 2, 6, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = C.body;
+    ctx.beginPath();
+    ctx.arc(px, r.y + BELT_H / 2, 2.2, 0, 7);
+    ctx.fill();
+  };
+  if (!occ.belt[b.col - 1]) roller(r.x + 3);
+  if (!occ.belt[b.col + 1]) roller(r.x + r.w - 3);
 }
 
 export function drawMachine(b, r) {
@@ -337,6 +415,28 @@ export function drawMachine(b, r) {
     ctx.beginPath();
     ctx.arc(x, r.y + 10, 1.8, 0, 7);
     ctx.fill();
+  }
+  if (d.band === 'over') {
+    // Warnstreifen am Fuß – markiert den Ein-/Austritt aufs Band
+    const hy = r.y + r.h - 9;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x + 3, hy, r.w - 6, 9);
+    ctx.clip();
+    ctx.fillStyle = '#1d2430';
+    ctx.fillRect(r.x + 3, hy, r.w - 6, 9);
+    ctx.fillStyle = '#e0a040';
+    for (let i = -1; i * 12 < r.w; i++) {
+      const px = r.x + 3 + i * 12;
+      ctx.beginPath();
+      ctx.moveTo(px, hy + 9);
+      ctx.lineTo(px + 6, hy);
+      ctx.lineTo(px + 12, hy);
+      ctx.lineTo(px + 6, hy + 9);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
   switch (b.t) {
     case 'spike': {
@@ -376,7 +476,8 @@ export function drawMachine(b, r) {
     }
     case 'spawn': {
       // Eingangstür links, Sitzreihe mittig, Ausgang aufs Band rechts
-      ctx.fillStyle = 'rgba(45,64,90,' + (0.12 + 0.08 * Math.sin(S.t * 3)) + ')';
+      ctx.fillStyle =
+        'rgba(45,64,90,' + (0.12 + 0.08 * Math.sin(S.t * 3)) + ')';
       ctx.fillRect(r.x + 7, r.y + 18, 26, r.h - 24);
       ctx.strokeStyle = C.steel;
       ctx.lineWidth = 2;
@@ -429,25 +530,36 @@ export function drawMachine(b, r) {
           drawLimbShape(it.part || 'armL', 0, 0);
           ctx.restore();
         } else
-          drawCorpseShape(ix, iy, it.rot * 1.5 + i, 0.85 - clamp(it.rot / 9, 0, 1) * 0.3);
+          drawCorpseShape(
+            ix,
+            iy,
+            it.rot * 1.5 + i,
+            0.85 - clamp(it.rot / 9, 0, 1) * 0.3,
+          );
       });
       const f = b.items.length / 9;
       ctx.fillStyle = 'rgba(20,32,45,.4)';
-      ctx.fillRect(r.x + 10, r.y - 8, r.w - 20, 5);
+      ctx.fillRect(r.x + 10, r.y - 9, r.w - 20, 7);
       ctx.fillStyle = f > 0.75 ? C.accent2 : C.dim;
-      ctx.fillRect(r.x + 10, r.y - 8, (r.w - 20) * f, 5);
+      ctx.fillRect(r.x + 10, r.y - 9, (r.w - 20) * f, 7);
       break;
     }
     case 'oven': {
       ctx.fillStyle = 'rgba(30,48,62,.35)';
       ctx.fillRect(r.x + 14, r.y + 30, r.w - 28, r.h - 50);
       if (b.items.length && b.clean <= 0) {
-        ctx.fillStyle = 'rgba(229,120,50,' + (0.5 + 0.25 * Math.sin(S.t * 9)) + ')';
+        ctx.fillStyle =
+          'rgba(229,120,50,' + (0.5 + 0.25 * Math.sin(S.t * 9)) + ')';
         ctx.fillRect(r.x + 18, r.y + 40, r.w - 36, r.h - 70);
         ctx.fillStyle = 'rgba(20,32,45,.4)';
-        ctx.fillRect(r.x + 12, r.y - 8, r.w - 24, 5);
+        ctx.fillRect(r.x + 12, r.y - 9, r.w - 24, 7);
         ctx.fillStyle = C.light;
-        ctx.fillRect(r.x + 12, r.y - 8, (r.w - 24) * clamp(b.prog / 1.4, 0, 1), 5);
+        ctx.fillRect(
+          r.x + 12,
+          r.y - 9,
+          (r.w - 24) * clamp(b.prog / 1.4, 0, 1),
+          7,
+        );
       }
       break;
     }
@@ -479,9 +591,14 @@ export function drawMachine(b, r) {
       });
       if (b.items.length) {
         ctx.fillStyle = 'rgba(20,32,45,.4)';
-        ctx.fillRect(r.x + 12, r.y + 6, r.w - 24, 5);
+        ctx.fillRect(r.x + 12, r.y + 6, r.w - 24, 7);
         ctx.fillStyle = C.dim;
-        ctx.fillRect(r.x + 12, r.y + 6, (r.w - 24) * clamp(b.prog / 1.7, 0, 1), 5);
+        ctx.fillRect(
+          r.x + 12,
+          r.y + 6,
+          (r.w - 24) * clamp(b.prog / 1.7, 0, 1),
+          7,
+        );
       }
       break;
     }
@@ -501,7 +618,7 @@ export function drawMachine(b, r) {
   }
   ctx.fillStyle = S.running && on && b.on !== false ? C.accent2 : C.steel;
   ctx.beginPath();
-  ctx.arc(r.x + r.w - 14, r.y + 10, 2.5, 0, 7);
+  ctx.arc(r.x + r.w - 14, r.y + 10, 4, 0, 7);
   ctx.fill();
 }
 
@@ -509,7 +626,15 @@ export function drawBuilding(b) {
   const r = bldRect(b),
     d = DEF[b.t];
   if (d.band === 'belt') drawBelt(b, r);
-  else drawMachine(b, r);
+  else {
+    // Bodenkontakt: Schatten in Keller/Oben, blauer Lichtfleck auf dem Band
+    ctx.fillStyle =
+      d.band === 'over' ? 'rgba(47,129,248,.12)' : 'rgba(17,28,42,.1)';
+    ctx.beginPath();
+    ctx.ellipse(r.x + r.w / 2, r.y + r.h, r.w * 0.45, 4, 0, 0, 7);
+    ctx.fill();
+    drawMachine(b, r);
+  }
   if (b.on === false && d.band !== 'belt') {
     ctx.fillStyle = 'rgba(0,0,0,.38)';
     ctx.fillRect(r.x, r.y, r.w, r.h);
@@ -525,15 +650,19 @@ export function drawBuilding(b) {
     ctx.fillStyle = C.bright;
     ctx.font = '600 11px ui-monospace,monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('REINIGUNG ' + b.clean.toFixed(1) + 's', r.x + r.w / 2, r.y - 6);
+    ctx.fillText(
+      'REINIGUNG ' + b.clean.toFixed(1) + 's',
+      r.x + r.w / 2,
+      r.y - 6,
+    );
     ctx.textAlign = 'left';
   }
   if (d.dirt && b.dirt > 4 && b.clean <= 0) {
     const w = r.w - 12;
     ctx.fillStyle = 'rgba(15,25,40,.35)';
-    ctx.fillRect(r.x + 6, r.y - 9, w, 5);
+    ctx.fillRect(r.x + 6, r.y - 10, w, 7);
     ctx.fillStyle = b.dirt > 70 ? C.err : b.dirt > 40 ? C.warn : C.ok;
-    ctx.fillRect(r.x + 6, r.y - 9, w * (1 - b.dirt / 100), 5);
+    ctx.fillRect(r.x + 6, r.y - 10, w * (1 - b.dirt / 100), 7);
   }
   if (S.pf < 0.4 && d.e > 0 && b.clean <= 0) {
     ctx.fillStyle = '#e0a040';
@@ -561,14 +690,12 @@ export function drawBuilding(b) {
 function drawPipes() {
   for (const b of blds) {
     if (b.link !== 'ok') continue;
-    const target = b.t === 'drain' ? horizontal(b, 'tank') : vertical(b, 'tank');
+    const target =
+      b.t === 'drain' ? horizontal(b, 'tank') : vertical(b, 'tank');
     if (!target) continue;
     const r = bldRect(b),
       c = bldRect(target);
-    let x1,
-      y1,
-      x2,
-      y2;
+    let x1, y1, x2, y2;
     if (b.t === 'drain') {
       const hy = r.y + r.h / 2;
       if (c.x < r.x) [x1, y1, x2, y2] = [r.x, hy, c.x + c.w, hy];
@@ -600,7 +727,8 @@ function drawPipes() {
   }
 }
 
-export const snapCol = (mx, w) => clamp(Math.floor((mx - X0) / CELL - (w - 1) / 2), 0, COLS - w);
+export const snapCol = (mx, w) =>
+  clamp(Math.floor((mx - X0) / CELL - (w - 1) / 2), 0, COLS - w);
 export function drawGhost() {
   const t = S.tool,
     d = DEF[t],
@@ -608,7 +736,7 @@ export function drawGhost() {
     reason = placeReason(t, col),
     ok = !reason,
     r = bldRect({ t, col, w: d.w });
-  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.strokeStyle = 'rgba(60,74,90,.1)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let c = 0; c <= COLS; c++) {
@@ -626,7 +754,11 @@ export function drawGhost() {
   ctx.font = '600 11.5px ui-monospace,monospace';
   ctx.textAlign = 'center';
   ctx.fillStyle = ok ? C.light : C.bright;
-  ctx.fillText(d.n.toUpperCase() + ' · ' + d.cost + ' €', r.x + r.w / 2, r.y - 16);
+  ctx.fillText(
+    d.n.toUpperCase() + ' · ' + d.cost + ' €',
+    r.x + r.w / 2,
+    r.y - 16,
+  );
   if (!ok) {
     ctx.fillStyle = 'rgba(229,72,58,.95)';
     ctx.fillRect(r.x + r.w / 2 - 90, r.y - 34, 180, 17);
@@ -668,7 +800,7 @@ export function render() {
     const v = floorBlood[i];
     if (v < 0.15) continue;
     const h = Math.min(11, v * 1.5);
-    ctx.globalAlpha = clamp(0.18 + v / 10, 0, 0.85);
+    ctx.globalAlpha = clamp(0.28 + v / 10, 0, 0.85);
     ctx.fillStyle = bc;
     ctx.fillRect(colX(i), KELLER_FLOOR - h + 2, CELL + 0.5, h);
   }
@@ -678,7 +810,7 @@ export function render() {
     const v = beltBlood[i];
     if (v < 0.15) continue;
     const h = Math.min(9, v * 1.4);
-    ctx.globalAlpha = clamp(0.2 + v / 9, 0, 0.9);
+    ctx.globalAlpha = clamp(0.32 + v / 9, 0, 0.9);
     ctx.fillStyle = bc;
     ctx.fillRect(colX(i), BELT_Y - h + 2, CELL + 0.5, h);
   }
@@ -693,7 +825,8 @@ export function render() {
       drawStick(s);
     }
   for (const s of sticks)
-    if (s.state === 'sit' || s.state === 'stand' || s.state === 'enter') drawStick(s);
+    if (s.state === 'sit' || s.state === 'stand' || s.state === 'enter')
+      drawStick(s);
   for (const c of corpses) if (c.state !== 'belt') drawCorpse(c);
   for (const s of sticks) if (s.state === 'fall') drawStick(s);
   for (const p of parts) {
@@ -714,6 +847,8 @@ export function render() {
   if (S.tool) drawGhost();
   if (S.sel && blds.includes(S.sel)) {
     const r = bldRect(S.sel);
+    ctx.fillStyle = 'rgba(47,129,248,.1)';
+    ctx.fillRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6);
     ctx.strokeStyle = C.light;
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);

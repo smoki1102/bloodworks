@@ -1,4 +1,5 @@
 import './styles/main.css';
+import { ambient } from './core/effects.js';
 import { tick } from './core/simulation.js';
 import { S, freshState, initSim, setState } from './core/state.js';
 import { cv, initBackground, render, resize } from './render/renderer.js';
@@ -28,6 +29,7 @@ function loop(ts) {
     }
   }
   render();
+  ambient(dt);
   if ((hudTimer -= dt) <= 0) {
     hudTimer = 0.12;
     renderHUD();
