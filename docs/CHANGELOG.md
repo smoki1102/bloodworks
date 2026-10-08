@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.7.2 – Skill-Netz ohne Überlappung (08.10.2026)
+
+### Behobene Fehler
+
+- Im Reiter **Skill-Netz** lagen Knoten mit gleichem Ast und gleicher Voraussetzungstiefe
+  exakt übereinander und überdeckten sich: `prec_multi`/`prec_blade`, `mach_dirt`/`mach_speed`,
+  `mach_power`/`mach_dmg`, `eco_shop`/`eco_build`. Ursache: Die X-Position kam allein aus der
+  Tiefe (`depthOf`), die Y-Position nur aus dem Ast (`ROW_H`) – gleiche Tiefe im selben Ast
+  erging dieselbe Koordinate, die Kanten verliefen entsprechend unsauber.
+
+### Änderungen an bestehendem Code
+
+- Neues reines `skillLayout()` in `src/ui/skill.js` (kein DOM): Spalten weiter nach
+  Voraussetzungstiefe, Knoten gleicher Tiefe rasten in **Unterzeilen (Slots)** ein – bevorzugt
+  in der Unterzeile ihres ersten Voraussetzungs-Knotens, damit die Baumstruktur lesbar bleibt
+  (Maschinen werden ein 2×2-Grid). Die Ast-Höhe wächst mit der Zahl der Slots
+  (`SLOT_H`/`TAG_H`/`BR_GAP` statt fixem `ROW_H`); `renderSkill()` rendert nur noch aus diesen
+  Positionen, die Kanten-Anker nutzen die echte Knoten-Y (funktioniert auch für Knoten mit
+  astfremden Voraussetzungen).
+- Der `depths`-Cache wird pro Layout-Aufruf geleert statt module-weit gehalten.
+- `.snode` bekommt eine feste Höhe von 140 px (`box-sizing: border-box`, `overflow: hidden`),
+  passend zu `NODE_H` – sonst rutschen Karten mit Unlock-Zeile in die nächste Slot-Zeile.
+
+### Qualität
+
+- `npm run check` = ESLint + 73 Vitest-Tests (8 Dateien) + Vite-Build, fehlerfrei.
+- Neue Tests `tests/skill-layout.test.js`: alle 20 Knoten genau einmal positioniert, keine
+  Rechteck-Überlappung, Knoten und Tags innerhalb der Fläche, jede Kante verbindet ihren
+  Vorgänger und verläuft nach rechts, Ast-Tag über den Knoten seines Astes, gleiche Tiefe
+  gestapelt statt überlagert.
+- Netz wächst je nach Belegung (aktuell 860 × 1636 px) und scrollt im Fenster
+  (`#fNet` hat `overflow: auto`).
+
+### Annahmen
+
+1. Das Layout ist rein optisch; Spielstände (v9), Skill-Daten, Kosten und Kauflogik bleiben
+   unverändert.
+2. Die feste Kachelhöhe (140 px) ist bewusst deterministisch: Beschreibungen sind auf zwei
+   Zeilen begrenzt, Unlock-Zeilen passen zusätzlich – kürzere Karten werden oben ausgerichtet.
+
+
 ## 0.7.1 – Forschungsfenster, Absaugung, Zielauswahl (07.10.2026)
 
 ### Neu: Funktionen

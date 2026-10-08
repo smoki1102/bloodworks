@@ -1,6 +1,6 @@
 {
   "name": "bloodworks-stick-factory",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": true,
   "type": "module",
   "description": "BloodWorks: Stick Factory \u2013 browserbasiertes Fabrik-Simulationsspiel",

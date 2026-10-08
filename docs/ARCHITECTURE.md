@@ -31,11 +31,11 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/render/renderer.js`  | Canvas: Kamera, Culling, Gebäude, Waren, Sticks, Rohre, Hinweise        |
 | `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`) |
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
-| `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster (Knoten, Kanten, Kauf)      |
+| `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
 | `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
 | `src/main.js`             | Spielschleife, HUD- und Tutorial-Intervalle                             |
-| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belts`, `machines`, `pipes`, `skill`, `simulation`, `ui-smoke` |
+| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
 
 ## Raster und Koordinaten
 
@@ -122,8 +122,14 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
    `pipes.js`, `belts.js`).
 4. Test ergänzen: Kauf + `recomputeFx()` in `tests/skill.test.js`, Wirkung im passenden
    Systemtest (z. B. `tests/machines.test.js`).
-5. Das Diagramm in `src/ui/skill.js` positioniert Knoten automatisch nach Ast/Verzweigungstiefe
-   (`depths`, `NODE_W`/`STEP_X`/`ROW_H`) – bei Knoten ohne `req` wächst das Netz um eine Spalte.
+5. Das Diagramm in `src/ui/skill.js` berechnet `skillLayout()` **rein aus den Daten** (kein
+   DOM): Pro Ast ein Block untereinander, pro Knoten die **Spalte nach Voraussetzungstiefe**
+   (`depthOf`, `STEP_X`) und pro Spalte eine **Unterzeile (Slot)**. Knoten mit gleichem Ast
+   und gleicher Tiefe stapeln sich dadurch untereinander statt zu überlappen; der Slot wird
+   bevorzugt vom ersten `req`-Knoten geerbt, sonst der freie. Die Ast-Höhe wächst mit der
+   Zahl der Slots (`SLOT_H` + `TAG_H` + `BR_GAP` statt fixem `ROW_H`), die Fläche scrollt.
+   `NODE_H` in `skill.js` und die Höhe von `.snode` in `main.css` müssen gleich bleiben
+   (aktuell 140 px), sonst rutschen Karten in die nächste Slot-Zeile.
 
 ## Eingabe
 
@@ -145,8 +151,11 @@ verworfen und im Spiel als Toast gemeldet (`load()` in `src/ui/ui.js`). Bei Form
 
 ## Tests
 
-- `npm test` – 67 Tests, reines Node (kein DOM nötig).
+- `npm test` – 73 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
+- `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten
+  verbinden die Vorgänger nach rechts (lädt `dom-stub.js`, weil `skill.js` einen
+  Klick-Handler auf `document` registriert).
 - `tests/dom-stub.js`: minimaler DOM-/Canvas-Stub; `getElementById` liefert nur IDs, die
   tatsächlich in `index.html` stehen – **fehlt ein Element, fällt der Test auf**.
 - `tests/ui-smoke.test.js` lädt `src/main.js` komplett, führt Frames aus und klickt Buttons,

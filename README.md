@@ -56,6 +56,8 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Äste kosten abgetrennte Körperteile; gesperrt/verfügbar/gekauft sind klar unterscheidbar,
   Voraussetzungen und Kosten stehen direkt am Knoten, Wirkung sofort, auch für gebaute
   Maschinen. Reiter **Upgrades**: bestehende Forschungsumfragen mit Blut und Körperteilen.
+  Die Knoten rasten in Spalten (Voraussetzungstiefe) und Unterzeilen ein – nichts
+  überlappt, Kanten zeigen immer den echten Vorgänger; bei Bedarf scrollt das Fenster.
 - **Blut-Pipes und Netze:** frei verlegbare Rohre, Tanks und Geräte bilden Netze mit eigener
   Kapazität. Steht eine nutzbare Absaugung (Pipe-Zelle mit Tank, orthogonal neben Band oder
   Maschine), saugt das Blut ins Netz, statt vom Band zu tropfen – der Inspektor zeigt
@@ -70,7 +72,7 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 - **Aufträge:** die bestehende Quest-Kette bleibt erhalten; die Forschungsumfragen stehen
   im großen Forschungsfenster (Reiter Upgrades).
 - **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
-- **Qualität:** 67 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Qualität:** 73 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
