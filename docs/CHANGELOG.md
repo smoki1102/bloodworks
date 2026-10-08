@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.10.0 – Dokumentation overhaul-2 (08.10.2026)
+
+### Geplante Arbeit (nur Doku, kein Spielcode)
+
+- **`docs/PLAN.md` neu:** Umbauplan overhaul-2 mit vier Paketen (Quests 0.11,
+  Maschinen-Design 0.12, Animationen 0.13, UI 0.14) plus Dokumentationsphase 0.
+  Enthält Ablauf pro Phase (Tests, check, visuelle Prüfung, CHANGELOG, Commit,
+  Push, Bericht, Stop bis OK), harte Regeln und offene Risiken. Phase 0
+  (Code-Audit) ist abgehakt.
+- **`README.md`:** Testzahl 89 → 93; Features für Palette/Icons/Tooltip/
+  Hallenboden/Diagonalbänder und overhaul-2-Auftragskette nachgetragen; Verweis
+  auf `docs/PLAN.md`.
+- **`docs/ARCHITECTURE.md`:** Renderer-Zeile um Hallenboden (Diagonalbänder +
+  Raster) ergänzt; `drawMachine()` → `drawMachineBody()` korrigiert; Testliste
+  um `helpers.test` ergänzt; Testzahl 89 → 93.
+
+### Annahmen
+
+- Reihenfolge der Pakete: Doku → Quests → Maschinen-Design → Animationen → UI.
+  Quests zuerst, weil sie nur Metrik-/Save-Logik berühren; Maschinen vor
+  Animationen, weil Posen an der Geometrie hängen; UI zuletzt, weil sie nur liest.
+- Save-Strategie für Paket 2 (Footprint-Änderungen) wird dort entschieden:
+  `SAVE_VER` 10 + Migration oder dokumentierter Reset.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build,
+  fehlerfrei. Keine Code-Änderung, keine Save-Änderung.
+
 ## 0.9.6 – Politur/Performance/Doku (08.10.2026)
 
 ### Änderungen an bestehendem Code

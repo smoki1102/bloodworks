@@ -19,25 +19,25 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 
 ## Steuerung
 
-| Eingabe              | Wirkung                                            |
-| -------------------- | -------------------------------------------------- |
-| Maus links           | Bauen (Werkzeug), Band: Start- und Endpunkt, Inspektor |
-| Maus rechts / Esc    | Werkzeug abwählen                                   |
-| Maus mittel / Leertaste | Verschieben (Pan) / Start-Pause                 |
-| Rad                  | Zoomen an der Maus                                   |
-| Pfeiltasten / ±      | Kamera verschieben / zoomen                         |
-| 1–5                  | Bautaste: Bänder, Maschinen, Logistik, Rohre, Handel |
-| R                    | Baustein um 90° drehen                              |
-| E                    | Gewähltes Gerät an/aus                              |
-| Entf                 | Gewähltes Gerät verkaufen                           |
-| Strg/Cmd+Z           | Rückgängig                                          |
-| K                    | Forschung öffnen: Skill-Netz & Upgrades (pausiert)   |
+| Eingabe                 | Wirkung                                            |
+| ----------------------- | -------------------------------------------------- |
+| Maus links              | Bauen (Werkzeug), Band: Start- und Endpunkt, Inspektor |
+| Maus rechts / Esc       | Werkzeug abwählen                                  |
+| Maus mittel / Leertaste | Verschieben (Pan) / Start-Pause                    |
+| Rad                     | Zoomen an der Maus                                 |
+| Pfeiltasten / ±         | Kamera verschieben / zoomen                        |
+| 1–5                     | Bautaste: Bänder, Maschinen, Logistik, Rohre, Handel |
+| R                       | Baustein um 90° drehen                             |
+| E                       | Gewähltes Gerät an/aus                             |
+| Entf                    | Gewähltes Gerät verkaufen                          |
+| Strg/Cmd+Z              | Rückgängig                                         |
+| K                       | Forschung öffnen: Skill-Netz & Upgrades (pausiert) |
 
 ## Features
 
-- **Freie Bauwelt:** Keller, Obergeschoss und Halle entfallen – eine Halle auf einem Raster
-  (128 × 64 Zellen), überall baubar. Kamera frei verschiebbar und zoombar; große Anlagen
-  bleiben durch die zentrierte Ansicht vollständig sichtbar.
+- **Freie Bauwelt:** eine Halle auf einem Raster (128 × 64 Zellen), überall baubar.
+  Kamera frei verschiebbar und zoombar; große Anlagen bleiben durch die zentrierte
+  Ansicht vollständig sichtbar.
 - **Förderband als Strecke:** Werkzeug wählen, auf die **Startzelle** klicken, dann auf die
   **Zielzelle** – die Strecke zieht sich in echten 45°-Diagonalen mit geradem Rest, kostet
   pro Zelle und ist mit einem Befehl rückgängig zu machen. Bestehende Bandzellen werden
@@ -71,11 +71,19 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Im Tutorial ist nichts vorgebaut – man baut die komplette Kette selbst, jeder Schritt
   markiert Item, Zielzelle und Begründung; jederzeit überspringbar. Am Ende gibt es einen
   Startvorrat an Blut und Körperteilen für den ersten Skill-Knoten.
-- **Aufträge:** die bestehende Quest-Kette bleibt erhalten; die Forschungsumfragen stehen
-  im großen Forschungsfenster (Reiter Upgrades).
+- **Aufträge:** acht feste Aufträge (Kills, Fänge, Verkäufe, Abschleuderer, Abwürfe,
+  Schalter, Forschung, Gesamtausstoß) als Karte mit Fortschrittsbalken.
+- **Eigenes Icon-Set:** 27 handgezeichnete 16×16-Vektor-Icons (Canvas und Inline-SVG),
+  keine Emojis und keine Fremd-Assets.
+- **Einheitliches Farbsystem:** `src/config/palette.js` ist die einzige Farbquelle;
+  `applyTokens()` schreibt sie beim Start auf `:root`. Dunkles Anthrazit mit gedämpftem
+  Gelb-Grün als Aktionsfarbe, Blut-Rot als einziger Akzent.
+- **Bodenmuster:** Hallenboden mit Diagonalbändern und feinem Raster, damit Bewegung
+  und Geschwindigkeit auf dem Band ablesbar sind.
 - **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
-- **Qualität:** 89 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Qualität:** 93 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Änderungsverlauf: siehe [docs/CHANGELOG.md](docs/CHANGELOG.md).
+Umbauplan overhaul-2: siehe [docs/PLAN.md](docs/PLAN.md).
