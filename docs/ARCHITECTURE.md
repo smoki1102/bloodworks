@@ -16,10 +16,11 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt`, `clamp`, `rnd`)             |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
-| `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo  |
+| `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo (auch Gruppen)  |
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
 | `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint` |
+| `src/core/belt-path.js`   | Bau einer Bandstrecke: `planBeltPath` (Auto-L-Routen, Prüfung) und `buildBeltPath` (alles-oder-nichts, eine Rückgängig-Einheit) |
 | `src/core/pipes.js`       | Rohrnetze: `rebuildNets`, Absaug-Indiz (`suckNet`, `suctionNetOf`), `addBlood`/`takeBlood`/`spendBlood`, `bloodTotal` |
 | `src/core/skill.js`       | Skill-Stufen, `buySkill`, `recomputeFx` (setzt `S.fx`), `giveSkillGift` |
 | `src/core/market.js`      | Blutmarkt: Verkauf, Reserve (`setReserve`, `sellable`)                  |
@@ -35,13 +36,13 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
 | `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
 | `src/main.js`             | Spielschleife, HUD- und Tutorial-Intervalle                             |
-| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
+| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belt-path`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
 
 ## Raster und Koordinaten
 
 - Die Welt ist ein festes Raster: `GRID_W × GRID_H` Zellen à `CELL` Pixeln (`constants.js`).
   Gebäude speichern den **Oberlinken Ursprung** (`b.x`, `b.y`) plus `spanW`/`spanH`.
-- `originOf(t, x, y, h)` rechnet die angeklickte Zelle für große Gebäude in ihren Ursprung um;
+- `originOf(t, x, y)` rechnet die angeklickte Zelle für große Gebäude in ihren Ursprung um;
   `placeReason`/`addBuilding` erwarten immer den Ursprung.
 - Die Kamera liegt frei in der Welt (`S.cam = {x, y, z}`). `viewCells()` und `visibleRect()`
   rechnen den sichtbaren Bereich **um die Kamera zentriert** aus – die linke/obere Bildhälfte
@@ -62,6 +63,12 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   wird von `fluids()` zu Bodenblut; Leichen verrotten mit `CORPSE_LIFE`.
 - Am Bandende ohne Ziel fallen Waren ab – überall dort braucht es einen Container, sonst
   verliert man die Ware.
+- **Bandstrecke bauen:** `S.beltFrom` merkt den Startklick, `ui.js/beltAt()` fragt beim zweiten
+  Klick `buildBeltPath()` ab. `planBeltPath()` (`belt-path.js`) prüft beide L-Routen und nimmt
+  die erste freie; belegt → `Blockiert: <Name> (x,y)`, außerhalb → `Außerhalb der Fabrik`,
+  Ziel zu teuer → `Zu teuer: n €`, Richtungskonflikt → `Schleifenbildung`. Bestehende
+  Bandzellen werden umdirigiert (ohne Kosten), alles oder nichts – danach ist die Strecke eine
+  normale Reihe von 1×1-Bändern (Simulation unverändert).
 
 ### Blut
 
@@ -135,6 +142,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 - `1–5` Kategorie, `R` Drehen, `Escape`/Rechtsklick abwählen, `K` Forschung (pausiert),
   Pfeiltasten/`±` Kamera, Rad zoomen.
+- Band: erster Klick = Start, zweiter Klick oder Drag-Loslassen = Ende; Klick auf den Start
+  bricht ab (`S.beltFrom`, `clearTool()` setzt auch den Start zurück).
 - `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo.
 - Inspektor zeigt Status, Auslastung, Zielkörperteil mit Trefferquote, Filterregel,
   Marktreserve und Absaugung/Verbindung; der Inhalt wird nur ersetzt, solange kein

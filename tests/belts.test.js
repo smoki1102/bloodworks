@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { boot, put, run } from './helpers.js';
 import { S, corpses, sticks } from '../src/core/state.js';
 import { itemPos, roomIn, MIN_GAP } from '../src/core/belts.js';
+import { buildBeltPath } from '../src/core/belt-path.js';
+import { bldAtCell } from '../src/core/grid.js';
 import { DEF } from '../src/config/building-defs.js';
 
 const limb = (over = {}) => ({ kind: 'limb', part: 'armL', p: 0, lat: 0, ...over });
@@ -46,17 +48,18 @@ describe('Bandtransport', () => {
     expect(a.items.length).toBe(0);
   });
 
-  it('fährt Waren durch das Lift-Band nach oben', () => {
-    const low = put('belt', 11, 32, { dir: 3 });
-    put('lift', 11, 29, { dir: 3, h: 3 });
-    const top = put('belt', 11, 28, { dir: 0 });
-    low.items.push(limb());
-    let got = 0;
-    for (let i = 0; i < 40 && !got; i++) {
-      run(0.2);
-      got = top.items.length;
+  it('fährt Waren um die Ecke eines gebauten L-Pfads', () => {
+    buildBeltPath(10, 20, 12, 22);
+    const a = bldAtCell(10, 20);
+    expect(a).toBeTruthy();
+    a.items.push(limb());
+    let corner = 0;
+    for (let i = 0; i < 60 && !corner; i++) {
+      run(0.1);
+      const c = bldAtCell(12, 21);
+      corner = c ? c.items.length : 0;
     }
-    expect(got).toBe(1);
+    expect(corner).toBe(1);
   });
 
   it('stopppt am vollen Ziel und startet wieder bei Platz', () => {

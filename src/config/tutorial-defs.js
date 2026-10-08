@@ -18,7 +18,7 @@ export const TUT_STEPS = [
   {
     id: 'belt1',
     item: 'belt',
-    text: 'Zieh ein <b>Förderband</b> vom Eingang nach rechts. Bänder verbinden sich automatisch – mit <b>R</b> drehst du die Richtung.',
+    text: 'Zieh ein <b>Förderband</b> vom Eingang nach rechts: erst auf die Startzelle klicken, dann auf die Zielzelle – das Band baut sich automatisch.',
     need: {
       bld: 'belt',
       cells: [
@@ -46,7 +46,7 @@ export const TUT_STEPS = [
   {
     id: 'belt2',
     item: 'belt',
-    text: 'Führe das Band hinter der Walze weiter bis zum Container.',
+    text: 'Führe das Band hinter der Walze weiter bis zum Container – Startpunkt nach der Walze, Endpunkt vor dem Container.',
     need: {
       bld: 'belt',
       cells: [

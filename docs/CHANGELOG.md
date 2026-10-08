@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.8.0 – Förderband als Strecke, Lift-Band entfällt (08.10.2026)
+
+### Neu: Funktionen
+
+- **Förderband mit zwei Klicks:** Werkzeug wählen, auf die **Startzelle** klicken, dann auf
+  die **Zielzelle** – die Strecke zieht sich gerade oder um die Ecke. Ein Drag (Loslassen auf
+  einer anderen Zelle) baut ebenfalls; Klick auf die Startzelle, `Escape` oder Rechtsklick
+  bricht ab. Die Vorschau zeigt Pfad, Zellenzahl, Kosten und bei Problemen den Grund
+  („Blockiert: Presse (12,56)“, „Schleifenbildung“, „Zu teuer: 80 €“).
+- Neues `src/core/belt-path.js`: `planBeltPath()` prüft beide L-Varianten (erst waagerecht,
+  dann senkrecht – und umgekehrt) und nimmt die erste freie, `buildBeltPath()` baut
+  alles-oder-nichts mit **einer** Rückgängig-Einheit für die ganze Strecke.
+
+### Änderungen an bestehendem Code
+
+- **Lift-Band entfernt:** `DEF.lift`, `S.span`, `LIFT_SPAN` und alle `kind: 'lift'`-Zweige in
+  `placement.js`, `grid.js`, `belts.js`, `machines.js` und `renderer.js` entfallen – es gibt
+  nur noch die Strecke, die Baukarte und das Spannweiten-Tastenkürzel entfallen.
+- `originOf`/`placeReason`/`ghostCells`/`addBuilding` brauchen keinen Höhenparameter
+  mehr; die Bandrichtung (`R`) bleibt für andere Bausteine, beim Streckenbau kommt `dir`
+  automatisch aus dem Pfad.
+- Belegte Zellen auf der Strecke: bestehende Bänder werden umdirigiert und kostenlos
+  übernommen, alles andere (Maschinen, Weltkante, zu wenig Geld) stoppt den **ganzen** Pfad –
+  es entsteht nie ein halber Weg.
+- Simulation unverändert: eine Strecke bleibt eine Reihe von Einzelbändern (1 × 1) mit
+  bestehenden Übergaben; nur der Bauablauf ist neu.
+- Speicherstand bleibt **v9**: alte `lift`-Einträge werden beim Laden übersprungen
+  (`if (!DEF[o.t]) continue`), neue Bänder schreiben `spanH: 1` wie jedes 1×1-Teil.
+- Tutorial-Texte der Band-Schritte beschreiben den Start-/Endpunkt-Klick; die Baukarten-
+  Beschreibung von „Förderband“ ebenfalls.
+
+### Qualität
+
+- `npm run check` = ESLint + 81 Vitest-Tests (9 Dateien) + Vite-Build, fehlerfrei.
+- Neue `tests/belt-path.test.js` (8 Tests): gerade Strecke mit Richtungen, L-Pfad um die
+  Ecke, freier Knick bei Blockade, Ablehnung komplett bei Maschine, Schleifenbildung am
+  Pfadende, „Außerhalb der Fabrik“/„Zu teuer“, Kostenabzug plus Rückgängig, Übernahme
+  bestehender Bänder ohne Kosten.
+- `tests/belts.test.js`: Waren fahren um die Ecke eines gebauten L-Pfads (ersetzt den
+  Lift-Test); `tests/ui-smoke.test.js`: Zweiklick-Bau über echte Canvas-Eingabe inklusive
+  Pfad-Vorschau.
+
+### Annahmen
+
+1. Alte Spielstände werden **nicht** migriert: `lift`-Einträge fallen beim Laden weg, der
+   Rest der Fabrik bleibt unverändert.
+2. Der Pfad ist immer gerade oder L-förmig; sind beide Varianten blockiert, zeigt die
+   Vorschau die erste als Fehlergrund (Zickzack-Routen gibt es bewusst nicht).
+
+
 ## 0.7.2 – Skill-Netz ohne Überlappung (08.10.2026)
 
 ### Behobene Fehler

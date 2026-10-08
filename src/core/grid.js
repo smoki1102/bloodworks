@@ -73,7 +73,7 @@ export function exitCell(b, d) {
 /** Ports eines Gebäudes in absoluten Richtungen. */
 export function portsOf(b) {
   const d = DEF[b.t];
-  if (b.t === 'belt' || b.t === 'lift') return { in: [b.dir], out: [b.dir] };
+  if (b.t === 'belt') return { in: [b.dir], out: [b.dir] };
   const dir = b.dir ?? 0;
   const abs = (rels) => (rels || []).map((r) => (dir + r + 4) & 3);
   return { in: abs(d.in), out: abs(d.out) };
@@ -88,7 +88,7 @@ export function supportBelow(x, y) {
     const b = bldAtCell(x, cy);
     if (b) {
       const k = DEF[b.t].kind;
-      if (k !== 'belt' && k !== 'pipe' && k !== 'lift') return { x, y: cy, bld: b };
+      if (k !== 'belt' && k !== 'pipe') return { x, y: cy, bld: b };
     }
   }
   return { x, y: GRID_H - 1, bld: bldAtCell(x, GRID_H - 1) };

@@ -74,7 +74,7 @@ export function feed(t, it, d, entry) {
     t.items.push(it);
     return true;
   }
-  if (def.kind === 'lift' || def.kind === 'pass') {
+  if (def.kind === 'pass') {
     if (!portsOf(t).in.includes(d)) return false;
     if (!roomIn(t)) return false;
     it.lat = latOf(t, d, entry);
@@ -136,7 +136,7 @@ export function tryHandoff(b, it) {
 }
 
 /**
- * Waren in einem Gebäude bewern (Band, Lift, Durchlauf-Maschine).
+ * Waren in einem Gebäude bewern (Band, Durchlauf-Maschine).
  * @param {(it: object, i: number, dt: number) => void} work Fortschritts-Callback
  */
 export function stepTransport(b, dt, work) {

@@ -49,7 +49,7 @@ export function freshState() {
     cat: 'band',
     tool: null,
     dir: 0,
-    span: 3,
+    beltFrom: null,
     sel: null,
     spawnTimer: SPAWN_FIRST,
     spawned: 0,

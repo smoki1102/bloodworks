@@ -73,6 +73,28 @@ describe('UI im DOM (Smoke)', () => {
     expect(corpses.length + sticks.length).toBeGreaterThanOrEqual(0);
   });
 
+  it('baut eine Förderband-Strecke mit zwei Klicks', () => {
+    const money0 = S.money;
+    fireDoc('click', { target: fake({ t: 'belt' }) });
+    expect(S.tool).toBe('belt');
+    const at = (x, y) => toScreen(x * CELL + CELL / 2, y * CELL + CELL / 2);
+    const a = at(30, 40);
+    el('cv').dispatch('pointerdown', { button: 0, clientX: a.clientX, clientY: a.clientY, pointerId: 1 });
+    fireWin('pointerup', { target: el('cv') });
+    expect(S.beltFrom).toEqual({ x: 30, y: 40 });
+    step(2);
+    const b = at(33, 40);
+    el('cv').dispatch('pointerdown', { button: 0, clientX: b.clientX, clientY: b.clientY, pointerId: 2 });
+    fireWin('pointerup', { target: el('cv') });
+    expect(S.beltFrom).toBeNull();
+    const built = blds.filter((x) => x.t === 'belt' && x.y === 40 && x.x >= 30 && x.x <= 33);
+    expect(built.length).toBe(4);
+    expect(S.money).toBe(money0 - 4 * costOf('belt'));
+    step(2);
+    fireDoc('click', { target: fake({ t: 'belt' }) });
+    expect(S.tool).toBeNull();
+  });
+
   it('Kategorien, Werkzeuge und Kamera reagieren auf Eingaben', () => {
     fireWin('keydown', { code: 'Digit2', key: '2', preventDefault() {} });
     expect(S.cat).toBe('masch');

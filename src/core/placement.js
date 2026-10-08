@@ -17,10 +17,9 @@ export const isUnlocked = (t) => {
 };
 
 /** Ursprung (oben links) eines Baus, der zentriert auf die Zelle (cx,cy) kommt. */
-export function originOf(t, cx, cy, h = 0) {
+export function originOf(t, cx, cy) {
   const d = DEF[t];
-  const hh = t === 'lift' ? h : d.h;
-  return { x: cx - ((d.w - 1) >> 1), y: cy - ((hh - 1) >> 1) };
+  return { x: cx - ((d.w - 1) >> 1), y: cy - ((d.h - 1) >> 1) };
 }
 
 /** Alle Zellen des geplanten Baus frei und in der Welt? */
@@ -54,30 +53,27 @@ export function autoDir(x, y, preferred = 0) {
 
 /**
  * Grund, warum der Bau an (x,y) nicht möglich ist – oder null.
- * `h` ist die Spannweite (Lift), `d` die Baurichtung.
+ * `d` ist die Baurichtung.
  */
-export function placeReason(t, x, y, d = 0, h = 0) {
+export function placeReason(t, x, y, d = 0) {
   const def = DEF[t];
   if (!def) return 'Unbekannt';
-  const w = def.w,
-    hh = t === 'lift' ? h : def.h;
   if (!isUnlocked(t)) return 'Im Skill-Tree freizuschalten';
-  const bad = freeCells(t, x, y, w, hh);
+  const bad = freeCells(t, x, y, def.w, def.h);
   if (bad) return bad;
   if (t === 'belt' && !dirOk(x, y, d)) return 'Schleifenbildung';
-  if (t === 'lift' && (hh < 1 || hh > 8)) return 'Lift zu hoch';
   if (S.money < costOf(t)) return 'Zu teuer: ' + costOf(t) + ' €';
   return null;
 }
 
-export const canPlace = (t, x, y, d = 0, h = 0) => placeReason(t, x, y, d, h) === null;
+export const canPlace = (t, x, y, d = 0) => placeReason(t, x, y, d) === null;
 
 export function addBuilding(t, x, y, opts = {}) {
   const def = DEF[t];
   const d = opts.dir ?? 0;
-  const h = t === 'lift' ? opts.h ?? 3 : def.h;
+  const h = def.h;
   if (!opts.free) {
-    const reason = placeReason(t, x, y, d, h);
+    const reason = placeReason(t, x, y, d);
     if (reason) {
       if (!opts.silent) toast(reason, 'bad');
       return null;
@@ -185,9 +181,33 @@ export function pushHistory(add, b, amount) {
 export function clearHistory() {
   history.length = 0;
 }
+
+/** Eine Rückgängig-Einheit für mehrere Gebäude (Bandstrecke). */
+export function pushGroup(add, list, amount) {
+  history.push({
+    add,
+    cost: amount,
+    multi: list.map((b) => ({ id: b.id, t: b.t })),
+  });
+  if (history.length > 64) history.shift();
+}
+
 export function undo() {
   const h = history.pop();
   if (!h) return toast('Nichts rückgängig zu machen', 'bad');
+  if (h.multi) {
+    let n = 0;
+    for (const m of h.multi) {
+      const b = bmap.get(m.id);
+      if (b) {
+        removeBuilding(b);
+        n++;
+      }
+    }
+    S.money += h.cost;
+    toast('Rückgängig: Bandstrecke (' + n + ' Zellen)', 'good');
+    return;
+  }
   if (h.add) {
     const b = bmap.get(h.snap.id);
     if (b) removeBuilding(b);
@@ -197,7 +217,6 @@ export function undo() {
     const b = addBuilding(h.snap.t, h.snap.x, h.snap.y, {
       free: true,
       dir: h.snap.dir,
-      h: h.snap.spanH,
     });
     if (!b) return toast('Kein Platz mehr zum Wiederherstellen', 'bad');
     b.dirt = h.snap.dirt;
@@ -214,11 +233,10 @@ export function undo() {
 }
 
 /** Wasserzeichen für die Leerraum-Bauvorschau. */
-export const ghostCells = (t, x, y, d, h) => {
+export const ghostCells = (t, x, y, d) => {
   const def = DEF[t];
-  const hh = t === 'lift' ? h : def.h;
   const out = [];
-  for (let cy = y; cy < y + hh; cy++)
+  for (let cy = y; cy < y + def.h; cy++)
     for (let cx = x; cx < x + def.w; cx++) if (inGrid(cx, cy)) out.push([cx, cy]);
   return { cells: out, d };
 };

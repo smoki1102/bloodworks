@@ -1,8 +1,9 @@
 import { CATS, DEF } from '../config/building-defs.js';
 import { TUT_STEPS } from '../config/tutorial-defs.js';
 import { CELL, SAVE_KEY, SAVE_VER } from '../config/constants.js';
+import { buildBeltPath } from '../core/belt-path.js';
 import { toast } from '../core/effects.js';
-import { bldAt } from '../core/grid.js';
+import { bldAt, inGrid } from '../core/grid.js';
 import {
   addBuilding,
   clearHistory,
@@ -155,20 +156,54 @@ export function toWorld(e) {
 }
 
 function placeAt(t, cx, cy) {
-  const h = t === 'lift' ? S.span : 0;
-  const o = originOf(t, cx, cy, h);
-  const reason = placeReason(t, o.x, o.y, S.dir, h);
+  const o = originOf(t, cx, cy);
+  const reason = placeReason(t, o.x, o.y, S.dir);
   if (reason) {
     toast(reason, 'bad');
     return null;
   }
-  const b = addBuilding(t, o.x, o.y, { dir: S.dir, h });
+  const b = addBuilding(t, o.x, o.y, { dir: S.dir });
   if (b) {
     S.sel = b;
     renderInspector();
     updateTutorial();
   }
   return b;
+}
+
+/** Werkzeug abwählen – bricht auch eine laufende Bandwahl ab. */
+function clearTool() {
+  S.tool = null;
+  S.beltFrom = null;
+}
+
+/**
+ * Bandstrecke: erster Klick setzt den Start, zweiter das Ende (oder ein Drag
+ * loslassen). Klick auf die Startzelle bricht ab.
+ */
+function beltAt(cx, cy) {
+  if (!inGrid(cx, cy)) return;
+  const from = S.beltFrom;
+  if (!from) {
+    S.beltFrom = { x: cx, y: cy };
+    return;
+  }
+  if (from.x === cx && from.y === cy) {
+    S.beltFrom = null;
+    toast('Bandwahl abgebrochen', 'good');
+    return;
+  }
+  const plan = buildBeltPath(from.x, from.y, cx, cy);
+  if (plan.reason) {
+    toast(plan.reason, 'bad');
+    return;
+  }
+  S.beltFrom = null;
+  toast(
+    `Förderband: ${plan.cells.length} Zellen · −${plan.cost} €`,
+    'good',
+  );
+  updateTutorial();
 }
 
 /* -------------------------------- Eingabe -------------------------------- */
@@ -190,10 +225,15 @@ cv.addEventListener('pointerdown', (e) => {
   } else if (e.button === 0 && S.tool) {
     const cx = Math.floor(p.x / CELL),
       cy = Math.floor(p.y / CELL);
+    if (S.tool === 'belt') {
+      lastCell = null;
+      beltAt(cx, cy);
+      return;
+    }
     lastCell = cx + ':' + cy;
     placeAt(S.tool, cx, cy);
   } else if (e.button === 2) {
-    S.tool = null;
+    clearTool();
     S.sel = null;
     renderList();
     renderInspector();
@@ -210,7 +250,7 @@ cv.addEventListener('pointermove', (e) => {
     moved += 1;
     return;
   }
-  if (!S.down || !S.tool) return;
+  if (!S.down || !S.tool || S.tool === 'belt') return;
   const d = DEF[S.tool];
   if (!d || d.w > 1 || d.h > 1) return;
   const cx = Math.floor(p.x / CELL),
@@ -225,6 +265,14 @@ addEventListener('pointerup', (e) => {
   const wasPan = panning && moved < 4;
   panning = null;
   S.down = false;
+  if (S.tool === 'belt' && S.beltFrom && e.target === cv) {
+    const p = toWorld(e);
+    const cx = Math.floor(p.x / CELL),
+      cy = Math.floor(p.y / CELL);
+    if (cx !== S.beltFrom.x || cy !== S.beltFrom.y) beltAt(cx, cy);
+    lastCell = null;
+    return;
+  }
   if (wasPan && e.target === cv) {
     const p = toWorld(e);
     S.sel = bldAt(p.x, p.y);
@@ -255,7 +303,7 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
     toggleRun();
   } else if (e.key === 'Escape') {
-    S.tool = null;
+    clearTool();
     S.sel = null;
     renderList();
     renderInspector();
@@ -282,7 +330,7 @@ addEventListener('keydown', (e) => {
     document.querySelector('[data-a="openForschung"]')?.click();
   } else if (e.key >= '1' && e.key <= '5') {
     S.cat = CATS[+e.key - 1][0];
-    S.tool = null;
+    clearTool();
     renderTabs();
     lastList = null;
     renderList();
@@ -310,7 +358,7 @@ document.addEventListener('click', (e) => {
   const tab = e.target.closest('[data-c]');
   if (tab) {
     S.cat = tab.dataset.c;
-    S.tool = null;
+    clearTool();
     renderTabs();
     lastList = null;
     renderList();
@@ -321,6 +369,7 @@ document.addEventListener('click', (e) => {
     const t = card.dataset.t;
     if (!isUnlocked(t)) return toast('Im Skill-Tree freizuschalten', 'bad');
     S.tool = S.tool === t ? null : t;
+    S.beltFrom = null;
     S.sel = null;
     lastList = null;
     renderList();
@@ -499,13 +548,14 @@ export function load() {
     tutStep: raw.tutStep || 0,
     cam: raw.cam || S.cam,
     tool: null,
+    beltFrom: null,
     sel: null,
     tutCells: [],
     tutItem: null,
   });
   for (const o of raw.blds || []) {
     if (!DEF[o.t]) continue;
-    const b = addBuilding(o.t, o.x, o.y, { free: true, dir: o.dir, h: o.spanH });
+    const b = addBuilding(o.t, o.x, o.y, { free: true, dir: o.dir });
     if (!b) continue;
     b.dirt = o.dirt || 0;
     b.on = o.on !== false;

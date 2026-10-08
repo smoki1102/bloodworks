@@ -480,7 +480,7 @@ export function machine(b, dt, pf) {
   const k = d.kind;
 
   if (k === 'src') worked = stepSpawn(b, dt, pf);
-  else if (k === 'belt' || k === 'lift') {
+  else if (k === 'belt') {
     stepTransport(b, dt, null);
     worked = b.items.length > 0;
   } else if (k === 'pass') {

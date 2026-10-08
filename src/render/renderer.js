@@ -2,7 +2,8 @@ import { DEF } from '../config/building-defs.js';
 import { BELT_SPEED, CELL, GRID_W, PH, PW } from '../config/constants.js';
 import { bloodColor, reducedMotion } from '../core/effects.js';
 import { itemPos } from '../core/belts.js';
-import { originOf, placeReason } from '../core/placement.js';
+import { planBeltPath } from '../core/belt-path.js';
+import { costOf, originOf, placeReason } from '../core/placement.js';
 import { bldAtCell, bldRect, viewCells } from '../core/grid.js';
 import {
   S,
@@ -320,7 +321,7 @@ function drawPorts(b) {
   const ins = [],
     outs = [];
   const d = DEF[b.t];
-  if (b.t === 'belt' || b.t === 'lift') {
+  if (b.t === 'belt') {
     outs.push(b.dir);
     ins.push((b.dir + 2) & 3);
   } else {
@@ -623,7 +624,7 @@ function drawMachineBody(b, r) {
     default:
       break;
   }
-  if (DEF[b.t].kind === 'pass' || DEF[b.t].kind === 'lift') drawBandStrip(b, true);
+  if (DEF[b.t].kind === 'pass') drawBandStrip(b, true);
 }
 
 function drawItems(b) {
@@ -658,7 +659,7 @@ function drawBuilding(b, showPorts) {
     drawPipe(b);
     return;
   }
-  if (d.kind === 'belt' || d.kind === 'lift') {
+  if (d.kind === 'belt') {
     drawBandStrip(b, false);
   } else {
     ctx.fillStyle = 'rgba(17,28,42,.18)';
@@ -667,7 +668,7 @@ function drawBuilding(b, showPorts) {
     ctx.fill();
     drawMachineBody(b, r);
   }
-  if (d.kind === 'belt' || d.kind === 'lift' || d.kind === 'pass' || d.kind === 'route')
+  if (d.kind === 'belt' || d.kind === 'pass' || d.kind === 'route')
     drawItems(b);
 
   if (b.on === false && d.kind !== 'pipe') {
@@ -713,34 +714,70 @@ function cellRect(x, y) {
   return { x: x * CELL, y: y * CELL, w: CELL, h: CELL };
 }
 
+function ghostCell(x, y, bad) {
+  const r = cellRect(x, y);
+  ctx.fillStyle = bad ? 'rgba(229,72,58,.16)' : 'rgba(47,129,248,.14)';
+  ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.strokeStyle = bad ? C.err : C.accent;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+  ctx.setLineDash([]);
+}
+
+function ghostLabel(x, y, text, bad, dy = 0) {
+  ctx.font = '600 11.5px ui-monospace,monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = bad ? C.err : C.light;
+  ctx.fillText(text, (x + 0.5) * CELL, y * CELL - 14 - dy);
+  ctx.textAlign = 'left';
+}
+
+/** Vorschau der Bandstrecke: Start zuletzt geklickt, unter dem Cursor das Ende. */
+function drawBeltGhost(cx, cy) {
+  const from = S.beltFrom;
+  const plan = from ? planBeltPath(from.x, from.y, cx, cy) : null;
+  const cells = plan ? plan.cells : [{ x: cx, y: cy }];
+  const reason = plan ? plan.reason : placeReason('belt', cx, cy, S.dir);
+  const price = plan
+    ? plan.cost
+    : bldAtCell(cx, cy)
+      ? 0
+      : costOf('belt');
+  const bad = !!reason;
+  for (const c of cells) ghostCell(c.x, c.y, bad);
+  if (from) {
+    const r = cellRect(from.x, from.y);
+    ctx.strokeStyle = bad ? C.err : C.bright;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6);
+    ctx.fillStyle = bad ? C.err : C.accent2;
+    ctx.beginPath();
+    ctx.arc(r.x + r.w / 2, r.y + r.h / 2, 5, 0, 7);
+    ctx.fill();
+  }
+  const last = cells[cells.length - 1];
+  const head = from ? `FÖRDERBAND · ${cells.length} ZELLEN · ` : 'FÖRDERBAND · ';
+  ghostLabel(last.x, last.y, head + price + ' €', bad);
+  if (reason) ghostLabel(last.x, last.y, reason.toUpperCase(), bad, 15);
+}
+
 function drawGhost() {
   const t = S.tool,
     d = DEF[t];
   if (!d) return;
   const cx = Math.floor(S.wx / CELL),
     cy = Math.floor(S.wy / CELL);
-  const { x: x0, y: y0 } = originOf(t, cx, cy, S.span);
-  const hh = t === 'lift' ? S.span : d.h;
-  const reason = placeReason(t, x0, y0, S.dir, hh);
-  ctx.fillStyle = reason ? 'rgba(229,72,58,.16)' : 'rgba(47,129,248,.14)';
-  for (let y = y0; y < y0 + hh; y++)
-    for (let x = x0; x < x0 + d.w; x++) {
-      const r = cellRect(x, y);
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.strokeStyle = reason ? C.err : C.accent;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
-      ctx.setLineDash([]);
-    }
-  ctx.font = '600 11.5px ui-monospace,monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = reason ? C.err : C.light;
-  const lx = (x0 + d.w / 2) * CELL,
-    ly = y0 * CELL - 14;
-  ctx.fillText(d.n.toUpperCase() + ' · ' + (d.cost || 0) + ' €', lx, ly);
-  if (reason) ctx.fillText(reason.toUpperCase(), lx, ly - 15);
-  ctx.textAlign = 'left';
+  if (t === 'belt') {
+    drawBeltGhost(cx, cy);
+    return;
+  }
+  const { x: x0, y: y0 } = originOf(t, cx, cy);
+  const reason = placeReason(t, x0, y0, S.dir);
+  for (let y = y0; y < y0 + d.h; y++)
+    for (let x = x0; x < x0 + d.w; x++) ghostCell(x, y, !!reason);
+  ghostLabel(x0 + (d.w - 1) / 2, y0, d.n.toUpperCase() + ' · ' + (d.cost || 0) + ' €', !!reason);
+  if (reason) ghostLabel(x0 + (d.w - 1) / 2, y0, reason.toUpperCase(), true, 15);
 }
 
 function drawHints() {

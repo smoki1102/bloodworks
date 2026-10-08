@@ -53,12 +53,7 @@ describe('Platzierung', () => {
   it('zentriert große Gebäude auf die Zielzelle', () => {
     expect(originOf('bin', 10, 10)).toEqual({ x: 10, y: 10 });
     expect(originOf('spawn', 10, 10)).toEqual({ x: 10, y: 10 });
-    expect(originOf('lift', 10, 10, 5)).toEqual({ x: 10, y: 8 });
-  });
-
-  it('Lift-Spanne ist auf 1–8 begrenzt', () => {
-    expect(placeReason('lift', 3, 3, 0, 9)).toBe('Lift zu hoch');
-    expect(placeReason('lift', 3, 3, 0, 8)).toBeNull();
+    expect(originOf('spike', 10, 10)).toEqual({ x: 10, y: 10 });
   });
 
   it('Verkauf zahlt die Hälfte, Rückgängig stellt wieder her', () => {

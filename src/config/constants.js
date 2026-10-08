@@ -21,8 +21,7 @@ export const DIR_NAME = ['Rechts', 'Runter', 'Links', 'Hoch'];
 
 export const BELT_H = 14, // sichtbare Banddicke in einer Zelle
   BELT_SPEED = 54,
-  GRAVITY = 1500,
-  LIFT_SPAN = 8; // max. Zellen Höhe eines Lift-Bands
+  GRAVITY = 1500;
 
 export const BASE_CAP = 100,
   TANK_CAP = 250,
