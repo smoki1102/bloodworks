@@ -618,6 +618,13 @@ function migrate(raw) {
     delete raw.toggled;
     raw.v = 10;
   }
+  if (raw.v === 10) {
+    // Paket v0.12.0: Gebäude-Footprints wachsen. Alte Layouts würden beim Laden
+    // überlappen und still verworfen – daher dokumentierter Fabrik-Reset:
+    // Fortschritt (Geld, Quests, Stats, Skills) bleibt, die Gebäude nicht.
+    raw.blds = [];
+    raw.v = 11;
+  }
   if (raw.v !== SAVE_VER) return null;
   return raw;
 }

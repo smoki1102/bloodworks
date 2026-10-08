@@ -6,6 +6,7 @@ import { ROUTE_CAP, BIN_ROT_TIME, OVEN_TIME, ACID_TIME, SHOP_TIME } from '../src
 import { filterMatch, makeBody, severPart, missingOf } from '../src/core/anatomy.js';
 import { bladeCut, hitChance } from '../src/core/machines.js';
 import { feed } from '../src/core/belts.js';
+import { DEF } from '../src/config/building-defs.js';
 
 const corpse = (missing = []) => ({
   kind: 'corpse',
@@ -18,13 +19,14 @@ const corpse = (missing = []) => ({
 });
 const limb = (part = 'armL') => ({ kind: 'limb', part, p: 0, lat: 0, bleed: 0, life: 120 });
 
-/** Eingang → Band → Maschine (2 breit) → Band → Container. null, wenn gesperrt. */
+/** Eingang → Band → Maschine → Band → Container. null, wenn gesperrt. */
 function killLine(machine) {
   put('spawn', 10, 20, { dir: 0 });
   put('belt', 12, 20, { dir: 0 });
   if (!put(machine, 13, 20, { dir: 0 })) return null;
-  put('belt', 15, 20, { dir: 0 });
-  return put('bin', 16, 20);
+  const ex = 13 + DEF[machine].w;
+  put('belt', ex, 20, { dir: 0 });
+  return put('bin', ex + 1, 20);
 }
 
 describe('Quelle', () => {

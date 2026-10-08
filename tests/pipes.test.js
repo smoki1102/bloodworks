@@ -36,8 +36,8 @@ function netWorld(withGen = false) {
   const market = put('market', 26, 40);
   let gen = null;
   if (withGen) {
-    put('pipe', 26, 41);
-    gen = put('gen', 26, 42);
+    put('pipe', 26, 43);
+    gen = put('gen', 26, 44);
   }
   run(0.1);
   return { drain, market, gen };

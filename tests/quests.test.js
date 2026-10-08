@@ -4,7 +4,6 @@ import { S } from '../src/core/state.js';
 import { QUESTS } from '../src/config/quest-defs.js';
 import { METRIC, questDef, questProgress, questStep, questTotal } from '../src/core/quests.js';
 import { upgCount } from '../src/core/upgrades.js';
-import { feed } from '../src/core/belts.js';
 
 describe('Auftragskette', () => {
   beforeEach(() => boot());
@@ -24,7 +23,7 @@ describe('Auftragskette', () => {
   });
 
   it('zählt Abschleuderer-Würfe als Ereignis, nicht als Gebäude', () => {
-    put('schleuder', 13, 20, { dir: 0 });
+    put('schleuder', 20, 20, { dir: 0 });
     run(1);
     expect(S.stats.schleuder).toBe(0);
     const b = put('schleuder', 10, 20, { dir: 0 });

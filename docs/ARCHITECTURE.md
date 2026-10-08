@@ -30,7 +30,12 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz, iteriert nur über ein Schmutz-Rechteck statt aller 8192 Zellen – `touch()` bei Zufluss, `resetBloodBounds()` nach `initSim()`), `reducedMotion()`/`setReducedMotion()` (Systemwert oder Nutzer-Override aus dem Einstellungs-Popover) |
 | `src/core/simulation.js`  | `tick(dt)`: Netze, Energie, Maschinen, Flow, Bänder, Flüssigkeiten, Sticks, Leichen, Partikel |
 | `src/core/upgrades.js`, `quests.js` | Bestehende Forschung und Auftragskette                  |
-| `src/render/renderer.js`  | Canvas: Kamera, Culling, Hallenboden (Diagonalbänder + Raster), Gebäude (`drawMachineBody`), Waren, Sticks, Rohre, Hinweise |
+| `src/render/renderer.js`  | Canvas: Kamera, Culling, Hallenboden (Diagonalbänder + Raster), Gebäude-Regie, Waren, Sticks, Rohre, Hinweise. Re-exportiert `cv`/`C` aus `canvas.js` |
+| `src/render/canvas.js`    | Gemeinsamer Kontext `cv`/`ctx` und Palette `C` (kein Import-Zyklus mit `renderer.js`) |
+| `src/render/figures.js`   | Figuren/Items: `drawStickFigure`, `drawCorpse`, `drawCorpseShape`, `drawLimbShape`, `drawItemShape` |
+| `src/render/prims.js`     | Grundformen für Geräte: `housing`, `bar`, `machineOn`, `queuedItems` |
+| `src/render/bands.js`     | Bandraster (`bandRect`, `drawBandStrip`, `drawBandDiag`) für Bänder und Pass-Maschinen |
+| `src/render/machines/*.js`| Ein Modul je Gerätetyp; `index.js` dispatcht `drawMachineBody` |
 | `src/render/icons.js`     | Eigenes Icon-Set (27 Icons, 16×16-Vektor): eine Shape-Definition pro Icon, zwei Renderer – `drawIcon` (Canvas) und `iconSvg` (Inline-SVG für DOM-UI). Keine Emoji/Sonderglyphen, keine Fremd-Assets |
 | `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`), Token-Init (`applyTokens`, `initIcons`), Einstellungs-Popover |
 | `src/ui/tooltip.js`       | Zentrales Tooltip-Element für `data-tip` (Hover + Fokus, 350 ms Delay, Mehrzeilen via `\n`); ersetzt native `title` |
@@ -111,7 +116,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 1. Eintrag in `DEF` (`src/config/building-defs.js`) inkl. `icon`, `cat`, `kind`, `cap`, `e`, optional `unlock`. Das `icon`-Feld verweist auf einen Namen aus `ICONS` (`src/render/icons.js`); für ein neues Icon dort eine 16×16-Shape-Definition ergänzen.
 2. Verhalten in `src/core/machines.js` (`step…`) bzw. `src/core/flow.js`.
-3. Optik als `case` in `drawMachineBody()` (`src/render/renderer.js`). Icon-lastige Maschinen (Logistik, Handel) nutzen `drawIcon(ctx, d.icon, …)`; Detailzeichnungen bleiben eigener Code.
+3. Optik als `draw()`-Funktion in `src/render/machines/<typ>.js` anlegen und im Dispatcher `src/render/machines/index.js` eintragen. Icon-lastige Maschinen (Logistik, Handel) nutzen `drawIcon(ctx, d.icon, …)`; Detailzeichnungen bleiben eigener Code. Für mehrzellige Geräte immer aus `r` (`bldRect`) rechnen, damit die Zeichnung auf den Footprint skaliert.
 4. Kategoriekarten aktualisieren sich automatisch über `cat`.
 5. Test in `tests/machines.test.js` bzw. `tests/simulation.test.js`.
 
@@ -162,22 +167,25 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 ## Spielstand
 
 `localStorage`, Schlüssel `bloodworks_v9` (historisch; Formatversion steckt in `raw.v`,
-aktuell `v: 10`). Enthält Geld, Energie, Blut, Aufträge, Forschung, Skill-Stufen samt
+aktuell `v: 11`). Enthält Geld, Energie, Blut, Aufträge, Forschung, Skill-Stufen samt
 Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera, die Spielzähler in `S.stats`
 (`spawned`, `kills`, `sold`, `escaped`, `ejected`, `caught`, `toggled`, `partsSold`,
 `schleuder`) sowie alle Gebäude inklusive Zielen, Filterregeln, Reserve und Waren
 (Stick-Leichen zusätzlich `body` mit `limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`).
 `load()` zieht ältere Stände über die `migrate()`-Stufenliste hoch (v9→v10 zieht die
-alten Einzelfelder in `S.stats`); unbekannte/neuere Versionen werden abgelehnt und als
-Toast gemeldet. Bei Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in
-`migrate()` ergänzen und `save()`/`load()`/`hasSave()` anpassen.
+alten Einzelfelder in `S.stats`, v10→v11 leert die Gebäude wegen der neuen Footprints);
+unbekannte/neuere Versionen werden abgelehnt und als Toast gemeldet. Bei
+Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in `migrate()` ergänzen
+und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 101 Tests, reines Node (kein DOM nötig).
+- `npm test` – 103 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
 - `tests/quests.test.js`: Quest-Metriken existieren und sind erreichbar, Abschleuderer-Ereignis,
   Teilehandel, Kettenfortschritt, v9→v10-Migration.
+- `tests/ui-smoke.test.js`: u. a. Render-Smoke über jeden Gebäudetyp auf dem neuen
+  Footprint und Migration v10→v11 (Fabrik-Reset).
 - `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten
   verbinden die Vorgänger nach rechts (lädt `dom-stub.js`, weil `skill.js` einen
   Klick-Handler auf `document` registriert).

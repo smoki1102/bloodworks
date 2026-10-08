@@ -81,9 +81,13 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Gelb-Grün als Aktionsfarbe, Blut-Rot als einziger Akzent.
 - **Bodenmuster:** Hallenboden mit Diagonalbändern und feinem Raster, damit Bewegung
   und Geschwindigkeit auf dem Band ablesbar sind.
-- **Speicherstand v10:** Spielzähler in `S.stats`; alte Stände (v8 und älter) werden
-  verworfen mit Hinweis im Spiel, v9 wird automatisch migriert.
-- **Qualität:** 101 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Größere Maschinen:** Walze, Pressen, Abschleuderer, Ofen, Säurebad, Tank, Markt,
+  Generator und Verkauf belegen mehrzellige Footprints; Ware und Gliedmaßen sind in
+  den Gehäusen sichtbar.
+- **Speicherstand v11:** Spielzähler in `S.stats`; v10-Stände bleiben erhalten, verlieren
+  beim Laden aber einmalig ihr Fabrik-Layout (Fabrik-Reset), v9 wird über v10 migriert,
+  v8 und älter werden verworfen.
+- **Qualität:** 103 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

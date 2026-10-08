@@ -15,14 +15,14 @@ function fullLine() {
   put('spawn', 10, 20, { dir: 0 });
   put('belt', 12, 20, { dir: 0 });
   put('spike', 13, 20, { dir: 0 });
-  put('belt', 15, 20, { dir: 0 });
-  put('bin', 16, 20);
+  put('belt', 16, 20, { dir: 0 });
+  put('bin', 17, 20);
   put('drain', 16, 63);
   put('pipe', 17, 63);
   put('pipe', 18, 63);
-  put('tank', 19, 63);
+  put('tank', 19, 60);
   put('pipe', 21, 63);
-  put('market', 22, 63);
+  put('market', 22, 61);
 }
 
 describe('Simulation', () => {
@@ -98,8 +98,8 @@ describe('Simulation', () => {
     put('spawn', 10, 20, { dir: 0 });
     put('belt', 12, 20, { dir: 0 });
     put('spike', 13, 20, { dir: 0 });
-    put('belt', 15, 20, { dir: 0 });
-    put('bin', 16, 20);
+    put('belt', 16, 20, { dir: 0 });
+    put('bin', 17, 20);
     run(30);
     expect(S.stats.kills).toBeGreaterThan(0);
     expect(partPoints()).toBe(0);

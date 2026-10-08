@@ -7,6 +7,7 @@ import { costOf } from '../src/core/placement.js';
 import { save, load, hasSave, newGame, toggleRun, renderInspector } from '../src/ui/ui.js';
 import { addBuilding } from '../src/core/placement.js';
 import { rebuildNets } from '../src/core/pipes.js';
+import { DEF } from '../src/config/building-defs.js';
 
 const step = (n) => frames(n);
 /** Ziel mit `data`-Attributen, das `closest()` wie im Browser beantwortet. */
@@ -44,6 +45,25 @@ describe('UI im DOM (Smoke)', () => {
     expect(S.t).toBe(0);
   });
 
+  it('rendert jeden Gebäudetyp auf dem neuen Footprint ohne Fehler', () => {
+    newGame('free');
+    S.money = 999999;
+    S.skill.lv = { eco_shop: 1, prec_blade: 1, log_filter: 1 };
+    Object.keys(DEF).forEach((t, i) => {
+      const x = 2 + (i % 12) * 10;
+      const y = 2 + Math.floor(i / 12) * 8;
+      addBuilding(t, x, y, { free: true, dir: 0 });
+    });
+    rebuildNets();
+    step(3);
+    expect(blds.length).toBeGreaterThanOrEqual(Object.keys(DEF).length);
+    S.sel = blds.find((b) => b.t === 'spike');
+    step(2);
+    expect(el('inspector').innerHTML).toContain('Spikes');
+    S.sel = null;
+    step(1);
+  });
+
   it(
     'baut die Startwelt, simuliert und platziert über Karte + Canvas',
     () => {
@@ -70,7 +90,7 @@ describe('UI im DOM (Smoke)', () => {
       });
       const spike = blds.find((b) => b.t === 'spike');
       expect(spike).toBeTruthy();
-      expect(spike.x).toBe(60);
+      expect(spike.x).toBe(59);
       expect(spike.y).toBe(50);
       expect(S.money).toBe(money0 - costOf('spike'));
       expect(S.sel).toBe(spike);
@@ -143,7 +163,7 @@ describe('UI im DOM (Smoke)', () => {
     step(3);
   });
 
-  it('speichert und lädt den Speicherstand v10', () => {
+  it('speichert und lädt den Speicherstand v11', () => {
     const before = { n: blds.length, money: S.money, t: S.t, spike: !!blds.find((b) => b.t === 'spike') };
     save(true);
     expect(hasSave()).toBe(true);
@@ -162,7 +182,7 @@ describe('UI im DOM (Smoke)', () => {
     expect(hasSave()).toBe(false);
   });
 
-  it('migriert einen v9-Spielstand auf S.stats (v10)', () => {
+  it('migriert einen v9-Spielstand auf S.stats (v11)', () => {
     localStorage.setItem(
       'bloodworks_v9',
       JSON.stringify({
@@ -196,6 +216,43 @@ describe('UI im DOM (Smoke)', () => {
     expect(S.stats.partsSold).toBe(0);
     expect(S.stats.schleuder).toBe(0);
     expect(S.quest).toBe(2);
+    localStorage.removeItem('bloodworks_v9');
+  });
+
+  it('migriert einen v10-Spielstand und setzt die Fabrik zurück (v11)', () => {
+    localStorage.setItem(
+      'bloodworks_v9',
+      JSON.stringify({
+        v: 10,
+        money: 777,
+        energy: 100,
+        blood: 10,
+        ash: 2,
+        t: 12,
+        gore: 100,
+        stats: {
+          spawned: 0,
+          kills: 7,
+          sold: 30,
+          escaped: 1,
+          ejected: 2,
+          caught: 3,
+          toggled: 4,
+          partsSold: 5,
+          schleuder: 6,
+        },
+        quest: 2,
+        up: { lv: {} },
+        skill: { lv: {} },
+        blds: [{ t: 'spike', x: 13, y: 20, dir: 0 }],
+      }),
+    );
+    expect(hasSave()).toBe(true);
+    expect(load()).toBe(true);
+    expect(S.money).toBe(777);
+    expect(S.stats.kills).toBe(7);
+    expect(S.stats.partsSold).toBe(5);
+    expect(blds.length).toBe(0);
     localStorage.removeItem('bloodworks_v9');
   });
 
@@ -245,7 +302,7 @@ describe('UI im DOM (Smoke)', () => {
     addBuilding('tank', 44, 18, { free: true });
     addBuilding('pipe', 43, 18, { free: true });
     const belt = addBuilding('belt', 42, 18, { free: true, dir: 0 });
-    addBuilding('spike', 40, 18, { free: true });
+    addBuilding('spike', 38, 18, { free: true });
     rebuildNets();
     S.sel = belt;
     renderInspector();

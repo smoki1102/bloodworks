@@ -34,15 +34,15 @@ mit explizitem OK.
 
 ## Paket 2 – Maschinen-Design (Version 0.12.0)
 
-- [ ] Footprints vergrößern (Walze 3×2, Presse 2×3, Klingenpresse 3×3, Abschleuderer 4×2,
+- [x] Footprints vergrößern (Walze 3×2, Presse 2×3, Klingenpresse 3×3, Abschleuderer 4×2,
       Ofen 3×3, Säure 4×2, Tank 2×4, Generator 3×2, Markt 3×3, Verkauf 3×2) – Reihenfolge:
       zuerst reine Geometrie, dann Zeichnung.
-- [ ] `src/render/machines/*.js` anlegen, `drawMachineBody` auf Module aufteilen.
-- [ ] Sticks in Maschinen sichtbar machen (Position/Größe über Footprint).
-- [ ] Ports an neuen Footprints prüfen (`originOf`, `compsOf`, Feed-Regeln).
-- [ ] Alte Test-Koordinaten anpassen (`machines`, `pipes`, `simulation`).
-- [ ] Save-Entscheidung: `SAVE_VER` 10 + Migration oder dokumentierter Reset.
-- [ ] Visuelle Prüfung: Halle mit allen Maschinen, Warenfluss, Port-Pfeile.
+- [x] `src/render/machines/*.js` anlegen, `drawMachineBody` auf Module aufteilen.
+- [x] Sticks in Maschinen sichtbar machen (Position/Größe über Footprint).
+- [x] Ports an neuen Footprints prüfen (`originOf`, `compsOf`, Feed-Regeln).
+- [x] Alte Test-Koordinaten anpassen (`machines`, `pipes`, `simulation`).
+- [x] Save-Entscheidung: `SAVE_VER` 11 + Migration (dokumentierter Fabrik-Reset).
+- [x] Visuelle Prüfung: Halle mit allen Maschinen, Warenfluss, Port-Pfeile.
 
 ## Paket 3 – Animationen (Version 0.13.0)
 

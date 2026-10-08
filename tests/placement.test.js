@@ -59,7 +59,9 @@ describe('Platzierung', () => {
   it('zentriert große Gebäude auf die Zielzelle', () => {
     expect(originOf('bin', 10, 10)).toEqual({ x: 10, y: 10 });
     expect(originOf('spawn', 10, 10)).toEqual({ x: 10, y: 10 });
-    expect(originOf('spike', 10, 10)).toEqual({ x: 10, y: 10 });
+    expect(originOf('spike', 10, 10)).toEqual({ x: 9, y: 10 });
+    expect(originOf('tank', 10, 10)).toEqual({ x: 10, y: 9 });
+    expect(originOf('market', 10, 10)).toEqual({ x: 9, y: 9 });
   });
 
   it('Verkauf zahlt die Hälfte, Rückgängig stellt wieder her', () => {

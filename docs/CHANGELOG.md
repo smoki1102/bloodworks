@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.12.0 – Maschinen-Design: größere Footprints, Render-Module (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Footprints (SAVE_VER 11):** zehn Maschinen belegen nun größere, feste
+  Raster-Flächen: Spikes-Walze 3×2, Presse 2×3, Klingenpresse 3×3,
+  Abschleuderer 4×2, Verbrenner 3×3, Säurebad 4×2, Bluttank 2×4,
+  Generator 3×2, Blutmarkt 3×3, Verkauf 3×2. Eingang/Container/Reinraum,
+  Weichen, Rohre und Bänder bleiben unverändert. `originOf` zentriert die
+  größeren Gebäude weiterhin auf die angeklickte Zelle; Ports, Bandfluss und
+  Pipe-Anbindung lesen die Spans wie bisher über `bldRect`/`eachCell`.
+- **Migration v10 → v11:** Da alte Fabrik-Layouts mit den neuen Maßen
+  überlappen würden, setzt die Migration die Gebäude einmalig zurück
+  („Fabrik-Reset"). Geld, Quests, `S.stats`, Skills und Forschung bleiben
+  erhalten. `migrate()` kettet v9 → v10 → v11.
+- **Render-Aufteilung:** `drawMachineBody` liegt jetzt in
+  `src/render/machines/*.js` (ein Modul je Gerät, Dispatcher `index.js`).
+  Gemeinsame Bausteine wurden ausgelagert: `render/canvas.js` (Kontext/Palette),
+  `render/figures.js` (Stick/Leiche/Gliedmaße), `render/prims.js`
+  (Gehäuse, Balken, Warteschlange), `render/bands.js` (Bandraster, auch
+  diagonal). `renderer.js` bleibt Einstieg und re-exportiert `cv`/`C`.
+- **Zeichnung:** Walze, Presse, Klingenpresse und Abschleuderer skalieren auf
+  ihre neuen Flächen (Pistons Hub, rotierende Walze, Schwungarm). Verbrenner,
+  Säurebad und Verkauf zeigen ihre wartenden Waren jetzt sichtbar im Gehäuse
+  (Reihe über `queuedItems`); Markt und Generator nutzen größere Icons.
+
+### Qualität
+
+- `npm run check` = ESLint + 103 Vitest-Tests + Vite-Build, fehlerfrei.
+  Alte Test-Koordinaten an die neuen Footprints angepasst
+  (`machines.test.js` dynamischer Ausgang, `pipes`, `simulation`,
+  `quests`, `placement`, `ui-smoke`). Neuer Render-Smoke-Test: jeder
+  Gebäudetyp wird auf dem neuen Footprint platziert und gerendert
+  (inkl. Auswahl/Ports). Neuer Migrationstest v10 → v11.
+
+### Annahmen
+
+- Footprints rotieren **nicht** mit der Baurichtung `dir`: die im Plan
+  genannten Maße sind feste Weltmaße (Portrait/Landscape passend zur Optik).
+  `dir` steuert weiterhin nur Ports und Bandrichtung. Bei vertikaler
+  Ausrichtung durchläuft die Ware die Maschine entlang ihres Spans.
+- Beim Fabrik-Reset wird nur die Belegung geleert, kein Geld erstattet – der
+  Reset greift ohnehin nur beim Laden eines alten (v10-)Spielstands.
+
 ## 0.11.0 – Quests: S.stats, Ereignismetriken, Auftrags-Log (08.10.2026)
 
 ### Änderungen an bestehendem Code
