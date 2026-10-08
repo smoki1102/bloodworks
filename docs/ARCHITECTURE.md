@@ -13,7 +13,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/config/skill-defs.js`| Skill-Äste und Knoten inkl. Währung, Kosten, Stufen, `fx`, `unlock`      |
 | `src/config/tutorial-defs.js` | Die 12 Tutorialschritte (Text, Zielzelle, zu bauendes Item, Bedingung) |
 | `src/config/upgrade-defs.js`, `quest-defs.js` | Bestehende Forschung und Aufträge (unverändert)    |
-| `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt`, `clamp`, `rnd`)             |
+| `src/config/palette.js`   | Kanonische Farbquellen: `UI` (DOM-Tokens), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)` |
+| `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt` mit deutscher Tausendertrennung, `clamp`, `rnd`) |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
 | `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo (auch Gruppen)  |
@@ -26,11 +27,13 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/market.js`      | Blutmarkt: Verkauf, Reserve (`setReserve`, `sellable`)                  |
 | `src/core/machines.js`    | Geräte-Tick: Spawn, Senken, Weiche/Filter, Schneiden (`bladeCut`, `hitChance`), Dreck |
 | `src/core/flow.js`        | Bestehende Warenübergaben (Ofen/Säure) und Statistik                    |
-| `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz), `reducedMotion()` |
+| `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz, iteriert nur über ein Schmutz-Rechteck statt aller 8192 Zellen – `touch()` bei Zufluss, `resetBloodBounds()` nach `initSim()`), `reducedMotion()`/`setReducedMotion()` (Systemwert oder Nutzer-Override aus dem Einstellungs-Popover) |
 | `src/core/simulation.js`  | `tick(dt)`: Netze, Energie, Maschinen, Flow, Bänder, Flüssigkeiten, Sticks, Leichen, Partikel |
 | `src/core/upgrades.js`, `quests.js` | Bestehende Forschung und Auftragskette                  |
 | `src/render/renderer.js`  | Canvas: Kamera, Culling, Gebäude, Waren, Sticks, Rohre, Hinweise        |
-| `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`) |
+| `src/render/icons.js`     | Eigenes Icon-Set (27 Icons, 16×16-Vektor): eine Shape-Definition pro Icon, zwei Renderer – `drawIcon` (Canvas) und `iconSvg` (Inline-SVG für DOM-UI). Keine Emoji/Sonderglyphen, keine Fremd-Assets |
+| `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`), Token-Init (`applyTokens`, `initIcons`), Einstellungs-Popover |
+| `src/ui/tooltip.js`       | Zentrales Tooltip-Element für `data-tip` (Hover + Fokus, 350 ms Delay, Mehrzeilen via `\n`); ersetzt native `title` |
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
 | `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
@@ -106,9 +109,9 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 ## Neues Gebäude hinzufügen
 
-1. Eintrag in `DEF` (`src/config/building-defs.js`) inkl. `cat`, `kind`, `cap`, `e`, optional `unlock`.
+1. Eintrag in `DEF` (`src/config/building-defs.js`) inkl. `icon`, `cat`, `kind`, `cap`, `e`, optional `unlock`. Das `icon`-Feld verweist auf einen Namen aus `ICONS` (`src/render/icons.js`); für ein neues Icon dort eine 16×16-Shape-Definition ergänzen.
 2. Verhalten in `src/core/machines.js` (`step…`) bzw. `src/core/flow.js`.
-3. Optik als `case` in `drawMachine()` (`src/render/renderer.js`).
+3. Optik als `case` in `drawMachine()` (`src/render/renderer.js`). Icon-lastige Maschinen (Logistik, Handel) nutzen `drawIcon(ctx, d.icon, …)`; Detailzeichnungen bleiben eigener Code.
 4. Kategoriekarten aktualisieren sich automatisch über `cat`.
 5. Test in `tests/machines.test.js` bzw. `tests/simulation.test.js`.
 
@@ -160,13 +163,15 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 `localStorage`, Schlüssel `bloodworks_v9` (`v: 9`). Enthält Geld, Energie, Blut, Aufträge,
 Forschung, Skill-Stufen samt Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera sowie alle
-Gebäude inklusive Zielen, Filterregeln, Reserve und Waren. Inkompatible Versionen werden
-verworfen und im Spiel als Toast gemeldet (`load()` in `src/ui/ui.js`). Bei Formatänderungen
-`SAVE_VER` erhöhen und `save()`/`load()`/`hasSave()` anpassen.
+Gebäude inklusive Zielen, Filterregeln, Reserve und Waren (Stick-Leichen zusätzlich `body` mit
+`limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`). `load()` zieht ältere Stände über die
+`migrate()`-Stufenliste hoch; unbekannte/ neuere Versionen werden abgelehnt und als Toast
+gemeldet. Bei Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in `migrate()`
+ergänzen und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 73 Tests, reines Node (kein DOM nötig).
+- `npm test` – 89 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
 - `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten
   verbinden die Vorgänger nach rechts (lädt `dom-stub.js`, weil `skill.js` einen

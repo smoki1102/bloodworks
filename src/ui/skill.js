@@ -77,7 +77,7 @@ function nodeHtml(n, x, y) {
   let btn;
   if (maxed) btn = `<button disabled>Maximal</button>`;
   else if (!ready)
-    btn = `<button disabled title="Benötigt: ${reqText(n)}">Gesperrt</button>`;
+    btn = `<button disabled data-tip="Benötigt: ${reqText(n)}">Gesperrt</button>`;
   else
     btn = `<button data-skill="${n.id}" ${poor ? 'disabled' : ''}>${cost} ${n.cur === 'blood' ? 'Blut' : 'Teile'}</button>`;
   const state = maxed ? 'max' : !ready ? 'lock' : poor ? '' : 'can';

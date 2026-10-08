@@ -18,7 +18,7 @@ import {
 export const DEF = {
   belt: {
     n: 'Förderband',
-    g: '»',
+    icon: 'belt',
     col: '#444',
     cat: 'band',
     kind: 'belt',
@@ -31,7 +31,7 @@ export const DEF = {
   },
   spawn: {
     n: 'Eingang',
-    g: '▶',
+    icon: 'spawn',
     col: '#555',
     cat: 'masch',
     kind: 'src',
@@ -44,7 +44,7 @@ export const DEF = {
   },
   spike: {
     n: 'Spikes-Walze',
-    g: '✹',
+    icon: 'spike',
     col: '#8a2a24',
     cat: 'masch',
     kind: 'pass',
@@ -60,7 +60,7 @@ export const DEF = {
   },
   press: {
     n: 'Presse',
-    g: '▤',
+    icon: 'press',
     col: '#6a3a30',
     cat: 'masch',
     kind: 'pass',
@@ -76,7 +76,7 @@ export const DEF = {
   },
   blade: {
     n: 'Presse mit Klingen',
-    g: '✕',
+    icon: 'blade',
     col: '#7a2a3a',
     cat: 'masch',
     kind: 'pass',
@@ -94,7 +94,7 @@ export const DEF = {
   },
   schleuder: {
     n: 'Abschleuderer',
-    g: '☄',
+    icon: 'schleuder',
     col: '#7a4a24',
     cat: 'masch',
     kind: 'pass',
@@ -110,7 +110,7 @@ export const DEF = {
   },
   bin: {
     n: 'Container',
-    g: '▥',
+    icon: 'bin',
     col: '#4a4a4a',
     cat: 'masch',
     kind: 'sink',
@@ -123,7 +123,7 @@ export const DEF = {
   },
   oven: {
     n: 'Verbrenner',
-    g: '♨',
+    icon: 'oven',
     col: '#7a3524',
     cat: 'masch',
     kind: 'sink',
@@ -137,7 +137,7 @@ export const DEF = {
   },
   acid: {
     n: 'Säurebad',
-    g: '☣',
+    icon: 'acid',
     col: '#3f4a3a',
     cat: 'masch',
     kind: 'sink',
@@ -151,7 +151,7 @@ export const DEF = {
   },
   shop: {
     n: 'Verkauf',
-    g: '§',
+    icon: 'shop',
     col: '#2f6a4a',
     cat: 'hand',
     kind: 'sink',
@@ -166,7 +166,7 @@ export const DEF = {
   },
   lab: {
     n: 'Reinraum',
-    g: '✚',
+    icon: 'lab',
     col: '#4a5560',
     cat: 'masch',
     kind: 'clean',
@@ -178,7 +178,7 @@ export const DEF = {
   },
   weiche: {
     n: 'Weiche',
-    g: '⑂',
+    icon: 'weiche',
     col: '#4a5a7a',
     cat: 'logi',
     kind: 'route',
@@ -193,7 +193,7 @@ export const DEF = {
   },
   merge: {
     n: 'Zusammenführung',
-    g: '←',
+    icon: 'merge',
     col: '#4a5a7a',
     cat: 'logi',
     kind: 'route',
@@ -208,7 +208,7 @@ export const DEF = {
   },
   filter: {
     n: 'Filter',
-    g: '≡',
+    icon: 'filter',
     col: '#5a4a7a',
     cat: 'logi',
     kind: 'route',
@@ -224,7 +224,7 @@ export const DEF = {
   },
   pipe: {
     n: 'Blut-Pipe',
-    g: '│',
+    icon: 'pipe',
     col: '#7a3030',
     cat: 'rohr',
     kind: 'pipe',
@@ -237,7 +237,7 @@ export const DEF = {
   },
   tank: {
     n: 'Bluttank',
-    g: '▮',
+    icon: 'tank',
     col: '#4a4a4a',
     cat: 'rohr',
     kind: 'tank',
@@ -249,7 +249,7 @@ export const DEF = {
   },
   drain: {
     n: 'Abfluss',
-    g: '≋',
+    icon: 'drain',
     col: '#555',
     cat: 'rohr',
     kind: 'drain',
@@ -261,7 +261,7 @@ export const DEF = {
   },
   market: {
     n: 'Blutmarkt',
-    g: '€',
+    icon: 'market',
     col: '#555',
     cat: 'hand',
     kind: 'market',
@@ -273,7 +273,7 @@ export const DEF = {
   },
   gen: {
     n: 'Generator',
-    g: '⚡',
+    icon: 'gen',
     col: '#555',
     cat: 'hand',
     kind: 'gen',

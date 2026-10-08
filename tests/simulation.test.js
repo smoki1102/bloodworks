@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { boot, put, run } from './helpers.js';
 import { S, corpses, sticks, nets, floorBlood } from '../src/core/state.js';
+import { addFloorBlood } from '../src/core/effects.js';
 import { idx } from '../src/core/grid.js';
 import { questStep, questProgress } from '../src/core/quests.js';
 import { buyUpgrade, upgEff, upgLevel } from '../src/core/upgrades.js';
@@ -58,7 +59,7 @@ describe('Simulation', () => {
 
   it('Bodenblut sickert nach unten', () => {
     put('bin', 10, 20);
-    floorBlood[idx(10, 20)] = 11;
+    addFloorBlood(10, 20, 11);
     run(0.5);
     let below = 0;
     for (let y = 21; y < 64; y++) below += floorBlood[idx(10, y)];
@@ -67,7 +68,7 @@ describe('Simulation', () => {
   });
 
   it('Bodenblut breitet sich am Boden seitlich aus', () => {
-    floorBlood[idx(10, 63)] = 11;
+    addFloorBlood(10, 63, 11);
     run(1);
     expect(floorBlood[idx(11, 63)] + floorBlood[idx(9, 63)]).toBeGreaterThan(0);
   });

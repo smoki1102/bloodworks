@@ -1,8 +1,8 @@
 import { CATS, DEF } from '../config/building-defs.js';
 import { TUT_STEPS } from '../config/tutorial-defs.js';
-import { CELL, SAVE_KEY, SAVE_VER } from '../config/constants.js';
+import { CELL, PH, PW, SAVE_KEY, SAVE_VER } from '../config/constants.js';
 import { buildBeltPath } from '../core/belt-path.js';
-import { toast } from '../core/effects.js';
+import { resetBloodBounds, setReducedMotion, toast } from '../core/effects.js';
 import { bldAt, inGrid } from '../core/grid.js';
 import {
   addBuilding,
@@ -17,7 +17,10 @@ import { netHasTank, bloodCapTotal, bloodTotal } from '../core/pipes.js';
 import { partPoints } from '../core/parts.js';
 import { giveSkillGift } from '../core/skill.js';
 import { S, blds, corpses, freshState, initSim, nets, setState } from '../core/state.js';
-import { cv, panBy, screenToWorld, zoomAt } from '../render/renderer.js';
+import { cv, panBy, resize, screenToWorld, zoomAt } from '../render/renderer.js';
+import { iconSvg } from '../render/icons.js';
+import { UI, CSS_MAP } from '../config/palette.js';
+import { initTooltip } from './tooltip.js';
 import { $, fmt } from '../utils/helpers.js';
 import {
   inspectorAction,
@@ -53,8 +56,10 @@ export function renderList() {
         .join(' · ');
       return `<div class="card${S.tool === k ? ' sel' : ''}${S.money < cost ? ' poor' : ''}${
         locked ? ' locked' : ''
-      }${S.tutItem === k ? ' tut' : ''}" data-t="${k}">
-    <div class="r1"><span class="g">${d.g}</span><span class="nm">${d.n}</span><span class="cost">${
+      }${S.tutItem === k ? ' tut' : ''}" data-t="${k}" role="button" tabindex="0" aria-pressed="${
+        S.tool === k
+      }">
+    <div class="r1"><span class="g">${iconSvg(d.icon)}</span><span class="nm">${d.n}</span><span class="cost">${
       cost ? cost + ' €' : '—'
     }</span></div>
     <div class="ds">${d.d}</div><div class="tag">${tags}</div></div>`;
@@ -354,6 +359,17 @@ const vhHalf = () => cv.getBoundingClientRect().height / 2;
 
 let skillPaused = false;
 
+/** Baukarte wählen/abwählen (Click und Enter/Space). */
+function selectCard(t) {
+  if (!isUnlocked(t)) return toast('Im Skill-Tree freizuschalten', 'bad');
+  S.tool = S.tool === t ? null : t;
+  S.beltFrom = null;
+  S.sel = null;
+  lastList = null;
+  renderList();
+  renderInspector();
+}
+
 document.addEventListener('click', (e) => {
   const tab = e.target.closest('[data-c]');
   if (tab) {
@@ -366,14 +382,7 @@ document.addEventListener('click', (e) => {
   }
   const card = e.target.closest('.card');
   if (card) {
-    const t = card.dataset.t;
-    if (!isUnlocked(t)) return toast('Im Skill-Tree freizuschalten', 'bad');
-    S.tool = S.tool === t ? null : t;
-    S.beltFrom = null;
-    S.sel = null;
-    lastList = null;
-    renderList();
-    renderInspector();
+    selectCard(card.dataset.t);
     return;
   }
   const act = e.target.closest('[data-a]');
@@ -395,11 +404,42 @@ document.addEventListener('change', (e) => {
   if (f) inspectorField(f.dataset.f, f.value);
 });
 
+// Enter/Space auf fokussierter Baukarte – Abfangen vor dem globalen Space-Handler.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.code !== 'Space') return;
+  const card = document.activeElement?.closest?.('.card');
+  if (!card) return;
+  e.preventDefault();
+  e.stopPropagation();
+  selectCard(card.dataset.t);
+});
+
 /* --------------------------------- Lauf --------------------------------- */
+
+/** Play-/Pause-Button: eigenes Icon + Label. */
+function setPlayBtn(label, running) {
+  $('btnPlay').innerHTML = `${iconSvg(running ? 'pause' : 'play')} ${label}`;
+}
+
+/** Statische Glyphen in index.html (z. B. Energie-HUD) durch Icons ersetzen. */
+function initIcons() {
+  const e = $('rEnergyIcon');
+  if (e) e.innerHTML = iconSvg('energy');
+  for (const b of document.querySelectorAll('[data-icon]'))
+    b.innerHTML = iconSvg(b.dataset.icon);
+}
+
+/** Kanonische Tokens aus `palette.js` auf `:root` schreiben (JS = Quelle). */
+function applyTokens() {
+  const root = document.documentElement;
+  if (!root || !root.style || !root.style.setProperty) return;
+  for (const [name, key] of Object.entries(CSS_MAP))
+    root.style.setProperty('--' + name, UI[key]);
+}
 
 export function toggleRun() {
   S.running = !S.running;
-  $('btnPlay').textContent = S.running ? '⏸ Pause' : '▶ ' + (S.t > 0 ? 'Weiter' : 'Start');
+  setPlayBtn(S.running ? 'Pause' : S.t > 0 ? 'Weiter' : 'Start', S.running);
   updateTutorial();
 }
 $('btnPlay').onclick = toggleRun;
@@ -421,6 +461,48 @@ document.querySelectorAll('#goreSeg button').forEach(
         .forEach((x) => x.classList.toggle('on', x === b));
     }),
 );
+
+/* ------------------------------- Einstellungen ------------------------------- */
+
+const setPop = $('setPop');
+
+function syncGoreSegs() {
+  for (const seg of [$('goreSeg'), $('goreSegGame')]) {
+    if (!seg) continue;
+    for (const b of seg.querySelectorAll('button'))
+      b.classList.toggle('on', +b.dataset.g === S.gore);
+  }
+}
+
+function toggleSetPop(force) {
+  const open = force !== undefined ? force : setPop.classList.contains('hide');
+  setPop.classList.toggle('hide', !open);
+  if (open) syncGoreSegs();
+}
+
+$('btnSettings').onclick = (e) => {
+  e.stopPropagation();
+  toggleSetPop();
+};
+
+document.addEventListener('click', (e) => {
+  if (
+    !setPop.classList.contains('hide') &&
+    !e.target.closest('#setPop') &&
+    !e.target.closest('#btnSettings')
+  )
+    toggleSetPop(false);
+});
+
+$('goreSegGame').querySelectorAll('button').forEach(
+  (b) =>
+    (b.onclick = () => {
+      S.gore = +b.dataset.g;
+      syncGoreSegs();
+    }),
+);
+
+$('optMotion').onchange = () => setReducedMotion($('optMotion').checked);
 
 /* ------------------------------- Speichern ------------------------------- */
 
@@ -475,6 +557,16 @@ export function save(silent) {
             prog: i.prog,
             bleed: i.bleed,
             life: i.life,
+            body: i.body
+              ? {
+                  hp: i.body.hp,
+                  bleeding: i.body.bleeding,
+                  lost: i.body.lost,
+                  hits: i.body.hits,
+                  limbs: i.body.limbs,
+                  php: i.body.php,
+                }
+              : undefined,
           })),
         })),
       }),
@@ -505,10 +597,24 @@ function closeForschungUI() {
   if (resume) toggleRun();
 }
 
+/**
+ * Aufsteigende Migration älterer Spielstände auf SAVE_VER. Pro Version ein
+ * Schritt; `raw` wird an Ort und Stelle verändert. Rückgabe: migrierter Rohdaten
+ * oder `null`, wenn die Migration nicht möglich ist.
+ *
+ * Beispiel für künftige Versionen:
+ *   if (raw.v === 9) { …Felder umwandeln…; raw.v = 10; }
+ */
+function migrate(raw) {
+  // if (raw.v === 9) { …; raw.v = 10; }
+  if (raw.v !== SAVE_VER) return null;
+  return raw;
+}
+
 export const hasSave = () => {
   try {
     const r = JSON.parse(localStorage.getItem(SAVE_KEY));
-    return !!r && r.v === SAVE_VER;
+    return !!r && migrate(r) !== null;
   } catch (err) {
     return false;
   }
@@ -522,10 +628,11 @@ export function load() {
     /* leerer oder kaputter Speicherstand */
   }
   if (!raw) return toast('Kein Spielstand', 'bad');
-  if (raw.v !== SAVE_VER)
-    return toast('Spielstand v' + raw.v + ' nicht kompatibel (nötig: v' + SAVE_VER + ')', 'bad');
+  raw = migrate(raw);
+  if (!raw) return toast('Spielstand nicht kompatibel', 'bad');
   if (S.running) toggleRun();
   initSim();
+  resetBloodBounds();
   Object.assign(S, {
     money: raw.money,
     energy: raw.energy,
@@ -579,6 +686,10 @@ export function load() {
 
 $('btnSave').onclick = () => save();
 $('btnLoad').onclick = load;
+applyTokens();
+initIcons();
+initTooltip();
+setPlayBtn('Start', false);
 $('btnSkipTut').onclick = () => {
   S.tut = 'off';
   S.done = true;
@@ -613,7 +724,7 @@ document.addEventListener('visibilitychange', () => {
 function startGame(mode) {
   newGame(mode);
   $('modal').classList.add('hide');
-  $('btnPlay').textContent = '▶ Start';
+  setPlayBtn('Start', false);
   if (mode === 'tutorial') toast('Tutorial: folge den grünen Markierungen', 'good');
 }
 
@@ -626,14 +737,15 @@ export function setupWorld(mode = 'free') {
 
 export function newGame(mode = 'tutorial') {
   const g = S ? S.gore : 100;
-  const cam = S ? { ...S.cam } : { x: 0, y: 0, z: 1 };
   setState(freshState());
   S.gore = g;
   S.tut = mode === 'tutorial' ? 'on' : 'off';
   S.done = mode !== 'tutorial';
-  S.cam = cam;
+  S.cam.x = PW / 2;
+  S.cam.y = PH / 2;
   clearHistory();
   initSim();
+  resetBloodBounds();
   setupWorld(mode);
   lastList = null;
   lastHint = null;
@@ -644,4 +756,5 @@ export function newGame(mode = 'tutorial') {
   renderInspector();
   renderHUD();
   updateTutorial();
+  resize();
 }

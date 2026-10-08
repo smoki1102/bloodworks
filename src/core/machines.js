@@ -20,6 +20,7 @@ import {
   GEN_GAIN,
   HIT_WINDOW,
   LAB_CLEAN_RATE,
+  LAB_RANGE,
   OVEN_ASH,
   OVEN_ENERGY,
   OVEN_TIME,
@@ -29,6 +30,7 @@ import {
   SCHLEUDER_KICK,
   EJECT_LIFT,
   SHOP_TIME,
+  SHOP_VALUE_MULT,
   SPAWN_BASE,
   SPAWN_FIRST,
   SPAWN_MIN,
@@ -36,9 +38,16 @@ import {
   SPIKE_HITS,
   rotR,
 } from '../config/constants.js';
-import { bloodColor, burst, floatText, nBurst } from './effects.js';
+import {
+  addBeltBlood,
+  addFloorBlood,
+  bloodColor,
+  burst,
+  floatText,
+  nBurst,
+} from './effects.js';
 import { noteOut, noteRate } from './flow.js';
-import { bldAtCell, cellX, cellY, idx, inGrid, portsOf } from './grid.js';
+import { bldAtCell, cellX, cellY, inGrid, portsOf } from './grid.js';
 import { addBlood, availBlood, suctionCells, takeBlood } from './pipes.js';
 import { itemPos, roomIn, stepTransport, exitCellOf, feed } from './belts.js';
 import { stepMarket, priceOf } from './market.js';
@@ -57,7 +66,6 @@ import {
 import { S, blds, sticks, corpses, floorBlood } from './state.js';
 import { upgEff } from './upgrades.js';
 import { clamp, rnd } from '../utils/helpers.js';
-import { addBeltBlood } from './effects.js';
 
 export const capOf = (t) => DEF[t].cap ?? 0;
 
@@ -319,10 +327,7 @@ function stepRoute(b, dt, pf, run) {
 function addBinBlood(b) {
   const per = BIN_BLOOD / Math.max(1, b.spanW * b.spanH);
   for (let y = b.y; y < b.y + b.spanH; y++)
-    for (let x = b.x; x < b.x + b.spanW; x++) {
-      const i = idx(x, y);
-      floorBlood[i] = Math.min(11, floorBlood[i] + per);
-    }
+    for (let x = b.x; x < b.x + b.spanW; x++) addFloorBlood(x, y, per);
   const c = { x: cellX(b.x) + (b.spanW * 48) / 2, y: cellY(b.y + b.spanH) };
   burst(c.x, c.y - 8, bloodColor(), nBurst(4), 90);
   floatText(c.x, c.y - 30, '+' + BIN_BLOOD, bloodColor());
@@ -368,7 +373,7 @@ function stepSink(b, dt, run) {
       S.energy = Math.min(S.energyMax, S.energy + OVEN_ENERGY * (S.fx?.oven ?? 1));
       S.ash += OVEN_ASH;
     } else if (b.t === 'acid') S.money += ACID_MONEY;
-    else S.money += Math.round(valueOf(it) * priceOf() * 8);
+    else S.money += Math.round(valueOf(it) * priceOf() * SHOP_VALUE_MULT);
     noteOut(b, S.t);
     b.pulse = 0.5;
     return true;
@@ -423,9 +428,16 @@ function stepDrain(b, dt, pf, run) {
 
 function stepLab(b, dt, pf) {
   if (pf < 0.1) return false;
-  for (const o of blds)
-    if (o.dirt > 0 && o.clean <= 0)
-      o.dirt = Math.max(0, o.dirt - LAB_CLEAN_RATE * dt * pf * (S.fx?.machDirt ?? 1));
+  const cx = b.x + (b.spanW || 1) / 2,
+    cy = b.y + (b.spanH || 1) / 2;
+  const r2 = LAB_RANGE * LAB_RANGE;
+  for (const o of blds) {
+    if (o.dirt <= 0 || o.clean > 0) continue;
+    const ox = o.x + (o.spanW || 1) / 2 - cx,
+      oy = o.y + (o.spanH || 1) / 2 - cy;
+    if (ox * ox + oy * oy > r2) continue;
+    o.dirt = Math.max(0, o.dirt - LAB_CLEAN_RATE * dt * pf * (S.fx?.machDirt ?? 1));
+  }
   b.glow = 0.5;
   return true;
 }

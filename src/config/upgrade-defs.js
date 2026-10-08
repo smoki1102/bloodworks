@@ -3,7 +3,7 @@ export const UPG = [
   {
     id: 'drive',
     n: 'Bandantrieb',
-    g: '»',
+    icon: 'belt',
     d: 'Bandgeschwindigkeit +12 % pro Stufe.',
     key: 'speed',
     step: 0.12,
@@ -13,7 +13,7 @@ export const UPG = [
   {
     id: 'market',
     n: 'Marktkenntnis',
-    g: '€',
+    icon: 'market',
     d: 'Verkaufspreis am Blutmarkt +10 % pro Stufe.',
     key: 'price',
     step: 0.1,
@@ -23,7 +23,7 @@ export const UPG = [
   {
     id: 'feed',
     n: 'Nachschub',
-    g: '▶',
+    icon: 'spawn',
     d: 'Der Eingang setzt Sticks 12 % schneller aufs Band.',
     key: 'spawn',
     step: 0.12,
@@ -33,7 +33,7 @@ export const UPG = [
   {
     id: 'tank',
     n: 'Tanksystem',
-    g: '▮',
+    icon: 'tank',
     d: '+100 Blutkapazität pro Stufe.',
     key: 'tank',
     step: 100,

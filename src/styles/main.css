@@ -1,19 +1,23 @@
+/* Kanonisch in src/config/palette.js (UI) – diese Werte sind Fallbacks. */
 :root {
   color-scheme: dark;
-  --bg: #151515;
-  --panel: #1d1d1d;
-  --panel2: #262626;
-  --line: #343434;
-  --line2: #464646;
-  --txt: #cfcfcf;
-  --dim: #8f8f8f;
-  --bright: #f5f5f5;
-  --accent: #c0392b;
+  --bg: #131512;
+  --panel: #1b1e19;
+  --panel2: #242822;
+  --line: #343830;
+  --line2: #474d40;
+  --txt: #d2d4c8;
+  --dim: #8b8e80;
+  --bright: #f2f3ea;
+  --accent: #b03528;
   --accent2: #e5483a;
-  --tech: #2f81f8;
-  --tech2: #5aa9ff;
-  --soft-tech: rgba(47, 129, 248, 0.16);
-  --soft: rgba(192, 57, 43, 0.14);
+  --action: #9fb52e;
+  --action2: #c0d64a;
+  --warn: #dfa033;
+  --ok: #6a9a34;
+  --err: #e5483a;
+  --soft-action: rgba(159, 181, 46, 0.16);
+  --soft: rgba(176, 53, 40, 0.14);
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --bot: env(safe-area-inset-bottom, 0px);
   --top: env(safe-area-inset-top, 0px);
@@ -22,6 +26,29 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+.ico {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.14em;
+  flex: none;
+}
+/* Fortschritts-/Statusbalken im Inspektor – Farbe über Klasse statt Inline-Hex. */
+.bar i.fill-dim {
+  background: var(--dim);
+}
+.bar i.fill-blood {
+  background: var(--accent2);
+}
+.bar i.fill-ok {
+  background: var(--ok);
+}
+.bar i.fill-warn {
+  background: var(--warn);
+}
+.bar i.fill-err {
+  background: var(--err);
 }
 html,
 body {
@@ -48,6 +75,10 @@ button {
   border-radius: 3px;
   padding: 8px 12px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 button:hover {
   background: #333;
@@ -61,7 +92,7 @@ button:disabled {
   cursor: not-allowed;
 }
 button:focus-visible {
-  outline: 2px solid var(--tech);
+  outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 #app {
@@ -147,6 +178,35 @@ canvas {
   border-color: var(--line2);
   color: var(--bright);
 }
+#setPop {
+  position: absolute;
+  top: calc(var(--top) + 46px);
+  right: 14px;
+  z-index: 30;
+  width: 230px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+#setPop.hide {
+  display: none;
+}
+#setPop .lbl:last-of-type {
+  margin-top: 4px;
+}
+.setRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 12px var(--mono);
+  color: var(--txt);
+  cursor: pointer;
+}
+.setRow input {
+  accent-color: var(--action);
+}
 #stats {
   font: 10px var(--mono);
   color: var(--dim);
@@ -187,18 +247,18 @@ canvas {
   color: var(--dim);
 }
 .seg button.on {
-  background: var(--tech);
+  background: var(--action);
   color: #fff;
 }
 #btnPlay {
-  background: var(--tech);
-  border-color: var(--tech);
+  background: var(--action);
+  border-color: var(--action);
   color: #fff;
   min-width: 100px;
 }
 #btnPlay:hover {
-  background: var(--tech2);
-  border-color: var(--tech2);
+  background: var(--action2);
+  border-color: var(--action2);
 }
 #side {
   height: 200px;
@@ -223,7 +283,7 @@ canvas {
 }
 #tabs button.on {
   color: var(--bright);
-  border-bottom-color: var(--tech);
+  border-bottom-color: var(--action);
 }
 #list {
   flex: 1;
@@ -248,8 +308,8 @@ canvas {
   border-color: var(--line2);
 }
 .card.sel {
-  border-color: var(--tech);
-  background: var(--soft-tech);
+  border-color: var(--action);
+  background: var(--soft-action);
 }
 .card.poor {
   opacity: 0.5;
@@ -281,6 +341,7 @@ canvas {
   margin-top: auto;
 }
 .card .g {
+  display: inline-flex;
   font-size: 20px;
   line-height: 1;
 }
@@ -292,7 +353,7 @@ canvas {
   padding: 9px 12px;
   background: var(--panel);
   border: 1px solid var(--line2);
-  border-left: 2px solid var(--tech);
+  border-left: 2px solid var(--action);
   border-radius: 3px;
   pointer-events: none;
   font-size: 12px;
@@ -304,7 +365,7 @@ canvas {
   display: inline-block;
   min-width: 16px;
   text-align: center;
-  background: var(--tech);
+  background: var(--action);
   color: #fff;
   font: 700 10px var(--mono);
   margin-right: 7px;
@@ -318,7 +379,7 @@ canvas {
   display: none;
   background: var(--panel2);
   border: 1px solid var(--line2);
-  border-top: 2px solid var(--tech);
+  border-top: 2px solid var(--action);
   border-radius: 3px;
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
 }
@@ -397,6 +458,24 @@ canvas {
   gap: 4px;
   align-items: center;
   pointer-events: none;
+}
+#tooltip {
+  position: fixed;
+  z-index: 40;
+  max-width: 240px;
+  padding: 7px 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  color: var(--txt);
+  font: 11.5px/1.45 var(--mono);
+  white-space: pre-line;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+#tooltip.show {
+  opacity: 1;
 }
 .toast {
   padding: 6px 13px;
@@ -490,7 +569,7 @@ canvas {
   gap: 10px;
   background: var(--panel2);
   border: 1px solid var(--line2);
-  border-top: 2px solid var(--tech);
+  border-top: 2px solid var(--action);
   border-radius: 3px;
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
   z-index: 6;
@@ -507,7 +586,7 @@ canvas {
   flex: 0 0 auto;
 }
 #forschung .resHead .ftitle {
-  color: var(--tech);
+  color: var(--action);
   letter-spacing: 0.08em;
 }
 #forschung .resHead .fcur {
@@ -532,8 +611,8 @@ canvas {
   padding: 5px 11px;
 }
 .ftabs button.on {
-  background: var(--tech);
-  border-color: var(--tech);
+  background: var(--action);
+  border-color: var(--action);
   color: #fff;
 }
 .fpane {
@@ -565,6 +644,7 @@ canvas {
   align-items: baseline;
 }
 .upg .g {
+  display: inline-flex;
   font-size: 16px;
 }
 .upg .nm {
@@ -597,7 +677,7 @@ canvas {
   border-radius: 2px;
 }
 .upg .pips i.on {
-  background: var(--tech);
+  background: var(--action);
 }
 .upg button {
   margin-left: auto;
@@ -625,7 +705,7 @@ canvas {
   padding: 30px;
   background: var(--panel);
   border: 1px solid var(--line2);
-  border-top: 2px solid var(--tech);
+  border-top: 2px solid var(--action);
   border-radius: 4px;
 }
 .box h1 {
@@ -658,21 +738,21 @@ canvas {
   flex: 1;
 }
 .segs button.on {
-  background: var(--tech);
-  border-color: var(--tech);
+  background: var(--action);
+  border-color: var(--action);
   color: #fff;
 }
 .big {
   width: 100%;
   padding: 13px;
   font-weight: 700;
-  background: var(--tech);
+  background: var(--action);
   border: 0;
   color: #fff;
   margin-top: 8px;
 }
 .big:hover {
-  background: var(--tech2);
+  background: var(--action2);
 }
 .big.alt {
   background: var(--panel2);
@@ -764,7 +844,7 @@ canvas {
   overflow: hidden;
 }
 .snode.can {
-  border-left: 2px solid #2f9e44;
+  border-left: 2px solid var(--ok);
 }
 .snode.lock {
   opacity: 0.5;
@@ -780,7 +860,7 @@ canvas {
   width: 600px;
   font: 700 11px var(--mono);
   letter-spacing: 0.05em;
-  color: var(--tech);
+  color: var(--action);
   text-transform: uppercase;
 }
 .brTag span {
@@ -812,7 +892,7 @@ svg.sline text {
 }
 .upg .unlock {
   font: 600 10px var(--mono);
-  color: #2f9e44;
+  color: var(--ok);
 }
 
 /* --------------------------- Baukarten / Tutorial --------------------------- */
@@ -821,12 +901,12 @@ svg.sline text {
   filter: grayscale(0.7);
 }
 .card .lock {
-  color: #e0a040;
+  color: var(--warn);
   font-weight: 600;
 }
 .card.tut {
-  border-color: #2f9e44;
-  box-shadow: 0 0 0 1px rgba(47, 158, 68, 0.35);
+  border-color: var(--ok);
+  box-shadow: 0 0 0 1px rgba(106, 154, 52, 0.35);
 }
 #inspector .res-row {
   gap: 5px;

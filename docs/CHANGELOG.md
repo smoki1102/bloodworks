@@ -1,5 +1,176 @@
 # Changelog
 
+## 0.9.6 – Politur/Performance/Doku (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **`fluids()`-Performance:** Blut-Simulation iteriert nur noch über ein
+  Schmutz-Rechteck (`touch()` expandiert bei Zufluss, `fluids()` verengt pro
+  Tick) statt zweimal über alle 8192 Zellen. `addBinBlood` nutzt jetzt
+  `addFloorBlood` (konsistent zum Dirty-Rect); `resetBloodBounds()` nach
+  `initSim()`.
+- **Save-Migration:** `migrate()`-Infrastruktur in `load()`/`hasSave()` –
+  künftige SAVE_VER-Bumps können alte Spielstände schrittweise hochziehen.
+  SAVE_VER bleibt 9.
+- **Texte:** Quest „Lücke & Fang": „im Keller (Container)" → „im Container";
+  Tutorial-Abfluss: irreführende Platzierungs-Hinweis formuliert („unten an
+  die Hallenkante, dorthin sickert das Blut").
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build, fehlerfrei.
+- Tests `pipes`/`simulation` nutzen jetzt die public API (`addFloorBlood`/
+  `addBeltBlood`) statt direkter Array-Schreibweise.
+
+## 0.9.5 – Mechanik/Balance (08.10.2026)
+
+### Behobene Fehler
+
+- **Verkaufsstelle:** Warenwert-Multiplikator von 8 auf 2 gesenkt
+  (`SHOP_VALUE_MULT`, ~248 €/s → ~62 €/s bei vollem Körperwert).
+- **Forschung:** Upgrades bezahlen jetzt aus dem Gesamtpool (freies Blut +
+  Tanks), nicht nur aus `S.blood`; die Schaltflächen-Anzeige prüft ebenfalls
+  `bloodTotal()`. Konsistent zum Skill-Tree (`spendBlood`).
+- **Labor:** reinigt jetzt nur noch Gebäude innerhalb von `LAB_RANGE` (10
+  Zellen) um das Labor, statt global die ganze Halle.
+- **Kamera:** beim Neustart (Tutorial/Neues Spiel) wird die Kamera auf die
+  Hallenmitte zentriert statt an der alten Position kleben zu bleiben.
+- **Speicherstand:** Stick-Leichen speichern ihren Körper (`body` mit `limbs`,
+  `hp`, `bleeding`, `lost`, `hits`, `php`) und überleben damit Speichern/Laden.
+- **Bin-Inspektionsbalken:** zeigt jetzt den mittleren Verwesefortschritt der
+  enthaltenen Items (`it.rot` / `BIN_ROT_TIME`), nicht mehr den nie gesetzten
+  `b.prog`.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build, fehlerfrei.
+- Save-Version bleibt 9 (Body-Feld optional, abwärtskompatibel).
+
+## 0.9.4 – Hallenboden-Politur (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Hallenboden:** subtile Kachelvariation (einmal gebautes Canvas-Muster mit
+  leichter Helligkeitsvarianz pro Viertelzelle + feine Rauschpunkte); überlagert
+  die flache `hall`-Fläche.
+- **Hallenrand:** harter 3px-Strich entfernt; weicher Abdunkler-Übergang zum
+  Hintergrund an allen vier Rändern (Lineargradienten) + dezente Kantenlinie.
+- **Bodenblut:** weiche, rotierende Ellipsenflecken mit deterministischem
+  Zellenrauschen (`cellNoise`) statt Rechteckstreifen am Zellenfuß; Radius und
+  Alpha skalieren weiter mit der Blutmenge.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build, fehlerfrei.
+- Keine Save-Änderung, keine neuen Dependencies, rein visuell.
+
+## 0.9.3 – Maschinen-/Objekt-Rendering auf Palette (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **`palette.js` / `CANVAS`:** Material-Tokens ergänzt – Gehäuse (`panel`),
+  dunkles Aktionsgrün (`accentDim`), Rohre (`pipe`, `pipe2`, `pipeDirt`),
+  Glas/Innenräume (`glass`, `spawnGlass`), Bänder (`beltInner`, `beltOff`,
+  `beltDirt`), Ofenfeuer (`fire`), Säure (`acid`), Glow (`glow`), Balken-
+  Hintergründe (`barBg`, `dirtBar`), Schatten (`shadow`), Hallenrand
+  (`hallEdge`), Abdunkler (`shade`), Reinigung (`fog`), Weiß (`white`),
+  Blut je Gore-Level (`blood0`/`blood50`/`blood100`) und Staub (`dust`).
+  Neue Helper-Funktion `rgba(hex, a)` für Hex-Tokens mit Deckkraft.
+- **`renderer.js`:** alle verbleibenden Hardcoded-Farben (Bänder, Port-Pfeile,
+  Rohre, Maschinen-Innenräume, Overlays „AUS"/„REINIGUNG", Dreck-Balken,
+  Warn-Badge, Geisterzellen, Bandvorschau, Tutorial-Hinweise, Hallenrand,
+  Auswahlrahmen, Stick-GLUT) auf Palette-Tokens umgestellt; kein `rgba()`/
+  Hex-Literal mehr außerhalb `palette.js`.
+- Neue Hilfsfunktion `bar()` – einheitlicher Fortschrittsbalken für
+  Bin, Ofen, Säure und Shop (vorher vier Copy-Paste-Varianten).
+- `housing()`: dezente Bodenschattierung unter dem Gehäuse (Tiefe).
+- `effects.js`: `bloodColor()` und Staub-Partikel nutzen `CANVAS`-Tokens.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build, fehlerfrei.
+- Keine Save-Änderung, keine neuen Dependencies.
+
+## 0.9.2 – Design-Tokens, Tooltip & Tastatur (08.10.2026)
+
+### Neu: Funktionen
+
+- **`src/config/palette.js`:** kanonische Farbquellen für UI (`UI`) und Canvas
+  (`CANVAS`) plus Mapping `CSS_MAP` für Token-Namen. Dunkles warmes Anthrazit,
+  Stahlgrau-Textstaffel, Industrie-Gelb-Grün als Aktionsfarbe (`--action`),
+  Blut-Rot als einziger Akzent (`--accent2`).
+- **`applyTokens()` (`ui.js`):** schreibt alle UI-Tokens beim Start auf `:root`
+  (JS = Quelle; CSS-Fallbacks bleiben als Deklaration stehen).
+- **`src/ui/tooltip.js`:** zentrales Tooltip-Element für `data-tip` (Hover +
+  Fokus, 350 ms Delay, Mehrzeilen via `\n`, Positionierung mit Viewport-Klemme).
+  Ersetzt langsame native `title`-Tooltips; HUD-Buttons, Ressourcen, Skill-Gesperrt-
+  Button und Inspektor-Kopf umgestellt.
+- **Einstellungs-Popover** (`#setPop`): Gore-Level (sofort wirksam, spiegelt das
+  Startmenü-Segment) und Schalter „Bewegung reduzieren" (`setReducedMotion()`
+  in `effects.js`, überschreibt die Systemeinstellung).
+- **Tastatur-Bedieneingabe:** Baukarten sind `role="button"`/`tabindex="0"`;
+  Enter und Space wählen die Karte (gefangen vor dem globalen Space-Handler).
+- **`fmt` (`helpers.js`):** deutsche Tausendertrennung (`1.600`) und
+  Komma-Dezimal bei k/M (`12,3k`, `2,5M`); neue `tests/helpers.test.js`.
+
+### Änderungen an bestehendem Code
+
+- `renderer.js`: `C` ist jetzt `CANVAS` aus `palette.js`; verbliebene Hardcoded-
+  Farben (Port-Pfeile, Ghost-Zelle, Auswahl, Hinweise) durch Token-Zugriffe ersetzt.
+- `main.css`: CSS-Variablen `--tech`/`--tech2`/`--soft-tech` → `--action`/
+  `--action2`/`--soft-action`; `:root`-Fallbacks auf Palette-Werte aktualisiert;
+  Rest-Härten (`.card .lock`, `.card.tut`, `.snode.can`, `.upg .unlock`) auf
+  Tokens umgestellt; neue `.bar i.fill-*`-Klassen.
+- `inspector.js`: alle fünf Fortschrittsbalken von Inline-Hex auf
+  `fill-blood`/`fill-dim`/`fill-warn`/`fill-ok`/`fill-err` umgestellt.
+- `index.html`: `theme-color` angepasst; Ressourcen-`title` → `data-tip`;
+  Einstellungs-Button mit `settings`-Icon ergänzt; Gore-Segment im Popover.
+- `icons.js`: neue UI-Icons `settings`.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build, fehlerfrei.
+- Keine Save-Änderung (`SAVE_KEY`/`SAVE_VER` unverändert).
+
+## 0.9.1 – Eigenes Icon-Set, Emoji/Sonderglyphen entfernt (08.10.2026)
+
+### Neu: Funktionen
+
+- **`src/render/icons.js`:** eigenes Icon-Set mit 27 Icons (19 Maschinen/Gebäude + 8 UI),
+  jede als reine 16×16-Vektorform definiert (`ICONS`-Tabelle aus Linien, Polygonen,
+  Kreisen, Rechtecken, Bögen). Zwei Renderer aus einer Quelle: `drawIcon()` für den
+  Canvas, `iconSvg()` für Inline-SVG in der DOM-UI. Keine Emoji, keine Sonderglyphen,
+  keine Fremd-Assets, keine neue Dependency.
+- Neue UI-Icons: `play`, `pause`, `close`, `power`, `clean`, `energy`, `blood`, `money`.
+
+### Änderungen an bestehendem Code
+
+- `building-defs.js`/`upgrade-defs.js`: Feld `g:` (Schriftglyphen wie `▶ ✹ ☄ ⚡ ≋`) →
+  `icon:` (Icon-Name aus `ICONS`). Alle 19 Gebäude und 4 Upgrades umgestellt.
+- `renderer.js`: die fünf `ctx.fillText(d.g, …)`-Stellen (Weiche/Zusammenführung/Filter,
+  Verkauf, Markt, Generator, Reinraum) zeichnen jetzt `drawIcon()`.
+- `ui.js`/`inspector.js`/`research.js`: Bauliste, Inspektor-Kopf, An/Aus- und
+  Reinigen-Buttons, Upgrade-Karten und Start-/Pause-Button nutzen `iconSvg()`;
+  `initIcons()` ersetzt die statische Energie-Glyphen im HUD.
+- `index.html`: Glyphen `⚡ ▶ ✕` entfernt (Icon-Platzhalter bzw. `data-icon`).
+- `main.css`: neue `.ico`-Klasse (inline-block, 1em, currentColor); Buttons sind
+  `inline-flex` mit `gap`, damit Icon + Label sauber sitzen.
+- `docs/ARCHITECTURE.md`: Icon-Modul dokumentiert, Testzahl korrigiert (73 → 89).
+
+### Qualität
+
+- `npm run check` = ESLint + 89 Vitest-Tests (9 Dateien) + Vite-Build, fehlerfrei.
+- Unicode-Scan über Quelle/Markup: nur noch typografische Zeichen (`· – — € × → § °`)
+  in Prosa und Kommentaren; alle dekorativen Sonderglyphen (`▶ ✹ ▤ ✕ ☄ ▥ ♨ ☣ § ✚ ⑂
+  ← ≡ │ ▮ ≋ ⚡ ⏸ ⏻ ✦`) entfernt.
+
+### Annahmen
+
+1. Prosa-Pfeile `→` (z. B. „8 Blut/s → 15 E/s") bleiben typografisch zulässig; ersetzt
+   werden nur dekorative Glyphen, die als Icon/Ersatz für Grafik fungieren.
+2. Icons erben ihre Farbe per `currentColor` (DOM) bzw. werden mit `C.*` aus der
+   Renderer-Palette gefärbt (Canvas) – keine eigenen Icon-Farben.
+
 ## 0.9.0 – Echte 45°-Bänder (08.10.2026)
 
 ### Neu: Funktionen

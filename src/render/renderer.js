@@ -16,6 +16,8 @@ import {
   sticks,
 } from '../core/state.js';
 import { $, clamp } from '../utils/helpers.js';
+import { drawIcon } from './icons.js';
+import { CANVAS, rgba } from '../config/palette.js';
 
 export const cv = $('cv'),
   ctx = cv.getContext('2d');
@@ -26,23 +28,46 @@ export let vScale = 1,
   vw = 1,
   vh = 1;
 
-export const C = {
-  bg: '#141a22',
-  hall: '#1d242e',
-  grid: 'rgba(120,140,165,.10)',
-  grid2: 'rgba(120,140,165,.20)',
-  body: '#d7dfe9',
-  dark: '#2a333f',
-  steel: '#7c8a9a',
-  light: '#3c4a5a',
-  bright: '#0f1720',
-  dim: '#5d6b7a',
-  accent: '#1d7fd6',
-  accent2: '#2f81f8',
-  err: '#e5483a',
-  warn: '#e0a040',
-  ok: '#2f9e44',
-};
+/** Deterministisches 0–1-Rauschen pro Zelle (stabile Optik, kein Flimmern). */
+function cellNoise(x, y) {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+let floorPat;
+/** Einmal gebautes Kachelmuster über dem Hallenboden (subtile Variation). */
+function floorPattern() {
+  if (floorPat !== undefined) return floorPat;
+  floorPat = null;
+  if (typeof document === 'undefined') return null;
+  try {
+    const pc = document.createElement('canvas');
+    pc.width = pc.height = CELL;
+    const p = pc.getContext && pc.getContext('2d');
+    if (!p) return null;
+    p.fillStyle = C.hall;
+    p.fillRect(0, 0, CELL, CELL);
+    const shades = [
+      'rgba(0,0,0,0)',
+      'rgba(255,255,255,0.015)',
+      'rgba(0,0,0,0.022)',
+      'rgba(255,255,255,0.008)',
+    ];
+    for (let i = 0; i < 4; i++) {
+      p.fillStyle = shades[i];
+      p.fillRect((i % 2) * (CELL / 2), Math.floor(i / 2) * (CELL / 2), CELL / 2, CELL / 2);
+    }
+    p.fillStyle = 'rgba(0,0,0,0.014)';
+    for (let i = 0; i < 10; i++) p.fillRect((i * 37) % CELL, (i * 53) % CELL, 2, 1);
+    floorPat = ctx.createPattern(pc, 'repeat');
+  } catch {
+    floorPat = null;
+  }
+  return floorPat;
+}
+
+/** Canvas-Palette – kanonisch in `config/palette.js` (CANVAS). */
+export const C = CANVAS;
 
 /* ------------------------------- Kamera ------------------------------- */
 
@@ -145,7 +170,7 @@ export function drawLimbShape(part, x, y) {
 /** Stick an (x,y) – Füße auf y, Seite von rechts. */
 export function drawStickFigure(x, y, body, anim, glow, chair) {
   const has = (p) => !body || body.limbs[p];
-  const ink = glow ? 'rgba(255,255,255,.92)' : C.bright;
+  const ink = glow ? rgba(C.white, 0.92) : C.bright;
   const sw = Math.sin(anim * 13) * (body && body.hp < 45 ? 6.5 : 4);
   ctx.save();
   ctx.strokeStyle = ink;
@@ -153,7 +178,7 @@ export function drawStickFigure(x, y, body, anim, glow, chair) {
   ctx.lineWidth = glow ? 7.2 : 2.6;
   ctx.lineCap = 'round';
   if (chair) {
-    ctx.strokeStyle = glow ? 'rgba(255,255,255,.8)' : C.steel;
+    ctx.strokeStyle = glow ? rgba(C.white, 0.8) : C.steel;
     ctx.lineWidth = glow ? 5 : 2.2;
     ctx.beginPath();
     ctx.moveTo(x - 8, y - 34);
@@ -293,15 +318,15 @@ function drawBandStrip(b, inner) {
   }
   ctx.stroke();
   if (inner) {
-    ctx.fillStyle = 'rgba(30,44,60,.35)';
+    ctx.fillStyle = rgba(C.beltInner, 0.35);
     ctx.fillRect(s.x, s.y, s.w, s.h);
   }
   if (b.dirt > 4) {
-    ctx.fillStyle = 'rgba(70,40,25,' + Math.min(0.4, b.dirt / 260) + ')';
+    ctx.fillStyle = rgba(C.beltDirt, Math.min(0.4, b.dirt / 260));
     ctx.fillRect(s.x, s.y, s.w, s.h);
   }
   if (b.on === false) {
-    ctx.fillStyle = 'rgba(10,14,20,.45)';
+    ctx.fillStyle = rgba(C.beltOff, 0.45);
     ctx.fillRect(s.x, s.y, s.w, s.h);
   }
 }
@@ -333,15 +358,15 @@ function drawBandDiag(b, inner) {
   }
   ctx.stroke();
   if (inner) {
-    ctx.fillStyle = 'rgba(30,44,60,.35)';
+    ctx.fillStyle = rgba(C.beltInner, 0.35);
     ctx.fillRect(-len / 2, -w / 2, len, w);
   }
   if (b.dirt > 4) {
-    ctx.fillStyle = 'rgba(70,40,25,' + Math.min(0.4, b.dirt / 260) + ')';
+    ctx.fillStyle = rgba(C.beltDirt, Math.min(0.4, b.dirt / 260));
     ctx.fillRect(-len / 2, -w / 2, len, w);
   }
   if (b.on === false) {
-    ctx.fillStyle = 'rgba(10,14,20,.45)';
+    ctx.fillStyle = rgba(C.beltOff, 0.45);
     ctx.fillRect(-len / 2, -w / 2, len, w);
   }
   ctx.restore();
@@ -349,11 +374,21 @@ function drawBandDiag(b, inner) {
 
 /* -------------------------------- Gebäude -------------------------------- */
 
+/** Fortschrittsbalken über einem Gerät (Hintergrund + Füllung). */
+function bar(x, y, w, frac, col) {
+  ctx.fillStyle = rgba(C.barBg, 0.4);
+  ctx.fillRect(x, y, w, 6);
+  ctx.fillStyle = col;
+  ctx.fillRect(x, y, w * clamp(frac, 0, 1), 6);
+}
+
 function housing(r, col) {
-  ctx.fillStyle = '#eef3f9';
+  ctx.fillStyle = C.panel;
   ctx.fillRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
   ctx.fillStyle = col;
   ctx.fillRect(r.x + 2, r.y + 2, r.w - 4, 11);
+  ctx.fillStyle = rgba(C.shade, 0.12);
+  ctx.fillRect(r.x + 2, r.y + r.h - 5, r.w - 4, 3);
   ctx.strokeStyle = C.steel;
   ctx.lineWidth = 2;
   ctx.strokeRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
@@ -389,8 +424,8 @@ function drawPorts(b) {
     ctx.closePath();
     ctx.fill();
   };
-  for (const dd of ins) arrow(dd, 'rgba(47,158,68,.95)');
-  for (const dd of outs) arrow(dd, 'rgba(47,129,248,.95)');
+  for (const dd of ins) arrow(dd, rgba(C.accentDim, 0.95));
+  for (const dd of outs) arrow(dd, rgba(C.accent2, 0.95));
 }
 
 function drawPipe(b, vis) {
@@ -403,7 +438,7 @@ function drawPipe(b, vis) {
     [-1, 0],
     [0, -1],
   ];
-  ctx.strokeStyle = '#8a3a3a';
+  ctx.strokeStyle = C.pipe;
   ctx.lineWidth = 11;
   ctx.lineCap = 'butt';
   for (const [dx, dy] of nb) {
@@ -414,18 +449,18 @@ function drawPipe(b, vis) {
     ctx.lineTo(cx + dx * CELL * 0.6, cy + dy * CELL * 0.6);
     ctx.stroke();
   }
-  ctx.fillStyle = '#8a3a3a';
+  ctx.fillStyle = C.pipe;
   ctx.fillRect(cx - 14, cy - 14, 28, 28);
-  ctx.fillStyle = '#b05555';
+  ctx.fillStyle = C.pipe2;
   ctx.beginPath();
   ctx.arc(cx, cy, 9, 0, 7);
   ctx.fill();
   if (b.dirt > 4) {
-    ctx.fillStyle = 'rgba(50,25,15,' + Math.min(0.5, b.dirt / 160) + ')';
+    ctx.fillStyle = rgba(C.pipeDirt, Math.min(0.5, b.dirt / 160));
     ctx.fillRect(cx - 14, cy - 14, 28, 28);
   }
   const pulse = reducedMotion() ? CELL * 0.3 : (S.t * 60 + b.id * 13) % CELL;
-  ctx.fillStyle = 'rgba(214,64,48,.55)';
+  ctx.fillStyle = rgba(C.glow, 0.55);
   ctx.beginPath();
   ctx.arc(cx - 12 + pulse * 0.5, cy, 3.4, 0, 7);
   ctx.fill();
@@ -440,7 +475,7 @@ function drawMachineBody(b, r) {
   const on = b.clean <= 0 && b.on !== false && S.pf > 0.15;
   switch (b.t) {
     case 'spawn': {
-      ctx.fillStyle = 'rgba(45,64,90,' + (0.12 + 0.08 * Math.sin(S.t * 3)) + ')';
+      ctx.fillStyle = rgba(C.spawnGlass, 0.12 + 0.08 * Math.sin(S.t * 3));
       ctx.fillRect(r.x + 8, r.y + 16, r.w - 40, r.h - 26);
       ctx.strokeStyle = C.steel;
       ctx.lineWidth = 2;
@@ -521,11 +556,7 @@ function drawMachineBody(b, r) {
     case 'weiche':
     case 'merge':
     case 'filter': {
-      ctx.font = 'bold 20px ui-monospace,monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = on ? C.bright : C.steel;
-      ctx.fillText(d.g, cx, cy + 7);
-      ctx.textAlign = 'left';
+      drawIcon(ctx, d.icon, cx, cy, 20, on ? C.bright : C.steel);
       const q = b.items.length;
       for (let i = 0; i < q; i++) {
         ctx.fillStyle = C.accent2;
@@ -536,7 +567,7 @@ function drawMachineBody(b, r) {
       break;
     }
     case 'bin': {
-      ctx.fillStyle = 'rgba(30,48,62,.35)';
+      ctx.fillStyle = rgba(C.glass, 0.35);
       ctx.fillRect(r.x + 7, r.y + 15, r.w - 14, r.h - 22);
       b.items.forEach((it, i) => {
         const ix = r.x + 24 + (i % 4) * 26,
@@ -554,28 +585,22 @@ function drawMachineBody(b, r) {
           drawCorpseShape(ix, iy, (it.rot || 0) * 1.5 + i, 0.85, it.missing);
       });
       const f = b.items.length / (DEF.bin.cap || 9);
-      ctx.fillStyle = 'rgba(20,32,45,.4)';
-      ctx.fillRect(r.x + 8, r.y - 8, r.w - 16, 6);
-      ctx.fillStyle = f > 0.75 ? C.accent2 : C.dim;
-      ctx.fillRect(r.x + 8, r.y - 8, (r.w - 16) * f, 6);
+      bar(r.x + 8, r.y - 8, r.w - 16, f, f > 0.75 ? C.accent2 : C.dim);
       break;
     }
     case 'oven': {
-      ctx.fillStyle = 'rgba(30,48,62,.35)';
+      ctx.fillStyle = rgba(C.glass, 0.35);
       ctx.fillRect(r.x + 12, r.y + 16, r.w - 24, r.h - 24);
       if (b.items.length && b.clean <= 0) {
-        ctx.fillStyle = 'rgba(229,120,50,' + (0.5 + 0.25 * Math.sin(S.t * 9)) + ')';
+        ctx.fillStyle = rgba(C.fire, 0.5 + 0.25 * Math.sin(S.t * 9));
         ctx.fillRect(r.x + 16, r.y + 20, r.w - 32, r.h - 32);
       }
-      ctx.fillStyle = 'rgba(20,32,45,.4)';
-      ctx.fillRect(r.x + 8, r.y - 8, r.w - 16, 6);
-      ctx.fillStyle = C.warn;
-      ctx.fillRect(r.x + 8, r.y - 8, (r.w - 16) * clamp((b.prog || 0) / 1.4, 0, 1), 6);
+      bar(r.x + 8, r.y - 8, r.w - 16, (b.prog || 0) / 1.4, C.warn);
       break;
     }
     case 'acid': {
       const lvl = r.y + r.h * 0.55;
-      ctx.fillStyle = 'rgba(120,200,110,.55)';
+      ctx.fillStyle = rgba(C.acid, 0.55);
       ctx.beginPath();
       ctx.moveTo(r.x + 7, r.y + r.h - 4);
       ctx.lineTo(r.x + 7, lvl);
@@ -586,22 +611,12 @@ function drawMachineBody(b, r) {
       ctx.strokeStyle = C.steel;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(r.x + 5, r.y + 13, r.w - 10, r.h - 17);
-      ctx.fillStyle = 'rgba(20,32,45,.4)';
-      ctx.fillRect(r.x + 8, r.y - 8, r.w - 16, 6);
-      ctx.fillStyle = C.ok;
-      ctx.fillRect(r.x + 8, r.y - 8, (r.w - 16) * clamp((b.prog || 0) / 1.7, 0, 1), 6);
+      bar(r.x + 8, r.y - 8, r.w - 16, (b.prog || 0) / 1.7, C.ok);
       break;
     }
     case 'shop': {
-      ctx.font = 'bold 22px ui-monospace,monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = on ? C.bright : C.steel;
-      ctx.fillText(d.g, cx, cy + 7);
-      ctx.textAlign = 'left';
-      ctx.fillStyle = 'rgba(20,32,45,.4)';
-      ctx.fillRect(r.x + 6, r.y - 8, r.w - 12, 6);
-      ctx.fillStyle = C.ok;
-      ctx.fillRect(r.x + 6, r.y - 8, (r.w - 12) * clamp((b.prog || 0) / 0.9, 0, 1), 6);
+      drawIcon(ctx, d.icon, cx, cy, 22, on ? C.bright : C.steel);
+      bar(r.x + 6, r.y - 8, r.w - 12, (b.prog || 0) / 0.9, C.ok);
       break;
     }
     case 'tank': {
@@ -609,7 +624,7 @@ function drawMachineBody(b, r) {
       const v = net ? net.v : S.blood;
       const cap = net ? net.cap : S.bloodCap;
       const fh = (r.h - 26) * clamp(v / Math.max(1, cap), 0, 1);
-      ctx.fillStyle = 'rgba(30,48,62,.28)';
+      ctx.fillStyle = rgba(C.glass, 0.28);
       ctx.fillRect(r.x + 11, r.y + 15, r.w - 22, r.h - 22);
       ctx.fillStyle = bloodColor();
       ctx.fillRect(r.x + 11, r.y + r.h - 7 - fh, r.w - 22, fh);
@@ -619,7 +634,7 @@ function drawMachineBody(b, r) {
       break;
     }
     case 'drain': {
-      ctx.fillStyle = 'rgba(30,48,62,.4)';
+      ctx.fillStyle = rgba(C.glass, 0.4);
       ctx.fillRect(r.x + 8, r.y + 8, r.w - 16, r.h - 16);
       ctx.strokeStyle = C.steel;
       ctx.lineWidth = 3;
@@ -630,7 +645,7 @@ function drawMachineBody(b, r) {
         ctx.stroke();
       }
       if (b.glow > 0.05) {
-        ctx.fillStyle = 'rgba(214,64,48,' + b.glow * 0.7 + ')';
+        ctx.fillStyle = rgba(C.glow, b.glow * 0.7);
         ctx.beginPath();
         ctx.arc(cx, cy, 8 + b.glow * 4, 0, 7);
         ctx.fill();
@@ -638,11 +653,7 @@ function drawMachineBody(b, r) {
       break;
     }
     case 'market': {
-      ctx.font = 'bold 26px ui-monospace,monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = on && b.link === 'ok' ? C.bright : C.steel;
-      ctx.fillText(d.g, cx, cy + 9);
-      ctx.textAlign = 'left';
+      drawIcon(ctx, d.icon, cx, cy, 26, on && b.link === 'ok' ? C.bright : C.steel);
       if (b.reserveTouched) {
         ctx.fillStyle = C.accent2;
         ctx.fillRect(r.x + 5, r.y + 15, 5, r.h - 22);
@@ -650,19 +661,11 @@ function drawMachineBody(b, r) {
       break;
     }
     case 'gen': {
-      ctx.font = 'bold 26px ui-monospace,monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = b.glow > 0.05 ? C.warn : C.steel;
-      ctx.fillText(d.g, cx, cy + 9);
-      ctx.textAlign = 'left';
+      drawIcon(ctx, d.icon, cx, cy, 26, b.glow > 0.05 ? C.warn : C.steel);
       break;
     }
     case 'lab': {
-      ctx.font = 'bold 24px ui-monospace,monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = on ? C.accent2 : C.steel;
-      ctx.fillText(d.g, cx, cy + 8);
-      ctx.textAlign = 'left';
+      drawIcon(ctx, d.icon, cx, cy, 22, on ? C.accent2 : C.steel);
       break;
     }
     default:
@@ -706,7 +709,7 @@ function drawBuilding(b, showPorts) {
   if (d.kind === 'belt') {
     drawBandStrip(b, false);
   } else {
-    ctx.fillStyle = 'rgba(17,28,42,.18)';
+    ctx.fillStyle = rgba(C.shadow, 0.18);
     ctx.beginPath();
     ctx.ellipse(r.x + r.w / 2, r.y + r.h, r.w * 0.42, 4, 0, 0, 7);
     ctx.fill();
@@ -716,7 +719,7 @@ function drawBuilding(b, showPorts) {
     drawItems(b);
 
   if (b.on === false && d.kind !== 'pipe') {
-    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillStyle = rgba(C.shade, 0.4);
     ctx.fillRect(r.x, r.y, r.w, r.h);
     ctx.fillStyle = C.steel;
     ctx.font = 'bold 10px ui-monospace,monospace';
@@ -725,7 +728,7 @@ function drawBuilding(b, showPorts) {
     ctx.textAlign = 'left';
   }
   if (b.clean > 0) {
-    ctx.fillStyle = 'rgba(190,190,190,.2)';
+    ctx.fillStyle = rgba(C.fog, 0.2);
     ctx.fillRect(r.x, r.y, r.w, r.h);
     ctx.fillStyle = C.bright;
     ctx.font = '600 10px ui-monospace,monospace';
@@ -735,15 +738,15 @@ function drawBuilding(b, showPorts) {
   }
   if (d.dirt && b.dirt > 6 && b.clean <= 0 && d.kind !== 'pipe') {
     const w = r.w - 12;
-    ctx.fillStyle = 'rgba(15,25,40,.4)';
+    ctx.fillStyle = rgba(C.dirtBar, 0.4);
     ctx.fillRect(r.x + 6, r.y - 9, w, 6);
     ctx.fillStyle = b.dirt > 70 ? C.err : b.dirt > 40 ? C.warn : C.ok;
     ctx.fillRect(r.x + 6, r.y - 9, w * (1 - b.dirt / 100), 6);
   }
   if (b.link === 'none' && b.clean <= 0 && d.kind !== 'pipe' && d.kind !== 'belt') {
-    ctx.fillStyle = 'rgba(229,72,58,.92)';
+    ctx.fillStyle = rgba(C.err, 0.92);
     ctx.fillRect(r.x + r.w / 2 - 6, r.y - 24, 12, 12);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = C.white;
     ctx.font = '700 10px ui-monospace,monospace';
     ctx.textAlign = 'center';
     ctx.fillText('!', r.x + r.w / 2, r.y - 15);
@@ -760,7 +763,7 @@ function cellRect(x, y) {
 
 function ghostCell(x, y, bad) {
   const r = cellRect(x, y);
-  ctx.fillStyle = bad ? 'rgba(229,72,58,.16)' : 'rgba(47,129,248,.14)';
+  ctx.fillStyle = bad ? rgba(C.err, 0.16) : rgba(C.accent, 0.14);
   ctx.fillRect(r.x, r.y, r.w, r.h);
   ctx.strokeStyle = bad ? C.err : C.accent;
   ctx.lineWidth = 2;
@@ -791,7 +794,7 @@ function drawBeltGhost(cx, cy) {
   const bad = !!reason;
   for (const c of cells) ghostCell(c.x, c.y, bad);
   if (plan && plan.cells.some((c) => c.dir != null)) {
-    ctx.strokeStyle = bad ? 'rgba(229,72,58,.9)' : 'rgba(47,129,248,.9)';
+    ctx.strokeStyle = bad ? rgba(C.err, 0.9) : rgba(C.accent2, 0.9);
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -843,7 +846,7 @@ function drawGhost() {
 function drawHints() {
   if (!S.tutCells || !S.tutCells.length) return;
   const a = reducedMotion() ? 0.6 : 0.35 + 0.3 * Math.sin(S.t * 4);
-  ctx.strokeStyle = 'rgba(47,158,68,' + a + ')';
+  ctx.strokeStyle = rgba(C.accentDim, a);
   ctx.lineWidth = 3;
   for (const [x, y] of S.tutCells) {
     const r = cellRect(x, y);
@@ -862,9 +865,30 @@ export function render() {
   // Hallenboden
   ctx.fillStyle = C.hall;
   ctx.fillRect(0, 0, PW, PH);
-  ctx.strokeStyle = 'rgba(140,160,185,.35)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(-2, -2, PW + 4, PH + 4);
+  const pat = floorPattern();
+  if (pat) {
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, PW, PH);
+  }
+  // Weicher Übergang zum Dunkeln statt hartem Randstrich
+  const grad = ctx.createLinearGradient(0, 0, 0, PH);
+  grad.addColorStop(0, rgba(C.bg, 0.55));
+  grad.addColorStop(0.12, rgba(C.bg, 0));
+  grad.addColorStop(0.88, rgba(C.bg, 0));
+  grad.addColorStop(1, rgba(C.bg, 0.55));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, PW, PH);
+  const gradL = ctx.createLinearGradient(0, 0, PW, 0);
+  gradL.addColorStop(0, rgba(C.bg, 0.55));
+  gradL.addColorStop(0.06, rgba(C.bg, 0));
+  gradL.addColorStop(0.94, rgba(C.bg, 0));
+  gradL.addColorStop(1, rgba(C.bg, 0.55));
+  ctx.fillStyle = gradL;
+  ctx.fillRect(0, 0, PW, PH);
+  // Dezente Hallenkante
+  ctx.strokeStyle = rgba(C.hallEdge, 0.22);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, PW - 2, PH - 2);
 
   const vis = viewCells(S.cam, vw, vh);
 
@@ -893,16 +917,27 @@ export function render() {
   }
   ctx.stroke();
 
-  // Bodenblut
+  // Bodenblut – weiche Flecken statt Rechteckstreifen
   const bc = bloodColor();
   for (let y = vis.y0; y < vis.y1; y++)
     for (let x = vis.x0; x < vis.x1; x++) {
       const v = floorBlood[y * GRID_W + x];
       if (v < 0.15) continue;
-      const h = Math.min(CELL - 4, v * 2.2);
-      ctx.globalAlpha = clamp(0.3 + v / 10, 0, 0.85);
+      const n = cellNoise(x, y), n2 = cellNoise(x + 37, y + 11);
+      const rr = CELL * 0.32 * (0.55 + Math.min(v, 10) / 10) * (0.85 + n * 0.3);
+      ctx.globalAlpha = clamp(0.3 + v / 12, 0, 0.85);
       ctx.fillStyle = bc;
-      ctx.fillRect(x * CELL + 1, (y + 1) * CELL - h, CELL - 2, h);
+      ctx.beginPath();
+      ctx.ellipse(
+        x * CELL + CELL / 2 + (n - 0.5) * CELL * 0.25,
+        y * CELL + CELL / 2 + (n2 - 0.5) * CELL * 0.25,
+        rr,
+        rr * (0.7 + n2 * 0.35),
+        n * 6.28,
+        0,
+        7,
+      );
+      ctx.fill();
     }
   ctx.globalAlpha = 1;
 
@@ -952,7 +987,7 @@ export function render() {
   // Auswahl
   if (S.sel && blds.includes(S.sel)) {
     const r = bldRect(S.sel);
-    ctx.fillStyle = 'rgba(47,129,248,.08)';
+    ctx.fillStyle = rgba(C.accent, 0.08);
     ctx.fillRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6);
     ctx.strokeStyle = C.accent2;
     ctx.lineWidth = 2;

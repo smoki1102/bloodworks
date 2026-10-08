@@ -4,6 +4,7 @@ import { bloodTotal } from '../core/pipes.js';
 import { S } from '../core/state.js';
 import { buyUpgrade, upgCost, upgLevel } from '../core/upgrades.js';
 import { $, fmt } from '../utils/helpers.js';
+import { iconSvg } from '../render/icons.js';
 import { renderSkill } from './skill.js';
 
 export let lastRes = null;
@@ -41,9 +42,9 @@ export function renderResearch() {
     const lv = upgLevel(u.id),
       cost = upgCost(u),
       maxed = cost === null,
-      poor = cost !== null && S.blood < cost;
+      poor = cost !== null && bloodTotal() < cost;
     return `<div class="upg${maxed ? ' max' : ''}">
-      <div class="r1"><span class="g">${u.g}</span><span class="nm">${u.n}</span>
+      <div class="r1"><span class="g">${iconSvg(u.icon)}</span><span class="nm">${u.n}</span>
         <span class="lv">${lv} / ${u.max}</span></div>
       <div class="ds">${u.d}</div>
       <div class="r2">

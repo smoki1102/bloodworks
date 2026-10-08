@@ -1,6 +1,6 @@
 import { UPG } from '../config/upgrade-defs.js';
 import { toast } from './effects.js';
-import { S } from './state.js';
+import { S, nets } from './state.js';
 
 export const upgDef = (id) => UPG.find((u) => u.id === id) || null;
 export const upgLevel = (id) => S.up.lv[id] || 0;
@@ -26,8 +26,19 @@ export function buyUpgrade(id) {
   const lv = upgLevel(id);
   if (lv >= u.max) return toast(u.n + ' ist bereits maximal erforscht', 'bad');
   const cost = u.costs[lv];
-  if (S.blood < cost) return toast('Nicht genug Blut (' + cost + ' nötig)', 'bad');
-  S.blood -= cost;
+  // Gesamtpool (freies Blut + Tanks), wie spendBlood in pipes.js – aber ohne
+  // Import-Zyklus (pipes.js importiert upgrades.js).
+  const total = S.blood + nets.reduce((a, n) => a + n.v, 0);
+  if (total < cost) return toast('Nicht genug Blut (' + cost + ' nötig)', 'bad');
+  let rest = Math.min(cost, S.blood);
+  S.blood -= rest;
+  rest = cost - rest;
+  for (const net of nets) {
+    if (rest <= 0) break;
+    const t = Math.min(rest, net.v);
+    net.v -= t;
+    rest -= t;
+  }
   S.up.lv[id] = lv + 1;
   toast(u.n + ' Stufe ' + (lv + 1) + ' erforscht', 'good');
 }

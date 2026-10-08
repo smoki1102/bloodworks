@@ -74,7 +74,7 @@ export const TUT_STEPS = [
   {
     id: 'drain',
     item: 'drain',
-    text: 'Der <b>Abfluss</b> saugt das Blut vom Boden auf – er braucht Platz direkt über dem Boden.',
+    text: 'Der <b>Abfluss</b> saugt das Blut vom Boden auf – stelle ihn unten an die Hallenkante, dorthin sickert das Blut.',
     need: { bld: 'drain', cells: [[19, 63]] },
     cells: [
       [19, 63],

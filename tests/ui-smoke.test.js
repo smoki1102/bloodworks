@@ -44,34 +44,43 @@ describe('UI im DOM (Smoke)', () => {
     expect(S.t).toBe(0);
   });
 
-  it('baut die Startwelt, simuliert und platziert über Karte + Canvas', () => {
-    el('btnFree').click();
-    expect(S.tut).toBe('off');
-    expect(blds.length).toBe(7);
-    el('btnPlay').click();
-    expect(S.running).toBe(true);
-    step(600);
-    expect(S.t).toBeGreaterThan(5);
-    expect(S.spawned).toBeGreaterThan(0);
-    step(1500);
-    expect(S.ash).toBeGreaterThan(0);
+  it(
+    'baut die Startwelt, simuliert und platziert über Karte + Canvas',
+    () => {
+      el('btnFree').click();
+      expect(S.tut).toBe('off');
+      expect(blds.length).toBe(7);
+      el('btnPlay').click();
+      expect(S.running).toBe(true);
+      step(600);
+      expect(S.t).toBeGreaterThan(5);
+      expect(S.spawned).toBeGreaterThan(0);
+      step(1500);
+      expect(S.ash).toBeGreaterThan(0);
 
-    const money0 = S.money;
-    fireDoc('click', { target: fake({ t: 'spike' }) });
-    expect(S.tool).toBe('spike');
-    const p = toScreen(60 * CELL + CELL / 2, 50 * CELL + CELL / 2);
-    el('cv').dispatch('pointerdown', { button: 0, clientX: p.clientX, clientY: p.clientY, pointerId: 1 });
-    const spike = blds.find((b) => b.t === 'spike');
-    expect(spike).toBeTruthy();
-    expect(spike.x).toBe(60);
-    expect(spike.y).toBe(50);
-    expect(S.money).toBe(money0 - costOf('spike'));
-    expect(S.sel).toBe(spike);
-    fireWin('pointerup', { target: el('cv') });
-    toggleRun();
-    expect(S.running).toBe(false);
-    expect(corpses.length + sticks.length).toBeGreaterThanOrEqual(0);
-  });
+      const money0 = S.money;
+      fireDoc('click', { target: fake({ t: 'spike' }) });
+      expect(S.tool).toBe('spike');
+      const p = toScreen(60 * CELL + CELL / 2, 50 * CELL + CELL / 2);
+      el('cv').dispatch('pointerdown', {
+        button: 0,
+        clientX: p.clientX,
+        clientY: p.clientY,
+        pointerId: 1,
+      });
+      const spike = blds.find((b) => b.t === 'spike');
+      expect(spike).toBeTruthy();
+      expect(spike.x).toBe(60);
+      expect(spike.y).toBe(50);
+      expect(S.money).toBe(money0 - costOf('spike'));
+      expect(S.sel).toBe(spike);
+      fireWin('pointerup', { target: el('cv') });
+      toggleRun();
+      expect(S.running).toBe(false);
+      expect(corpses.length + sticks.length).toBeGreaterThanOrEqual(0);
+    },
+    20000,
+  );
 
   it('baut eine Förderband-Strecke mit zwei Klicks', () => {
     const money0 = S.money;

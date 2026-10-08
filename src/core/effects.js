@@ -1,4 +1,5 @@
 import { CELL, GRID_H, GRID_W, PH, PW } from '../config/constants.js';
+import { CANVAS } from '../config/palette.js';
 import { idx } from './grid.js';
 import { suckNet } from './pipes.js';
 import { nets, S, beltBlood, floorBlood, occ, parts } from './state.js';
@@ -6,8 +7,14 @@ import { $, rnd } from '../utils/helpers.js';
 
 /* Effekte */
 let _reduced;
+let _motionOverride = null;
+/** Explizite Nutzerentscheidung (Einstellungs-Popover); `null` = Systemwert. */
+export function setReducedMotion(on) {
+  _motionOverride = on === null ? null : !!on;
+}
 /** Systemeinstellung "Bewegung reduzieren" (in Node ohne matchMedia: false). */
 export function reducedMotion() {
+  if (_motionOverride !== null) return _motionOverride;
   if (_reduced === undefined)
     _reduced =
       typeof matchMedia === 'function' &&
@@ -51,61 +58,101 @@ export function toast(msg, kind) {
   setTimeout(() => el.remove(), 2400);
 }
 export const bloodColor = () =>
-  S.gore === 0 ? '#36424f' : S.gore === 50 ? '#8e2a22' : '#cf3020';
+  S.gore === 0 ? CANVAS.blood0 : S.gore === 50 ? CANVAS.blood50 : CANVAS.blood100;
 export const nBurst = (a) =>
   S.gore === 0 ? 3 : S.gore === 50 ? Math.ceil(a * 0.6) : a;
+
+/* Schmutz-Rechteck: Zellen, die (noch) Blut enthalten könnten. Wird von den
+ * add*-Helfern expandiert und in fluids() pro Tick neu verengt – spart das
+ * zweimalige Scannen aller 8192 Zellen. */
+let bMinX = 1,
+  bMinY = 1,
+  bMaxX = 0,
+  bMaxY = 0;
+const touch = (x, y) => {
+  if (x < bMinX) bMinX = x;
+  if (y < bMinY) bMinY = y;
+  if (x > bMaxX) bMaxX = x;
+  if (y > bMaxY) bMaxY = y;
+};
+
+/** Nach initSim(): Blut-Arrays sind leer, Bounds zurücksetzen. */
+export function resetBloodBounds() {
+  bMinX = 1;
+  bMinY = 1;
+  bMaxX = 0;
+  bMaxY = 0;
+}
 
 export const addBeltBlood = (x, y, a) => {
   if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return;
   const i = idx(x, y);
   beltBlood[i] = Math.min(9, beltBlood[i] + a);
+  touch(x, y);
 };
 export const addFloorBlood = (x, y, a) => {
   if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return;
   const i = idx(x, y);
   floorBlood[i] = Math.min(11, floorBlood[i] + a);
+  touch(x, y);
 };
 
 /**
  * Blut bewegt sich: Bandblut tropft auf den Boden – außer die Zelle grenzt an
  * ein angeschlossenes Pipe-Netz, dann wird es dort eingesaugt (kein Tropfen).
  * Bodenblut sickert nach unten, bis es auf ein Gebäude trifft, und breitet
- * sich dann seitlich aus.
+ * sich dann seitlich aus. Iteration nur über das Schmutz-Rechteck.
  */
 export function fluids(dt) {
-  const n = GRID_W * GRID_H;
-  for (let i = 0; i < n; i++) {
-    const b0 = beltBlood[i];
-    if (b0 > 0.001) {
-      const dr = Math.min(b0, b0 * dt * 0.55 + dt * 0.02);
-      const netId = suckNet[i];
-      const net = netId >= 0 ? nets[netId] : null;
-      if (net) {
-        const take = Math.min(dr, Math.max(0, net.cap - net.v));
-        net.v += take;
-        beltBlood[i] -= take;
-      } else {
-        beltBlood[i] -= dr;
-        floorBlood[i] = Math.min(11, floorBlood[i] + dr);
+  if (bMaxX < bMinX) return; // kein aktives Blut
+  const x0 = bMinX,
+    y0 = bMinY,
+    x1 = bMaxX,
+    y1 = bMaxY;
+  bMinX = 1;
+  bMinY = 1;
+  bMaxX = 0;
+  bMaxY = 0;
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++) {
+      const i = idx(x, y);
+      const b0 = beltBlood[i];
+      if (b0 > 0.001) {
+        touch(x, y);
+        const dr = Math.min(b0, b0 * dt * 0.55 + dt * 0.02);
+        const netId = suckNet[i];
+        const net = netId >= 0 ? nets[netId] : null;
+        if (net) {
+          const take = Math.min(dr, Math.max(0, net.cap - net.v));
+          net.v += take;
+          beltBlood[i] -= take;
+        } else {
+          beltBlood[i] -= dr;
+          floorBlood[i] = Math.min(11, floorBlood[i] + dr);
+        }
+      }
+      if (beltBlood[i] > 0) {
+        beltBlood[i] = Math.max(0, beltBlood[i] - dt * 0.05);
+        if (beltBlood[i] > 0) touch(x, y);
       }
     }
-    if (beltBlood[i] > 0) beltBlood[i] = Math.max(0, beltBlood[i] - dt * 0.05);
-  }
   const down = 46 * dt,
     side = 15 * dt;
-  for (let y = GRID_H - 1; y >= 0; y--) {
-    for (let x = 0; x < GRID_W; x++) {
+  for (let y = y1; y >= y0; y--) {
+    for (let x = x0; x <= x1; x++) {
       const i = idx(x, y);
       let v = floorBlood[i] - dt * 0.03;
       if (v <= 0.002) {
         floorBlood[i] = Math.max(0, v);
         continue;
       }
+      touch(x, y);
       const below = y + 1 < GRID_H ? idx(x, y + 1) : -1;
       if (below >= 0 && occ[below] <= 0) {
         const q = Math.min(v, down);
         v -= q;
         floorBlood[below] = Math.min(11, floorBlood[below] + q);
+        touch(x, y + 1);
         floorBlood[i] = v;
         continue;
       }
@@ -122,6 +169,7 @@ export function fluids(dt) {
         const q = Math.min(half, room);
         floorBlood[i] -= q;
         floorBlood[j] += q;
+        touch(nx, y);
       }
     }
   }
@@ -144,7 +192,7 @@ export function ambient(dt) {
     vy: -1 - rnd() * 3,
     life,
     max: life,
-    color: 'rgba(92,110,132,.5)',
+    color: CANVAS.dust,
     size: 1 + rnd() * 1.2,
     grav: 0,
   });

@@ -3,7 +3,7 @@ export const QUESTS = [
   { n: 'Erste Beute', d: 'Erlege 10 Sticks auf dem Band.', metric: 'kills', goal: 10, reward: 150 },
   {
     n: 'Lücke & Fang',
-    d: 'Reiße eine Lücke ins Band und fange 5 Leichen im Keller (Container).',
+    d: 'Reiße eine Lücke ins Band und fange 5 Leichen im Container.',
     metric: 'caught',
     goal: 5,
     reward: 200,

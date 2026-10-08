@@ -1,5 +1,5 @@
 import { DEF } from '../config/building-defs.js';
-import { TARGETS } from '../config/constants.js';
+import { BIN_ROT_TIME, TARGETS } from '../config/constants.js';
 import { toast } from '../core/effects.js';
 import { hitChance } from '../core/machines.js';
 import { netOf, suctionNetOf } from '../core/pipes.js';
@@ -7,6 +7,7 @@ import { sellBuilding } from '../core/placement.js';
 import { S, blds } from '../core/state.js';
 import { sellable, setReserve } from '../core/market.js';
 import { $, clamp, fmt } from '../utils/helpers.js';
+import { iconSvg } from '../render/icons.js';
 
 export let lastInsp = null;
 
@@ -51,16 +52,18 @@ function progressBar(b) {
     const cap = n ? n.cap : S.bloodCap;
     const p = clamp((v / Math.max(1, cap)) * 100, 0, 100);
     return `<div class="kv"><span>Füllstand</span><b>${fmt(v)} / ${fmt(cap)}</b></div>
-      <div class="bar"><i style="width:${p}%;background:#5aa0c8"></i></div>`;
+      <div class="bar"><i class="fill-blood" style="width:${p}%"></i></div>`;
   }
   if (b.t === 'bin' && b.items.length) {
-    const p = clamp((b.prog / 9) * 100, 0, 100);
-    return `<div class="bar"><i style="width:${Math.floor(p)}%;background:#8f8f8f"></i></div>`;
+    const avgRot =
+      b.items.reduce((a, i) => a + (i.rot || 0), 0) / b.items.length;
+    const p = clamp((avgRot / BIN_ROT_TIME) * 100, 0, 100);
+    return `<div class="bar"><i class="fill-dim" style="width:${Math.floor(p)}%"></i></div>`;
   }
   if ((b.t === 'oven' || b.t === 'acid') && b.items.length) {
     const t = b.t === 'oven' ? 1.4 : 1.7;
     const p = clamp((b.prog / t) * 100, 0, 100);
-    return `<div class="bar"><i style="width:${Math.floor(p)}%;background:${b.t === 'oven' ? '#d98e3a' : '#9b9'}"></i></div>`;
+    return `<div class="bar"><i class="${b.t === 'oven' ? 'fill-warn' : 'fill-ok'}" style="width:${Math.floor(p)}%"></i></div>`;
   }
   if (b.t === 'press') {
     return `<div class="kv"><span>Zyklus</span><b>${Math.floor(((b.phase % 1.4) / 1.4) * 100)}%</b></div>`;
@@ -73,7 +76,7 @@ function utilBar(b) {
     return '';
   const p = clamp((b.util || 0) * 100, 0, 100);
   return `<div class="kv"><span>Auslastung</span><b>${Math.floor(p)}%</b></div>
-    <div class="bar"><i style="width:${p}%;background:${p > 90 ? '#e5483a' : '#8f8f8f'}"></i></div>`;
+    <div class="bar"><i class="${p > 90 ? 'fill-err' : 'fill-dim'}" style="width:${p}%"></i></div>`;
 }
 function rateLabel(b) {
   if (!b.rate) return '';
@@ -174,17 +177,17 @@ export function renderInspector() {
   const onBtn =
     d.kind === 'belt' || b.t === 'spawn'
       ? ''
-      : `<button data-a="toggle" style="grid-column:1">${b.on ? '⏻ An' : '⏻ Aus'}</button>`;
-  const html = `<h3>${d.g} ${d.n}<button class="close" data-a="close" title="Schließen">✕</button></h3>
+      : `<button data-a="toggle" style="grid-column:1">${iconSvg('power')} ${b.on ? 'An' : 'Aus'}</button>`;
+  const html = `<h3>${iconSvg(d.icon)} ${d.n}<button class="close" data-a="close" data-tip="Schließen (Esc)" aria-label="Schließen">${iconSvg('close')}</button></h3>
     <div class="panel">
     <div class="kv"><span>Status</span><b class="${cls}">${st}</b></div>
     ${utilBar(b)}${progressBar(b)}${linkLabel(b)}${rateLabel(b)}
     ${b.items.length ? `<div class="kv"><span>${queueLabel(b)}</span><b>${b.items.length}${queueMax(b)}</b></div>` : ''}
     ${targetCtl(b)}${filterCtl(b)}${reserveCtl(b)}
     <div class="kv"><span>Sauberkeit</span><b>${clean.toFixed(0)}%</b></div>
-    <div class="bar"><i style="width:${clean}%;background:${clean > 60 ? '#8f8f8f' : clean > 30 ? '#e0a040' : '#e5483a'}"></i></div>
+    <div class="bar"><i class="${clean > 60 ? 'fill-dim' : clean > 30 ? 'fill-warn' : 'fill-err'}" style="width:${clean}%"></i></div>
     <div class="kv"><span>Verbrauch</span><b>${d.e ? d.e.toFixed(2) + ' E/s' : '—'}</b></div>
-    <div class="acts">${onBtn}<button data-a="clean" ${b.dirt < 3 || b.clean > 0 ? 'disabled' : ''}>✦ Reinigen · ${cost} €</button>
+    <div class="acts">${onBtn}<button data-a="clean" ${b.dirt < 3 || b.clean > 0 ? 'disabled' : ''}>${iconSvg('clean')} Reinigen · ${cost} €</button>
     <button class="danger" data-a="sell">Verkaufen · +${Math.round((d.cost || 0) * 0.5)} €</button></div></div>`;
   if (html !== lastInsp) {
     // Eingaben (Select/Number) nicht zerstören, solange sie fokussiert sind –

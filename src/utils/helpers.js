@@ -12,5 +12,10 @@ export const hash = (i) => {
 };
 export const fmt = (n) => {
   n = Math.floor(n);
-  return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : '' + n;
+  if (n >= 999950) return (n / 1e6).toFixed(1).replace('.', ',') + 'M';
+  if (n >= 1e4)
+    return (
+      (n / 1e3).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'k'
+    );
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };

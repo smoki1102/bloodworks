@@ -15,6 +15,7 @@ import {
 } from '../src/core/pipes.js';
 import { setReserve, sellable, reserveValue, priceOf } from '../src/core/market.js';
 import { beltBlood, floorBlood } from '../src/core/state.js';
+import { addBeltBlood, addFloorBlood } from '../src/core/effects.js';
 import { BASE_CAP, TANK_CAP, MARKET_PRICE, MARKET_RESERVE } from '../src/config/constants.js';
 
 /** Bodenblut einer Spalte (Blut sickert nach unten, deshalb zeilenweise). */
@@ -124,7 +125,7 @@ describe('Pipe-Netze', () => {
 
   it('saugt Bodenblut auf und pumpt es ins Netz', () => {
     netWorld();
-    floorBlood[idx(24, 40)] = 11;
+    addFloorBlood(24, 40, 11);
     expect(suctionCells(24, 40, 1).length).toBe(9);
     run(0.5);
     expect(nets[0].v).toBeGreaterThan(0);
@@ -136,7 +137,7 @@ describe('Pipe-Netze', () => {
     put('belt', 18, 40, { dir: 0 });
     run(0.1);
     expect(nets.length).toBe(1);
-    beltBlood[idx(18, 40)] = 6;
+    addBeltBlood(18, 40, 6);
     run(1);
     expect(colBlood(18)).toBe(0);
     expect(beltBlood[idx(18, 40)]).toBeLessThan(6);
@@ -147,7 +148,7 @@ describe('Pipe-Netze', () => {
     put('tank', 20, 40);
     put('belt', 18, 40, { dir: 0 });
     run(0.1);
-    beltBlood[idx(18, 40)] = 6;
+    addBeltBlood(18, 40, 6);
     run(1);
     expect(colBlood(18)).toBeGreaterThan(0);
     expect(nets.length).toBe(0);

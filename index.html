@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#1d1d1d" />
+    <meta name="theme-color" content="#131512" />
     <title>BloodWorks: Stick Factory</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
@@ -16,18 +16,27 @@
         <div id="brand">BLOOD<span>WORKS</span></div>
         <div id="hud">
           <div id="resRow">
-            <div class="res" title="Geld">€ <b id="rMoney">0</b></div>
-            <div class="res blood" title="Blut">
+            <div class="res" data-tip="Geld – für Bau, Reinigung und Verkauf">
+              € <b id="rMoney">0</b>
+            </div>
+            <div class="res blood" data-tip="Blut – Skill- und Upgrade-Währung">
               Blut <b id="rBlood">0</b><small id="rBloodCap"></small>
             </div>
-            <div class="res" id="rEnergyBox" title="Energie">
-              ⚡ <b id="rEnergy">0</b>
+            <div class="res" id="rEnergyBox" data-tip="Energie –Maschinen laufen nur mit Strom">
+              <span id="rEnergyIcon"></span> <b id="rEnergy">0</b>
             </div>
-            <div class="res" title="Abgetrennte Körperteile (Skill-Währung)">
+            <div
+              class="res"
+              data-tip="Teile – abgetrennte Körperteile, Währung für Maschinen- und Logistik-Skills"
+            >
               Teile <b id="rParts">0</b>
             </div>
-            <div class="res" title="Asche">Asche <b id="rAsh">0</b></div>
-            <div class="res" title="Leichen">Leichen <b id="rCorpse">0</b></div>
+            <div class="res" data-tip="Asche – Rückstand aus dem Verbrenner">
+              Asche <b id="rAsh">0</b>
+            </div>
+            <div class="res" data-tip="Leichen – auf Bändern, in Maschinen und auf dem Boden">
+              Leichen <b id="rCorpse">0</b>
+            </div>
           </div>
           <p id="stats"></p>
         </div>
@@ -36,14 +45,25 @@
             <button data-s="1" class="on">1×</button
             ><button data-s="2">2×</button><button data-s="4">4×</button>
           </div>
-          <button id="btnPlay">▶ Start</button>
-          <button id="btnResearch" data-a="openForschung" title="Skill-Netz und Upgrades">
+          <button id="btnPlay" data-tip="Simulation starten (Leertaste)">Start</button>
+          <button
+            id="btnResearch"
+            data-a="openForschung"
+            data-tip="Skill-Netz und Upgrades (K)"
+          >
             Forschung
           </button>
-          <button id="btnSave" title="Speichern">Speichern</button>
-          <button id="btnLoad" title="Laden">Laden</button>
-          <button id="btnSkipTut" hidden title="Tutorial überspringen">Überspringen</button>
-          <button id="btnNew" title="Neues Spiel">Neu</button>
+          <button id="btnSave" data-tip="Spielstand speichern">Speichern</button>
+          <button id="btnLoad" data-tip="Spielstand laden">Laden</button>
+          <button id="btnSkipTut" hidden data-tip="Tutorial überspringen">
+            Überspringen
+          </button>
+          <button id="btnNew" data-tip="Neues Spiel – kehrt zum Startmenü zurück">
+            Neu
+          </button>
+          <button id="btnSettings" data-tip="Einstellungen" aria-label="Einstellungen">
+            <span data-icon="settings"></span>
+          </button>
         </div>
       </header>
       <main id="view">
@@ -58,7 +78,13 @@
               <button data-ftab="net" class="on">Skill-Netz</button>
               <button data-ftab="upg">Upgrades</button>
             </span>
-            <button class="close" data-a="closeForschung" title="Schließen">✕</button>
+            <button
+              class="close"
+              data-a="closeForschung"
+              data-icon="close"
+              data-tip="Schließen (Esc)"
+              aria-label="Schließen"
+            ></button>
           </div>
           <div id="fNet" class="fpane"></div>
           <div id="fUpg" class="fpane hide"></div>
@@ -70,6 +96,17 @@
         <div id="tabs"></div>
         <div id="list"></div>
       </aside>
+    </div>
+    <div id="setPop" class="hide" role="dialog" aria-label="Einstellungen">
+      <div class="lbl">Gore-Level</div>
+      <div class="segs" id="goreSegGame">
+        <button data-g="0">Öl</button><button data-g="50">Mittel</button
+        ><button data-g="100" class="on">Cartoon</button>
+      </div>
+      <label class="setRow"
+        ><input type="checkbox" id="optMotion" />
+        Bewegung reduzieren</label
+      >
     </div>
     <div id="modal">
       <div class="box">
