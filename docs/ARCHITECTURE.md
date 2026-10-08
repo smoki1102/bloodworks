@@ -13,7 +13,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/config/skill-defs.js`| Skill-Äste und Knoten inkl. Währung, Kosten, Stufen, `fx`, `unlock`      |
 | `src/config/tutorial-defs.js` | Die 12 Tutorialschritte (Text, Zielzelle, zu bauendes Item, Bedingung) |
 | `src/config/upgrade-defs.js`, `quest-defs.js` | Bestehende Forschung und Aufträge (unverändert)    |
-| `src/config/palette.js`   | Kanonische Farbquellen: `UI` (DOM-Tokens), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)` |
+| `src/config/palette.js`   | Kanonische Quellen: `UI` (DOM-Farben), `METRICS` (Abstände/Radien/Schatten/Font/Dauer), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)`. `applyTokens()` schreibt `UI`+`METRICS` auf `:root` |
 | `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt` mit deutscher Tausendertrennung, `clamp`, `rnd`) |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
@@ -40,6 +40,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/render/icons.js`     | Eigenes Icon-Set (27 Icons, 16×16-Vektor): eine Shape-Definition pro Icon, zwei Renderer – `drawIcon` (Canvas) und `iconSvg` (Inline-SVG für DOM-UI). Keine Emoji/Sonderglyphen, keine Fremd-Assets |
 | `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`), Token-Init (`applyTokens`, `initIcons`), Einstellungs-Popover |
 | `src/ui/tooltip.js`       | Zentrales Tooltip-Element für `data-tip` (Hover + Fokus, 350 ms Delay, Mehrzeilen via `\n`); ersetzt native `title` |
+| `src/ui/gallery.js`       | Dev-Galerie (`galleryHtml`, `openGallery`) für Design-Review, nur per `?ui` / `?gallery` in `main.js` geöffnet |
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
 | `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
@@ -181,13 +182,17 @@ und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 113 Tests, reines Node (kein DOM nötig).
+- `npm test` – 123 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
 - `tests/quests.test.js`: Quest-Metriken existieren und sind erreichbar, Abschleuderer-Ereignis,
   Teilehandel, Kettenfortschritt, v9→v10-Migration.
 - `tests/poses.test.js`: Posen ohne Canvas – Struktur, `spin`-Linearität,
   `swing`-Periodizität, `pressStroke`-Dreieck, `pose(..., {still})` == `REST`, `moving()`
   unter reduzierter Bewegung.
+- `tests/palette.test.js`: `UI`/`METRICS`/`CANVAS` gesetzt, `CSS_MAP` zeigt nur auf
+  vorhandene Farben, `rgba()`-Umrechnung.
+- `tests/gallery.test.js`: `galleryHtml()` ohne DOM – Abschnitte, jedes Icon mit Namen,
+  Modus-Titel, keine leeren Token-Werte.
 - `tests/ui-smoke.test.js`: u. a. Render-Smoke über jeden Gebäudetyp auf dem neuen
   Footprint und Migration v10→v11 (Fabrik-Reset).
 - `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten

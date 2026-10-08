@@ -87,8 +87,10 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 - **Speicherstand v11:** Spielzähler in `S.stats`; v10-Stände bleiben erhalten, verlieren
   beim Laden aber einmalig ihr Fabrik-Layout (Fabrik-Reset), v9 wird über v10 migriert,
   v8 und älter werden verworfen.
-- **Qualität:** 113 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Qualität:** 123 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel, Pulse und Maschinenposen/Bänder werden reduziert).
+- **Design-Tokens:** Farben (`UI`) und Maße/Typo/Bewegung (`METRICS`) zentral in
+  `src/config/palette.js`, beim Start auf `:root` geschrieben. Dev-Galerie mit `?ui` / `?gallery`.
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Änderungsverlauf: siehe [docs/CHANGELOG.md](docs/CHANGELOG.md).

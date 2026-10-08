@@ -32,6 +32,43 @@ export const UI = {
   softAction: 'rgba(159, 181, 46, 0.16)',
 };
 
+/**
+ * Maße/Typo/Bewegung als kanonische Token (nicht Farben). Werden wie `UI`
+ * beim Start auf `:root` geschrieben; `main.css` hält dieselben Werte als
+ * Fallback. Ein Spacing-Raster (4 px) hält Abstände konsistent.
+ */
+export const METRICS = {
+  /* Abstände */
+  sp1: '4px',
+  sp2: '8px',
+  sp3: '12px',
+  sp4: '16px',
+  sp5: '20px',
+  sp6: '30px',
+  /* Radien */
+  r1: '3px',
+  r2: '4px',
+  r3: '8px',
+  rPill: '999px',
+  /* Schatten */
+  shPop: '0 8px 24px rgba(0,0,0,0.45)',
+  shPanel: '0 0 25px rgba(0,0,0,0.5)',
+  shSheet: '0 -8px 30px rgba(0,0,0,0.5)',
+  /* Schrift */
+  fontUi: "13px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  fontSm: '11px',
+  fontXs: '10px',
+  fontMd: '12px',
+  fontLg: '15px',
+  fontHead: '22px',
+  fontTitle: '26px',
+  mono: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+  /* Bewegung */
+  durFast: '0.12s',
+  durMid: '0.3s',
+  durSlow: '0.4s',
+};
+
 export const CANVAS = {
   bg: '#11130f',
   hall: '#1e2119',

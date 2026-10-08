@@ -19,7 +19,7 @@ import { giveSkillGift } from '../core/skill.js';
 import { S, blds, corpses, freshState, initSim, nets, setState } from '../core/state.js';
 import { cv, panBy, resize, screenToWorld, zoomAt } from '../render/renderer.js';
 import { iconSvg } from '../render/icons.js';
-import { UI, CSS_MAP } from '../config/palette.js';
+import { UI, CSS_MAP, METRICS } from '../config/palette.js';
 import { initTooltip } from './tooltip.js';
 import { $, fmt } from '../utils/helpers.js';
 import {
@@ -435,6 +435,8 @@ function applyTokens() {
   if (!root || !root.style || !root.style.setProperty) return;
   for (const [name, key] of Object.entries(CSS_MAP))
     root.style.setProperty('--' + name, UI[key]);
+  for (const [name, val] of Object.entries(METRICS))
+    root.style.setProperty('--' + name, val);
 }
 
 export function toggleRun() {

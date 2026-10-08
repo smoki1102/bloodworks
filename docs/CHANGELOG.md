@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.14.0 – UI: Design-Tokens, Galerie, Feinschliff (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Maße-Tokens (`METRICS` in `src/config/palette.js`):** neben den Farben
+  (`UI`) gibt es jetzt kanonische Tokens für Abstände (`--sp1`…`--sp6`, 4-px-
+  Raster), Radien (`--r1`/`--r2`/`--r3`/`--rPill`), Schatten (`--shPop`,
+  `--shPanel`, `--shSheet`), Schrift (`--fontUi`, `--fontSm`…`--fontTitle`,
+  `--mono`) und Bewegung (`--durFast`, `--durMid`, `--durSlow`). `applyTokens()`
+  schreibt sie wie die Farben auf `:root`; `main.css` hält dieselben Werte als
+  Fallback.
+- **`main.css` auf Tokens umgestellt:** Grundschrift, Buttons, Panels
+  (`#setPop`, `#inspector`, `#forschung`), Karten, Tooltip und Modal nutzen
+  jetzt Radius-, Schatten-, Abstands-, Font- und Dauer-Tokens statt fester
+  Zahlen. Optik dabei unverändert (Werte auf das Raster gerundet).
+- **Feinschliff:** die Spielansicht (`#view`) bekommt einen dezenten
+  Innenrahmen (1 px Linie + weicher innerer Schatten) als „Hallenrahmen"; die
+  Bau-Leiste (`#side`) erhält eine obere Trennkante. Überschriften der
+  Startbox nutzen die Font-Tokens.
+- **Dev-Galerie (`src/ui/gallery.js`):** `galleryHtml(mode)` baut eine reine
+  HTML-Stilübersicht (Farben, Abstände/Radien, Typografie, Buttons, Balken,
+  Baukarten, Toasts, alle Icons); `openGallery()` hängt sie als Overlay an
+  `<body>`. `main.js` öffnet sie nur bei `?ui` (UI-Komponenten) bzw.
+  `?gallery` (Stil-Galerie). Im normalen Spiel passiert nichts.
+
+### Qualität
+
+- `npm run check` = ESLint + 123 Vitest-Tests + Vite-Build, fehlerfrei.
+- Neu `tests/palette.test.js` (Farb-/Maße-Tokens gesetzt, `CSS_MAP` zeigt nur
+  auf vorhandene Farben, `rgba()`-Umrechnung) und `tests/gallery.test.js`
+  (Abschnitte, jedes Icon mit Namen, Modus-Titel, keine leeren Werte) – beide
+  ohne DOM über `galleryHtml()`.
+- Visuelle Prüfung: Headless-Chrome-DOM-Abzug von `?gallery` (8 Abschnitte,
+  29 Icons) und Screenshots von Spiel, `?gallery` und `?ui`.
+
+### Annahmen
+
+- `?ui` und `?gallery` öffnen **dieselbe** Galerie, nur mit anderem Titel; die
+  Trennung aus dem Plan (Komponenten vs. Assets) ist damit als eine Seite mit
+  beschriftetem Modus umgesetzt. Neue IDs/Elemente legt die Galerie erst zur
+  Laufzeit an, `tests/dom-stub.js` bleibt unberührt.
+- `?ui`/`?gallery` sind reine Entwicklerhilfen ohne Spielersistence und werden
+  nicht im Menü verlinkt.
+
 ## 0.13.0 – Animationen: Posen-Modul, reduzierte Bewegung (08.10.2026)
 
 ### Änderungen an bestehendem Code

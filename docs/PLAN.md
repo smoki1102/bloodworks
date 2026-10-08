@@ -54,11 +54,11 @@ mit explizitem OK.
 
 ## Paket 4 – UI (Version 0.14.0)
 
-- [ ] Palette um Maße-Tokens erweitern (`--sp*`, `--r*`, `--shadow*`, `--font*`, `--dur*`).
-- [ ] Panels/Buttons auf Tokens umstellen.
-- [ ] Optische Anmutung: Hallenrahmen, Typo, Bau-Leiste (Screenshots entscheiden).
-- [ ] Dev-Seiten `?ui` / `?gallery` hinter Query-Param.
-- [ ] Visuelle Prüfung: Gesamtansicht, Forschung, Inspektor,/mobile Ansicht.
+- [x] Palette um Maße-Tokens erweitern (`--sp*`, `--r*`, `--shadow*`, `--font*`, `--dur*`).
+- [x] Panels/Buttons auf Tokens umstellen.
+- [x] Optische Anmutung: Hallenrahmen, Typo, Bau-Leiste (Screenshots entscheiden).
+- [x] Dev-Seiten `?ui` / `?gallery` hinter Query-Param.
+- [x] Visuelle Prüfung: Gesamtansicht, Forschung, Inspektor,/mobile Ansicht.
 
 ## Offene Risiken
 
