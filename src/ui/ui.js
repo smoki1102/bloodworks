@@ -19,7 +19,7 @@ import { giveSkillGift } from '../core/skill.js';
 import { S, blds, corpses, freshState, initSim, nets, setState } from '../core/state.js';
 import { cv, panBy, resize, screenToWorld, zoomAt } from '../render/renderer.js';
 import { iconSvg } from '../render/icons.js';
-import { UI, CSS_MAP } from '../config/palette.js';
+import { UI, CSS_MAP, METRICS } from '../config/palette.js';
 import { initTooltip } from './tooltip.js';
 import { $, fmt } from '../utils/helpers.js';
 import {
@@ -80,9 +80,9 @@ export function renderHUD() {
   $('rAsh').textContent = fmt(S.ash);
   $('rCorpse').textContent = corpses.length + blds.reduce((a, b) => a + b.items.length, 0);
   $('rEnergyBox').classList.toggle('bad', S.pf < 0.4);
-  $('stats').textContent = `SEKTOR 01 · ${S.kills} erledigt · ${S.ejected} abgeworfen · ${
-    S.escaped
-  } entkommen · ${fmt(S.sold)} Blut verkauft`;
+  $('stats').textContent = `SEKTOR 01 · ${S.stats.kills} erledigt · ${S.stats.ejected} abgeworfen · ${
+    S.stats.escaped
+  } entkommen · ${fmt(S.stats.sold)} Blut verkauft`;
 }
 
 /* -------------------------------- Tutorial -------------------------------- */
@@ -435,6 +435,8 @@ function applyTokens() {
   if (!root || !root.style || !root.style.setProperty) return;
   for (const [name, key] of Object.entries(CSS_MAP))
     root.style.setProperty('--' + name, UI[key]);
+  for (const [name, val] of Object.entries(METRICS))
+    root.style.setProperty('--' + name, val);
 }
 
 export function toggleRun() {
@@ -518,12 +520,7 @@ export function save(silent) {
         ash: S.ash,
         t: S.t,
         gore: S.gore,
-        kills: S.kills,
-        sold: S.sold,
-        escaped: S.escaped,
-        ejected: S.ejected,
-        caught: S.caught,
-        toggled: S.toggled,
+        stats: { ...S.stats },
         quest: S.quest,
         up: S.up,
         skill: S.skill,
@@ -601,12 +598,35 @@ function closeForschungUI() {
  * Aufsteigende Migration älterer Spielstände auf SAVE_VER. Pro Version ein
  * Schritt; `raw` wird an Ort und Stelle verändert. Rückgabe: migrierter Rohdaten
  * oder `null`, wenn die Migration nicht möglich ist.
- *
- * Beispiel für künftige Versionen:
- *   if (raw.v === 9) { …Felder umwandeln…; raw.v = 10; }
  */
 function migrate(raw) {
-  // if (raw.v === 9) { …; raw.v = 10; }
+  if (raw.v === 9) {
+    raw.stats = {
+      spawned: 0,
+      kills: raw.kills || 0,
+      sold: raw.sold || 0,
+      escaped: raw.escaped || 0,
+      ejected: raw.ejected || 0,
+      caught: raw.caught || 0,
+      toggled: raw.toggled || 0,
+      partsSold: 0,
+      schleuder: 0,
+    };
+    delete raw.kills;
+    delete raw.sold;
+    delete raw.escaped;
+    delete raw.ejected;
+    delete raw.caught;
+    delete raw.toggled;
+    raw.v = 10;
+  }
+  if (raw.v === 10) {
+    // Paket v0.12.0: Gebäude-Footprints wachsen. Alte Layouts würden beim Laden
+    // überlappen und still verworfen – daher dokumentierter Fabrik-Reset:
+    // Fortschritt (Geld, Quests, Stats, Skills) bleibt, die Gebäude nicht.
+    raw.blds = [];
+    raw.v = 11;
+  }
   if (raw.v !== SAVE_VER) return null;
   return raw;
 }
@@ -640,12 +660,17 @@ export function load() {
     ash: raw.ash,
     t: raw.t,
     gore: raw.gore,
-    kills: raw.kills,
-    sold: raw.sold,
-    escaped: raw.escaped,
-    ejected: raw.ejected || 0,
-    caught: raw.caught || 0,
-    toggled: raw.toggled || 0,
+    stats: {
+      spawned: 0,
+      kills: raw.stats?.kills || 0,
+      sold: raw.stats?.sold || 0,
+      escaped: raw.stats?.escaped || 0,
+      ejected: raw.stats?.ejected || 0,
+      caught: raw.stats?.caught || 0,
+      toggled: raw.stats?.toggled || 0,
+      partsSold: raw.stats?.partsSold || 0,
+      schleuder: raw.stats?.schleuder || 0,
+    },
     quest: raw.quest || 0,
     up: raw.up && raw.up.lv ? raw.up : { lv: {} },
     skill: raw.skill && raw.skill.lv ? raw.skill : { lv: {} },

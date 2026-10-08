@@ -36,8 +36,8 @@ function netWorld(withGen = false) {
   const market = put('market', 26, 40);
   let gen = null;
   if (withGen) {
-    put('pipe', 26, 41);
-    gen = put('gen', 26, 42);
+    put('pipe', 26, 43);
+    gen = put('gen', 26, 44);
   }
   run(0.1);
   return { drain, market, gen };
@@ -165,7 +165,7 @@ describe('Pipe-Netze', () => {
     expect(nets[0].v).toBeLessThan(100);
     expect(nets[0].v).toBeGreaterThanOrEqual(60 - 1e-6);
     expect(S.money).toBeGreaterThan(m0);
-    expect(S.sold).toBeGreaterThan(0);
+    expect(S.stats.sold).toBeGreaterThan(0);
     void MARKET_RESERVE;
   });
 

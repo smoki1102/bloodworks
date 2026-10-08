@@ -14,6 +14,7 @@ import {
 } from './ui/ui.js';
 import { renderForschung } from './ui/research.js';
 import { updateQuest } from './ui/quests.js';
+import { openGallery } from './ui/gallery.js';
 import { $ } from './utils/helpers.js';
 
 let lastTS = 0,
@@ -58,3 +59,9 @@ renderInspector();
 renderHUD();
 updateTutorial();
 requestAnimationFrame(loop);
+
+/* Entwickler-Galerie: nur mit `?ui` / `?gallery` (siehe ui/gallery.js). */
+const params =
+  typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+if (params && (params.has('ui') || params.has('gallery')))
+  openGallery(params.has('ui') ? 'ui' : 'gallery');

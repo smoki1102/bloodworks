@@ -209,7 +209,7 @@ export function toggleSelected() {
   const b = S.sel;
   if (!b) return;
   b.on = !b.on;
-  S.toggled++;
+  S.stats.toggled++;
   renderInspector();
 }
 export function cleanSelected(b) {

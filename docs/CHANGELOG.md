@@ -1,5 +1,207 @@
 # Changelog
 
+## 0.14.0 – UI: Design-Tokens, Galerie, Feinschliff (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Maße-Tokens (`METRICS` in `src/config/palette.js`):** neben den Farben
+  (`UI`) gibt es jetzt kanonische Tokens für Abstände (`--sp1`…`--sp6`, 4-px-
+  Raster), Radien (`--r1`/`--r2`/`--r3`/`--rPill`), Schatten (`--shPop`,
+  `--shPanel`, `--shSheet`), Schrift (`--fontUi`, `--fontSm`…`--fontTitle`,
+  `--mono`) und Bewegung (`--durFast`, `--durMid`, `--durSlow`). `applyTokens()`
+  schreibt sie wie die Farben auf `:root`; `main.css` hält dieselben Werte als
+  Fallback.
+- **`main.css` auf Tokens umgestellt:** Grundschrift, Buttons, Panels
+  (`#setPop`, `#inspector`, `#forschung`), Karten, Tooltip und Modal nutzen
+  jetzt Radius-, Schatten-, Abstands-, Font- und Dauer-Tokens statt fester
+  Zahlen. Optik dabei unverändert (Werte auf das Raster gerundet).
+- **Feinschliff:** die Spielansicht (`#view`) bekommt einen dezenten
+  Innenrahmen (1 px Linie + weicher innerer Schatten) als „Hallenrahmen"; die
+  Bau-Leiste (`#side`) erhält eine obere Trennkante. Überschriften der
+  Startbox nutzen die Font-Tokens.
+- **Dev-Galerie (`src/ui/gallery.js`):** `galleryHtml(mode)` baut eine reine
+  HTML-Stilübersicht (Farben, Abstände/Radien, Typografie, Buttons, Balken,
+  Baukarten, Toasts, alle Icons); `openGallery()` hängt sie als Overlay an
+  `<body>`. `main.js` öffnet sie nur bei `?ui` (UI-Komponenten) bzw.
+  `?gallery` (Stil-Galerie). Im normalen Spiel passiert nichts.
+
+### Qualität
+
+- `npm run check` = ESLint + 123 Vitest-Tests + Vite-Build, fehlerfrei.
+- Neu `tests/palette.test.js` (Farb-/Maße-Tokens gesetzt, `CSS_MAP` zeigt nur
+  auf vorhandene Farben, `rgba()`-Umrechnung) und `tests/gallery.test.js`
+  (Abschnitte, jedes Icon mit Namen, Modus-Titel, keine leeren Werte) – beide
+  ohne DOM über `galleryHtml()`.
+- Visuelle Prüfung: Headless-Chrome-DOM-Abzug von `?gallery` (8 Abschnitte,
+  29 Icons) und Screenshots von Spiel, `?gallery` und `?ui`.
+
+### Annahmen
+
+- `?ui` und `?gallery` öffnen **dieselbe** Galerie, nur mit anderem Titel; die
+  Trennung aus dem Plan (Komponenten vs. Assets) ist damit als eine Seite mit
+  beschriftetem Modus umgesetzt. Neue IDs/Elemente legt die Galerie erst zur
+  Laufzeit an, `tests/dom-stub.js` bleibt unberührt.
+- `?ui`/`?gallery` sind reine Entwicklerhilfen ohne Spielersistence und werden
+  nicht im Menü verlinkt.
+
+## 0.13.0 – Animationen: Posen-Modul, reduzierte Bewegung (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Neues Modul `src/render/anim/poses.js`:** reine Posen-Mathematik (kein
+  Zustand, kein Canvas). Exportiert `TAU`, `spin`, `swing`, `cycle`,
+  `pressStroke`, die Ruheposen `REST`, die Posenschreiber `POSES` je Gerät,
+  `pose(kind, t, opts)` und `moving(running, on)`. Die Maschinenanimationen
+  liegen damit zentral und ohne DOM testbar vor; die Gerätemodule rufen nur
+  noch `pose(...)` auf.
+- **Walze (`spike.js`), Klinge (`blade.js`), Abschleuderer (`schleuder.js`):**
+  nutzen jetzt `pose('spike'|'blade'|'schleuder', S.t, {still})` statt
+  Inline-Winkel. Verhalten unverändert (Walze/Schleuderer drehen, Klinge
+  pendelt), nur zentralisiert.
+- **Presse (`press.js`):** Hub kommt aus `pose('press', …)` mit
+  `prog: b.items[0]?.prog`; `pressStroke` bildet den Dreieckshub 0→1→0 über
+  1,4 s ab (0 = Kolben oben).
+- **`prefers-reduced-motion`:** `moving()` liefert bei reduzierter Bewegung
+  `false`, sodass alle vier Geräte ihre Ruhepose (`REST`) halten. Zusätzlich
+  friert `render/bands.js` den Bandpfeil-Scroll ein
+  (`beltTime() = 0` bei reduzierter Bewegung). Die Einstellung folgt weiterhin
+  Systemwert bzw. `optMotion`-Override in `core/effects.js`.
+
+### Qualität
+
+- `npm run check` = ESLint + 113 Vitest-Tests + Vite-Build, fehlerfrei.
+- Neuer Test `tests/poses.test.js` (ohne Canvas): Struktur der vier Posen,
+  Linearität von `spin`, Periodizität/Amplitude von `swing`, Dreieckshub und
+  Wertebereich von `pressStroke`, `cycle`-Normierung, Gleichheit von
+  `pose(..., {still:true})` mit `REST` sowie `moving()` unter reduzierter
+  Bewegung.
+- Render-Smoke-Test (`ui-smoke`) rendert die komplette Halle zusätzlich mit
+  aktiver reduzierter Bewegung (Ruheposen + eingefrorene Bänder).
+
+### Annahmen
+
+- Posen sind reine Anzeige-Werte; die Simulation bleibt die Wahrheit. Die
+  Modelle verändern nichts an `S`, `b` oder Warenfluss.
+- Bei reduzierter Bewegung wird nur *angehalten*, keine Zwischenpose
+  eingefroren: laufende Geräte springen sauber in die Ruhepose, angehaltene
+  Geräte zeigen ohnehin dieselbe.
+
+## 0.12.0 – Maschinen-Design: größere Footprints, Render-Module (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Footprints (SAVE_VER 11):** zehn Maschinen belegen nun größere, feste
+  Raster-Flächen: Spikes-Walze 3×2, Presse 2×3, Klingenpresse 3×3,
+  Abschleuderer 4×2, Verbrenner 3×3, Säurebad 4×2, Bluttank 2×4,
+  Generator 3×2, Blutmarkt 3×3, Verkauf 3×2. Eingang/Container/Reinraum,
+  Weichen, Rohre und Bänder bleiben unverändert. `originOf` zentriert die
+  größeren Gebäude weiterhin auf die angeklickte Zelle; Ports, Bandfluss und
+  Pipe-Anbindung lesen die Spans wie bisher über `bldRect`/`eachCell`.
+- **Migration v10 → v11:** Da alte Fabrik-Layouts mit den neuen Maßen
+  überlappen würden, setzt die Migration die Gebäude einmalig zurück
+  („Fabrik-Reset"). Geld, Quests, `S.stats`, Skills und Forschung bleiben
+  erhalten. `migrate()` kettet v9 → v10 → v11.
+- **Render-Aufteilung:** `drawMachineBody` liegt jetzt in
+  `src/render/machines/*.js` (ein Modul je Gerät, Dispatcher `index.js`).
+  Gemeinsame Bausteine wurden ausgelagert: `render/canvas.js` (Kontext/Palette),
+  `render/figures.js` (Stick/Leiche/Gliedmaße), `render/prims.js`
+  (Gehäuse, Balken, Warteschlange), `render/bands.js` (Bandraster, auch
+  diagonal). `renderer.js` bleibt Einstieg und re-exportiert `cv`/`C`.
+- **Zeichnung:** Walze, Presse, Klingenpresse und Abschleuderer skalieren auf
+  ihre neuen Flächen (Pistons Hub, rotierende Walze, Schwungarm). Verbrenner,
+  Säurebad und Verkauf zeigen ihre wartenden Waren jetzt sichtbar im Gehäuse
+  (Reihe über `queuedItems`); Markt und Generator nutzen größere Icons.
+
+### Qualität
+
+- `npm run check` = ESLint + 103 Vitest-Tests + Vite-Build, fehlerfrei.
+  Alte Test-Koordinaten an die neuen Footprints angepasst
+  (`machines.test.js` dynamischer Ausgang, `pipes`, `simulation`,
+  `quests`, `placement`, `ui-smoke`). Neuer Render-Smoke-Test: jeder
+  Gebäudetyp wird auf dem neuen Footprint platziert und gerendert
+  (inkl. Auswahl/Ports). Neuer Migrationstest v10 → v11.
+
+### Annahmen
+
+- Footprints rotieren **nicht** mit der Baurichtung `dir`: die im Plan
+  genannten Maße sind feste Weltmaße (Portrait/Landscape passend zur Optik).
+  `dir` steuert weiterhin nur Ports und Bandrichtung. Bei vertikaler
+  Ausrichtung durchläuft die Ware die Maschine entlang ihres Spans.
+- Beim Fabrik-Reset wird nur die Belegung geleert, kein Geld erstattet – der
+  Reset greift ohnehin nur beim Laden eines alten (v10-)Spielstands.
+
+## 0.11.0 – Quests: S.stats, Ereignismetriken, Auftrags-Log (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **`S.stats` (SAVE_VER 10):** alle Spielzähler (`spawned`, `kills`, `sold`,
+  `escaped`, `ejected`, `caught`, `toggled`, `partsSold`, `schleuder`) liegen
+  jetzt in einem Objekt `S.stats` statt als Einzelfelder auf `S`. `migrate()`
+  zieht v9-Stände hoch (alte Zähler wandern ins neue Objekt, neue Metriken
+  starten bei 0). `SAVE_KEY` bleibt historisch `bloodworks_v9`; maßgeblich ist
+  `SAVE_VER` + Migration.
+- **Quest-Metriken:** `METRIC` in `core/quests.js` liest nur noch `S.stats`
+  (plus `upg` über `upgCount()`). Metrik `schleuder` zählt jetzt Ereignisse
+  (abgeworfene Sticks vom Abschleuderer) statt gebauter Gebäude – der
+  Abschleuderer-Auftrag „Schleudertest" verlangt daher 3 Würfe, nicht mehr
+  nur den Bau. Neue Metrik `partsSold` (Waren an der Verkaufsstelle).
+- **Auftragskette (9 statt 8):** neue Quest „Teilehandel" (15 Körperteile
+  verkaufen, +250 €) vor „Serienausstoß" eingefügt.
+- **Auftrags-Log (`ui/quests.js`):** unter der Statuskarte erscheint eine
+  Liste aller Aufträge mit Zustandsmarkierung (✓ erledigt, ▸ aktiv, · offen)
+  und Mini-Fortschritt der aktiven Quest.
+- **Inspektor/HUD:** `S.toggled++` → `S.stats.toggled++`;
+  `renderHUD()`-Zeile liest `S.stats.*`.
+
+### Qualität
+
+- `npm run check` = ESLint + 101 Vitest-Tests (11 Dateien) + Vite-Build,
+  fehlerfrei. Neue Datei `tests/quests.test.js`: Metrik-Konsistenz (jede
+  Quest hat eine existierende Metrik), Ziel-/Belohnungsprüfung,
+  Abschleuderer-Ereignis, Teilehandel, Kettenfortschritt und -Ende.
+  `tests/ui-smoke.test.js`: Save-Test auf v10 umbenannt, neuer
+  Migrationstest v9 → v10 (`S.stats` wird aus Einzelfeldern gefüllt).
+
+### Annahmen
+
+- Reihenfolge der neuen Quest: „Teilehandel" vor „Serienausstoß", weil der
+  Gesamtausstoß logisch der Abschluss bleibt.
+- `partsSold` zählt jede abgewickelte Ware an der Verkaufsstelle (auch
+  ganze Leichen), nicht nur abgetrennte Teile – die Verkaufsstelle nimmt
+  beides.
+- SAVE_KEY-Behaltung: alter localStorage-Schlüssel bleibt `bloodworks_v9`,
+  weil ein Schlüsselwechsel alte Stände orphanen würde; die Formatversion
+  steckt in `raw.v`.
+
+## 0.10.0 – Dokumentation overhaul-2 (08.10.2026)
+
+### Geplante Arbeit (nur Doku, kein Spielcode)
+
+- **`docs/PLAN.md` neu:** Umbauplan overhaul-2 mit vier Paketen (Quests 0.11,
+  Maschinen-Design 0.12, Animationen 0.13, UI 0.14) plus Dokumentationsphase 0.
+  Enthält Ablauf pro Phase (Tests, check, visuelle Prüfung, CHANGELOG, Commit,
+  Push, Bericht, Stop bis OK), harte Regeln und offene Risiken. Phase 0
+  (Code-Audit) ist abgehakt.
+- **`README.md`:** Testzahl 89 → 93; Features für Palette/Icons/Tooltip/
+  Hallenboden/Diagonalbänder und overhaul-2-Auftragskette nachgetragen; Verweis
+  auf `docs/PLAN.md`.
+- **`docs/ARCHITECTURE.md`:** Renderer-Zeile um Hallenboden (Diagonalbänder +
+  Raster) ergänzt; `drawMachine()` → `drawMachineBody()` korrigiert; Testliste
+  um `helpers.test` ergänzt; Testzahl 89 → 93.
+
+### Annahmen
+
+- Reihenfolge der Pakete: Doku → Quests → Maschinen-Design → Animationen → UI.
+  Quests zuerst, weil sie nur Metrik-/Save-Logik berühren; Maschinen vor
+  Animationen, weil Posen an der Geometrie hängen; UI zuletzt, weil sie nur liest.
+- Save-Strategie für Paket 2 (Footprint-Änderungen) wird dort entschieden:
+  `SAVE_VER` 10 + Migration oder dokumentierter Reset.
+
+### Qualität
+
+- `npm run check` = ESLint + 93 Vitest-Tests (10 Dateien) + Vite-Build,
+  fehlerfrei. Keine Code-Änderung, keine Save-Änderung.
+
 ## 0.9.6 – Politur/Performance/Doku (08.10.2026)
 
 ### Änderungen an bestehendem Code

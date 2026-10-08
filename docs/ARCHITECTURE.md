@@ -13,7 +13,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/config/skill-defs.js`| Skill-Äste und Knoten inkl. Währung, Kosten, Stufen, `fx`, `unlock`      |
 | `src/config/tutorial-defs.js` | Die 12 Tutorialschritte (Text, Zielzelle, zu bauendes Item, Bedingung) |
 | `src/config/upgrade-defs.js`, `quest-defs.js` | Bestehende Forschung und Aufträge (unverändert)    |
-| `src/config/palette.js`   | Kanonische Farbquellen: `UI` (DOM-Tokens), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)` |
+| `src/config/palette.js`   | Kanonische Quellen: `UI` (DOM-Farben), `METRICS` (Abstände/Radien/Schatten/Font/Dauer), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)`. `applyTokens()` schreibt `UI`+`METRICS` auf `:root` |
 | `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt` mit deutscher Tausendertrennung, `clamp`, `rnd`) |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
@@ -30,16 +30,23 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz, iteriert nur über ein Schmutz-Rechteck statt aller 8192 Zellen – `touch()` bei Zufluss, `resetBloodBounds()` nach `initSim()`), `reducedMotion()`/`setReducedMotion()` (Systemwert oder Nutzer-Override aus dem Einstellungs-Popover) |
 | `src/core/simulation.js`  | `tick(dt)`: Netze, Energie, Maschinen, Flow, Bänder, Flüssigkeiten, Sticks, Leichen, Partikel |
 | `src/core/upgrades.js`, `quests.js` | Bestehende Forschung und Auftragskette                  |
-| `src/render/renderer.js`  | Canvas: Kamera, Culling, Gebäude, Waren, Sticks, Rohre, Hinweise        |
+| `src/render/renderer.js`  | Canvas: Kamera, Culling, Hallenboden (Diagonalbänder + Raster), Gebäude-Regie, Waren, Sticks, Rohre, Hinweise. Re-exportiert `cv`/`C` aus `canvas.js` |
+| `src/render/canvas.js`    | Gemeinsamer Kontext `cv`/`ctx` und Palette `C` (kein Import-Zyklus mit `renderer.js`) |
+| `src/render/figures.js`   | Figuren/Items: `drawStickFigure`, `drawCorpse`, `drawCorpseShape`, `drawLimbShape`, `drawItemShape` |
+| `src/render/prims.js`     | Grundformen für Geräte: `housing`, `bar`, `machineOn`, `queuedItems` |
+| `src/render/bands.js`     | Bandraster (`bandRect`, `drawBandStrip`, `drawBandDiag`) für Bänder und Pass-Maschinen; Scroll friert bei reduzierter Bewegung ein |
+| `src/render/anim/poses.js`| Reine Posen-Mathematik (`spin`, `swing`, `pressStroke`, `pose`, `moving`) für Walze/Presse/Klinge/Abschleuderer; kein Zustand, kein Canvas |
+| `src/render/machines/*.js`| Ein Modul je Gerätetyp; `index.js` dispatcht `drawMachineBody`; Animationsmodule lesen ihre Pose aus `anim/poses.js` |
 | `src/render/icons.js`     | Eigenes Icon-Set (27 Icons, 16×16-Vektor): eine Shape-Definition pro Icon, zwei Renderer – `drawIcon` (Canvas) und `iconSvg` (Inline-SVG für DOM-UI). Keine Emoji/Sonderglyphen, keine Fremd-Assets |
 | `src/ui/ui.js`            | HUD, Bauliste, Tutorial, Eingabe, Startmenü, Speichern (v9), Shortcuts, Forschungs-Pause (`openForschungUI`/`closeForschungUI`), Token-Init (`applyTokens`, `initIcons`), Einstellungs-Popover |
 | `src/ui/tooltip.js`       | Zentrales Tooltip-Element für `data-tip` (Hover + Fokus, 350 ms Delay, Mehrzeilen via `\n`); ersetzt native `title` |
+| `src/ui/gallery.js`       | Dev-Galerie (`galleryHtml`, `openGallery`) für Design-Review, nur per `?ui` / `?gallery` in `main.js` geöffnet |
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
 | `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
 | `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
 | `src/main.js`             | Spielschleife, HUD- und Tutorial-Intervalle                             |
-| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `placement`, `belt-path`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
+| `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `helpers.test`, `placement`, `belt-path`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
 
 ## Raster und Koordinaten
 
@@ -111,7 +118,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 1. Eintrag in `DEF` (`src/config/building-defs.js`) inkl. `icon`, `cat`, `kind`, `cap`, `e`, optional `unlock`. Das `icon`-Feld verweist auf einen Namen aus `ICONS` (`src/render/icons.js`); für ein neues Icon dort eine 16×16-Shape-Definition ergänzen.
 2. Verhalten in `src/core/machines.js` (`step…`) bzw. `src/core/flow.js`.
-3. Optik als `case` in `drawMachine()` (`src/render/renderer.js`). Icon-lastige Maschinen (Logistik, Handel) nutzen `drawIcon(ctx, d.icon, …)`; Detailzeichnungen bleiben eigener Code.
+3. Optik als `draw()`-Funktion in `src/render/machines/<typ>.js` anlegen und im Dispatcher `src/render/machines/index.js` eintragen. Icon-lastige Maschinen (Logistik, Handel) nutzen `drawIcon(ctx, d.icon, …)`; Detailzeichnungen bleiben eigener Code. Für mehrzellige Geräte immer aus `r` (`bldRect`) rechnen, damit die Zeichnung auf den Footprint skaliert.
 4. Kategoriekarten aktualisieren sich automatisch über `cat`.
 5. Test in `tests/machines.test.js` bzw. `tests/simulation.test.js`.
 
@@ -161,18 +168,33 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 ## Spielstand
 
-`localStorage`, Schlüssel `bloodworks_v9` (`v: 9`). Enthält Geld, Energie, Blut, Aufträge,
-Forschung, Skill-Stufen samt Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera sowie alle
-Gebäude inklusive Zielen, Filterregeln, Reserve und Waren (Stick-Leichen zusätzlich `body` mit
-`limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`). `load()` zieht ältere Stände über die
-`migrate()`-Stufenliste hoch; unbekannte/ neuere Versionen werden abgelehnt und als Toast
-gemeldet. Bei Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in `migrate()`
-ergänzen und `save()`/`load()`/`hasSave()` anpassen.
+`localStorage`, Schlüssel `bloodworks_v9` (historisch; Formatversion steckt in `raw.v`,
+aktuell `v: 11`). Enthält Geld, Energie, Blut, Aufträge, Forschung, Skill-Stufen samt
+Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera, die Spielzähler in `S.stats`
+(`spawned`, `kills`, `sold`, `escaped`, `ejected`, `caught`, `toggled`, `partsSold`,
+`schleuder`) sowie alle Gebäude inklusive Zielen, Filterregeln, Reserve und Waren
+(Stick-Leichen zusätzlich `body` mit `limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`).
+`load()` zieht ältere Stände über die `migrate()`-Stufenliste hoch (v9→v10 zieht die
+alten Einzelfelder in `S.stats`, v10→v11 leert die Gebäude wegen der neuen Footprints);
+unbekannte/neuere Versionen werden abgelehnt und als Toast gemeldet. Bei
+Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in `migrate()` ergänzen
+und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 89 Tests, reines Node (kein DOM nötig).
+- `npm test` – 123 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
+- `tests/quests.test.js`: Quest-Metriken existieren und sind erreichbar, Abschleuderer-Ereignis,
+  Teilehandel, Kettenfortschritt, v9→v10-Migration.
+- `tests/poses.test.js`: Posen ohne Canvas – Struktur, `spin`-Linearität,
+  `swing`-Periodizität, `pressStroke`-Dreieck, `pose(..., {still})` == `REST`, `moving()`
+  unter reduzierter Bewegung.
+- `tests/palette.test.js`: `UI`/`METRICS`/`CANVAS` gesetzt, `CSS_MAP` zeigt nur auf
+  vorhandene Farben, `rgba()`-Umrechnung.
+- `tests/gallery.test.js`: `galleryHtml()` ohne DOM – Abschnitte, jedes Icon mit Namen,
+  Modus-Titel, keine leeren Token-Werte.
+- `tests/ui-smoke.test.js`: u. a. Render-Smoke über jeden Gebäudetyp auf dem neuen
+  Footprint und Migration v10→v11 (Fabrik-Reset).
 - `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten
   verbinden die Vorgänger nach rechts (lädt `dom-stub.js`, weil `skill.js` einen
   Klick-Handler auf `document` registriert).

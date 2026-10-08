@@ -92,7 +92,7 @@ export function killInPlace(b, it) {
   it.body = null;
   it.held = false;
   it.bleed = 0.6;
-  S.kills++;
+  S.stats.kills++;
   const pos = itemPos(b, it);
   if (it.chair) {
     it.chair = false;
@@ -118,7 +118,7 @@ function stepSpawn(b, dt, pf) {
     Math.max(SPAWN_MIN, SPAWN_BASE - S.t / SPAWN_RAMP) * upgEff('spawn');
   if (!roomIn(t)) return false;
   t.items.push(mkStick());
-  S.spawned = (S.spawned || 0) + 1;
+  S.stats.spawned++;
   b.pulse = 0.4;
   return true;
 }
@@ -219,7 +219,8 @@ function ejectItem(b, it) {
     prog: undefined,
   };
   if (it.kind === 'stick') {
-    S.ejected++;
+    S.stats.ejected++;
+    if (b.t === 'schleuder') S.stats.schleuder++;
     if (it.chair) {
       it.chair = false;
       chairBits(pos.x, pos.y);
@@ -267,7 +268,7 @@ function workPass(b, run) {
 function tryEject(b, it, d) {
   const c = exitCellOf(b, d, 0);
   if (!inGrid(c.x, c.y)) {
-    S.escaped++;
+    S.stats.escaped++;
     return true;
   }
   const target = bldAtCell(c.x, c.y);
@@ -373,7 +374,10 @@ function stepSink(b, dt, run) {
       S.energy = Math.min(S.energyMax, S.energy + OVEN_ENERGY * (S.fx?.oven ?? 1));
       S.ash += OVEN_ASH;
     } else if (b.t === 'acid') S.money += ACID_MONEY;
-    else S.money += Math.round(valueOf(it) * priceOf() * SHOP_VALUE_MULT);
+    else {
+      S.money += Math.round(valueOf(it) * priceOf() * SHOP_VALUE_MULT);
+      S.stats.partsSold++;
+    }
     noteOut(b, S.t);
     b.pulse = 0.5;
     return true;
