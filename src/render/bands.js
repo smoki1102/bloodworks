@@ -1,8 +1,12 @@
 import { BELT_SPEED, CELL, DX, DY, isDiag } from '../config/constants.js';
 import { C, ctx } from './canvas.js';
 import { rgba } from '../config/palette.js';
+import { reducedMotion } from '../core/effects.js';
 import { S } from '../core/state.js';
 import { bldRect } from '../core/grid.js';
+
+/** Bandpfeile scrollen nur ohne reduzierte Bewegung. */
+const beltTime = () => (reducedMotion() ? 0 : S.t);
 
 /* ------------------------------ Band & Gerüst ------------------------------ */
 
@@ -23,7 +27,7 @@ export function drawBandStrip(b, inner) {
   ctx.strokeStyle = C.light;
   ctx.lineWidth = 2.4;
   ctx.beginPath();
-  const off = ((S.t * BELT_SPEED) % 20) - 20;
+  const off = ((beltTime() * BELT_SPEED) % 20) - 20;
   if (s.vert) {
     for (let i = -1; i < s.h / 20 + 1; i++) {
       const py = s.y + i * 20 - off * ((b.dir === 3 ? -1 : 1) || 1);
@@ -74,7 +78,7 @@ export function drawBandDiag(b, inner) {
   ctx.strokeStyle = C.light;
   ctx.lineWidth = 2.4;
   ctx.beginPath();
-  const off = ((S.t * BELT_SPEED) % 20) - 20;
+  const off = ((beltTime() * BELT_SPEED) % 20) - 20;
   for (let i = -1; i < len / 20 + 1; i++) {
     const px = i * 20 - off;
     if (px < -len / 2 + 2 || px > len / 2 - 4) continue;

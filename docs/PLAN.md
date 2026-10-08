@@ -46,11 +46,11 @@ mit explizitem OK.
 
 ## Paket 3 – Animationen (Version 0.13.0)
 
-- [ ] `src/render/anim/poses.js` (Datenmodule, kein Zustand schreiben).
-- [ ] Posen: Walze, Pressen-Hub, Klingen-Schlag, Abschleuderer-Schwung.
-- [ ] Pose-Tests (Struktur, Periodizität) ohne Canvas.
-- [ ] `prefers-reduced-motion` respektiert Animationen.
-- [ ] Visuelle Prüfung: laufende Maschinen, reduzierte Bewegung.
+- [x] `src/render/anim/poses.js` (Datenmodule, kein Zustand schreiben).
+- [x] Posen: Walze, Pressen-Hub, Klingen-Schlag, Abschleuderer-Schwung.
+- [x] Pose-Tests (Struktur, Periodizität) ohne Canvas.
+- [x] `prefers-reduced-motion` respektiert Animationen.
+- [x] Visuelle Prüfung: laufende Maschinen, reduzierte Bewegung.
 
 ## Paket 4 – UI (Version 0.14.0)
 

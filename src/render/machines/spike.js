@@ -1,15 +1,17 @@
 import { C, ctx } from '../canvas.js';
 import { S } from '../../core/state.js';
 import { machineOn } from '../prims.js';
+import { moving, pose } from '../anim/poses.js';
 
 export function draw(b, r) {
   const cx = r.x + r.w / 2;
   const cy = r.y + r.h / 2;
   const rad = Math.min(r.w, r.h) / 2 - 10;
   const on = machineOn(b);
+  const p = pose('spike', S.t, { still: !moving(S.running, on) });
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(S.running && on ? S.t * 3 : 0);
+  ctx.rotate(p.angle);
   ctx.fillStyle = C.bright;
   ctx.beginPath();
   const teeth = 32;

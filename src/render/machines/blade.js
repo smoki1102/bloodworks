@@ -1,13 +1,14 @@
 import { C, ctx } from '../canvas.js';
 import { S } from '../../core/state.js';
 import { machineOn } from '../prims.js';
+import { moving, pose } from '../anim/poses.js';
 
 export function draw(b, r) {
   const cx = r.x + r.w / 2;
   const cy = r.y + r.h / 2;
   const L = Math.min(r.w, r.h) * 0.36;
   const on = machineOn(b);
-  const a = S.running && on ? Math.sin(S.t * 8) * 0.25 : 0.2;
+  const a = pose('blade', S.t, { still: !moving(S.running, on) }).angle;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.strokeStyle = C.bright;

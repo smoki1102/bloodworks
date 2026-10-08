@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.13.0 – Animationen: Posen-Modul, reduzierte Bewegung (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Neues Modul `src/render/anim/poses.js`:** reine Posen-Mathematik (kein
+  Zustand, kein Canvas). Exportiert `TAU`, `spin`, `swing`, `cycle`,
+  `pressStroke`, die Ruheposen `REST`, die Posenschreiber `POSES` je Gerät,
+  `pose(kind, t, opts)` und `moving(running, on)`. Die Maschinenanimationen
+  liegen damit zentral und ohne DOM testbar vor; die Gerätemodule rufen nur
+  noch `pose(...)` auf.
+- **Walze (`spike.js`), Klinge (`blade.js`), Abschleuderer (`schleuder.js`):**
+  nutzen jetzt `pose('spike'|'blade'|'schleuder', S.t, {still})` statt
+  Inline-Winkel. Verhalten unverändert (Walze/Schleuderer drehen, Klinge
+  pendelt), nur zentralisiert.
+- **Presse (`press.js`):** Hub kommt aus `pose('press', …)` mit
+  `prog: b.items[0]?.prog`; `pressStroke` bildet den Dreieckshub 0→1→0 über
+  1,4 s ab (0 = Kolben oben).
+- **`prefers-reduced-motion`:** `moving()` liefert bei reduzierter Bewegung
+  `false`, sodass alle vier Geräte ihre Ruhepose (`REST`) halten. Zusätzlich
+  friert `render/bands.js` den Bandpfeil-Scroll ein
+  (`beltTime() = 0` bei reduzierter Bewegung). Die Einstellung folgt weiterhin
+  Systemwert bzw. `optMotion`-Override in `core/effects.js`.
+
+### Qualität
+
+- `npm run check` = ESLint + 113 Vitest-Tests + Vite-Build, fehlerfrei.
+- Neuer Test `tests/poses.test.js` (ohne Canvas): Struktur der vier Posen,
+  Linearität von `spin`, Periodizität/Amplitude von `swing`, Dreieckshub und
+  Wertebereich von `pressStroke`, `cycle`-Normierung, Gleichheit von
+  `pose(..., {still:true})` mit `REST` sowie `moving()` unter reduzierter
+  Bewegung.
+- Render-Smoke-Test (`ui-smoke`) rendert die komplette Halle zusätzlich mit
+  aktiver reduzierter Bewegung (Ruheposen + eingefrorene Bänder).
+
+### Annahmen
+
+- Posen sind reine Anzeige-Werte; die Simulation bleibt die Wahrheit. Die
+  Modelle verändern nichts an `S`, `b` oder Warenfluss.
+- Bei reduzierter Bewegung wird nur *angehalten*, keine Zwischenpose
+  eingefroren: laufende Geräte springen sauber in die Ruhepose, angehaltene
+  Geräte zeigen ohnehin dieselbe.
+
 ## 0.12.0 – Maschinen-Design: größere Footprints, Render-Module (08.10.2026)
 
 ### Änderungen an bestehendem Code
