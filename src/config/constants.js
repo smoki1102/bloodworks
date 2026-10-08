@@ -7,17 +7,31 @@ export const CELL = 48,
   W = PW,
   H = PH;
 
-/* Richtungen als Zahlen, im Uhrzeigersinn. */
+/* Richtungen als Zahlen. 0–3 orthogonal (im Uhrzeigersinn), 4–7 diagonal:
+   4 = NO, 5 = SO, 6 = SW, 7 = NW. Diagonale entstehen nur aus dem Streckenbau. */
 export const E = 0,
   S = 1,
   WDIR = 2,
   N = 3;
-export const DX = [1, 0, -1, 0],
-  DY = [0, 1, 0, -1];
-export const opp = (d) => (d + 2) & 3;
+export const DX = [1, 0, -1, 0, 1, 1, -1, -1],
+  DY = [0, 1, 0, -1, -1, 1, 1, -1];
+export const opp = (d) => (d < 4 ? (d + 2) & 3 : ((d - 2) & 3) + 4);
 export const rotL = (d) => (d + 3) & 3;
 export const rotR = (d) => (d + 1) & 3;
+export const isDiag = (d) => d > 3;
 export const DIR_NAME = ['Rechts', 'Runter', 'Links', 'Hoch'];
+
+/** Richtung aus dem Verschiebungsvektor (je −1, 0 oder 1). */
+const DIR_LUT = [7, 2, 6, -1, 3, -1, 1, -1, 4, 0, 5, -1];
+export const dirOf = (sx, sy) => DIR_LUT[(sx + 1) * 4 + (sy + 1)];
+
+/** Orthogonale Anteile einer Richtung (diagonal: beide Achsen, sonst: sie selbst). */
+export const compsOf = (d) => {
+  const out = [];
+  if (DX[d]) out.push(DX[d] > 0 ? E : WDIR);
+  if (DY[d]) out.push(DY[d] > 0 ? S : N);
+  return out;
+};
 
 export const BELT_H = 14, // sichtbare Banddicke in einer Zelle
   BELT_SPEED = 54,

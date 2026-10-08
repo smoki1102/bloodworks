@@ -1,5 +1,5 @@
 import { DEF } from '../config/building-defs.js';
-import { BELT_SPEED, CELL, DX, DY } from '../config/constants.js';
+import { BELT_SPEED, CELL, DX, DY, compsOf, isDiag } from '../config/constants.js';
 import { S, corpses, sticks } from './state.js';
 import { bldAtCell, inGrid, portsOf } from './grid.js';
 import { upgEff } from './upgrades.js';
@@ -11,16 +11,24 @@ export const MIN_GAP = 0.45;
 export const beltSpeed = () =>
   BELT_SPEED * upgEff('speed') * (S.fx?.beltSpeed ?? 1);
 
-export const lenOf = (b, d) => ((d & 1) ? b.spanH : b.spanW);
+export const lenOf = (b, d) => (isDiag(d) ? b.spanW * Math.SQRT2 : (d & 1 ? b.spanH : b.spanW));
 
-/** Eintritts-/Austrittspunkt einer Ware in der Längsachse. */
+/** Eintritts-/Austrittspunkt einer Ware: orthogonal auf der Kante, diagonal auf der Ecke. */
 export function edgePoint(b, d, lat, atExit) {
   const cx = b.x * CELL,
     cy = b.y * CELL;
   if (d === 0) return { x: atExit ? cx + b.spanW * CELL : cx, y: cy + (lat + 0.5) * CELL };
   if (d === 2) return { x: atExit ? cx : cx + b.spanW * CELL, y: cy + (lat + 0.5) * CELL };
   if (d === 1) return { x: cx + (lat + 0.5) * CELL, y: atExit ? cy + b.spanH * CELL : cy };
-  return { x: cx + (lat + 0.5) * CELL, y: atExit ? cy : cy + b.spanH * CELL };
+  if (d === 3) return { x: cx + (lat + 0.5) * CELL, y: atExit ? cy : cy + b.spanH * CELL };
+  const sx = DX[d],
+    sy = DY[d];
+  const w = b.spanW * CELL,
+    h = b.spanH * CELL;
+  const ex = atExit ? (sx > 0 ? w : 0) : sx > 0 ? 0 : w;
+  const ey = atExit ? (sy > 0 ? h : 0) : sy > 0 ? 0 : h;
+  const k = ((lat || 0) * CELL) / Math.SQRT2;
+  return { x: cx + ex + sy * k, y: cy + ey - sx * k };
 }
 
 export function itemPos(b, it) {
@@ -35,10 +43,20 @@ export function exitCellOf(b, d, lat) {
   if (d === 0) return { x: b.x + b.spanW, y: b.y + lat };
   if (d === 2) return { x: b.x - 1, y: b.y + lat };
   if (d === 1) return { x: b.x + lat, y: b.y + b.spanH };
-  return { x: b.x + lat, y: b.y - 1 };
+  if (d === 3) return { x: b.x + lat, y: b.y - 1 };
+  const sx = DX[d],
+    sy = DY[d];
+  return { x: b.x + (sx > 0 ? b.spanW : -1), y: b.y + (sy > 0 ? b.spanH : -1) };
 }
 
-export const latOf = (b, d, cell) => (d & 1 ? cell.x - b.x : cell.y - b.y);
+export const latOf = (b, d, cell) => {
+  if (!isDiag(d)) return d & 1 ? cell.x - b.x : cell.y - b.y;
+  // Diagonaler Eingang: Spur an der Achse des naheliegenden Maschinen-Ports ausrichten.
+  const ports = portsOf(b);
+  const ax = (ports.in[0] ?? ports.out[0] ?? 0) & 1;
+  const v = ax ? cell.x - b.x : cell.y - b.y;
+  return Math.max(0, Math.min((ax ? b.spanW : b.spanH) - 1, v));
+};
 
 /** Platz am Ende einer Warteschlange? */
 export function roomIn(t) {
@@ -47,6 +65,16 @@ export function roomIn(t) {
   if (last.p == null) return t.items.length < (DEF[t.t].cap || 3);
   return last.p >= MIN_GAP;
 }
+
+/**
+ * Nimmt das Gebäude eine Ware aus Bewegungsrichtung `d` an?
+ * Diagonale Eingänge zählen als beide orthogonalen Anteile.
+ */
+const accepts = (t, d) => {
+  const ins = portsOf(t).in;
+  if (ins.includes(d)) return true;
+  return isDiag(d) && compsOf(d).some((c) => ins.includes(c));
+};
 
 /**
  * Ware in ein Zielgebäude einspeisen.
@@ -67,7 +95,7 @@ export function feed(t, it, d, entry) {
     return true;
   }
   if (def.kind === 'route') {
-    if (!portsOf(t).in.includes(d)) return false;
+    if (!accepts(t, d)) return false;
     if (t.items.length >= (def.cap || 3)) return false;
     it.p = null;
     it.held = false;
@@ -75,7 +103,7 @@ export function feed(t, it, d, entry) {
     return true;
   }
   if (def.kind === 'pass') {
-    if (!portsOf(t).in.includes(d)) return false;
+    if (!accepts(t, d)) return false;
     if (!roomIn(t)) return false;
     it.lat = latOf(t, d, entry);
     it.p = 0;

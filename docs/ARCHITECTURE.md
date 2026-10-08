@@ -8,7 +8,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 | Ordner / Datei            | Aufgabe                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |
-| `src/config/constants.js` | Globale Zahlen: Raster, Zellgröße, Tempo, Wirtschaft, `TARGETS`, Tasten  |
+| `src/config/constants.js` | Globale Zahlen: Raster, Zellgröße, Tempo, Wirtschaft, `TARGETS`, Tasten, Richtungen (0–3 orthogonal, 4–7 diagonal: `DX`/`DY`, `opp`, `isDiag`, `dirOf`, `compsOf`) |
 | `src/config/building-defs.js` | Gebäude-Daten (`DEF`), Kategorien (`CATS`) – reine Daten            |
 | `src/config/skill-defs.js`| Skill-Äste und Knoten inkl. Währung, Kosten, Stufen, `fx`, `unlock`      |
 | `src/config/tutorial-defs.js` | Die 12 Tutorialschritte (Text, Zielzelle, zu bauendes Item, Bedingung) |
@@ -20,7 +20,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
 | `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint` |
-| `src/core/belt-path.js`   | Bau einer Bandstrecke: `planBeltPath` (Auto-L-Routen, Prüfung) und `buildBeltPath` (alles-oder-nichts, eine Rückgängig-Einheit) |
+| `src/core/belt-path.js`   | Bau einer Bandstrecke: `planBeltPath` (Diagonale + gerader Rest, beide Reihenfolgen) und `buildBeltPath` (alles-oder-nichts, eine Rückgängig-Einheit) |
 | `src/core/pipes.js`       | Rohrnetze: `rebuildNets`, Absaug-Indiz (`suckNet`, `suctionNetOf`), `addBlood`/`takeBlood`/`spendBlood`, `bloodTotal` |
 | `src/core/skill.js`       | Skill-Stufen, `buySkill`, `recomputeFx` (setzt `S.fx`), `giveSkillGift` |
 | `src/core/market.js`      | Blutmarkt: Verkauf, Reserve (`setReserve`, `sellable`)                  |
@@ -54,8 +54,13 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 ### Bänder, Fallgeschwindigkeit, Waren
 
-- Bänder haben vier Richtungen (`dir` 0–3 = rechts, runter, links, hoch). Ports am Geräte-Rahmen
-  sind **relativ**, die Reisedirektion **absolut** – `feed(t, it, d, entry)` prüft beides.
+- Bänder haben **acht Richtungen**: `dir` 0–3 orthogonal (rechts, runter, links, hoch),
+  `4–7` diagonal (NO, SO, SW, NW) – Diagonale entstehen nur aus dem Streckenbau, Maschinen
+  und `R` bleiben orthogonal. Ports am Geräte-Rahmen sind **relativ**, die Reisedirektion
+  **absolut** – `feed(t, it, d, entry)` prüft beides; ein diagonaler Eingang wird über die
+  **Komponentenregel** angenommen (`compsOf(d)` schneidet auf 0–3, passt eine Anteils-
+  Richtung zu einem Eingangs-Port). Auf Diagonalen ist die Bandlänge `√2 × Zellbreite`
+  (`lenOf`), Ware läuft von Zellecke zur gegenüberliegenden Ecke (`edgePoint`).
 - `MIN_GAP` sichert Abstand zwischen *bewegten* Waren; Waren, die am Eingang warten, dürfen
   enger liegen (sonst blockiert eine Weiche schon den Zulauf).
 - Auf dem Band liegende Waren mit `p == null` sind gehalten (Maschinen wie Presse/Klinge).
@@ -64,10 +69,11 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 - Am Bandende ohne Ziel fallen Waren ab – überall dort braucht es einen Container, sonst
   verliert man die Ware.
 - **Bandstrecke bauen:** `S.beltFrom` merkt den Startklick, `ui.js/beltAt()` fragt beim zweiten
-  Klick `buildBeltPath()` ab. `planBeltPath()` (`belt-path.js`) prüft beide L-Routen und nimmt
-  die erste freie; belegt → `Blockiert: <Name> (x,y)`, außerhalb → `Außerhalb der Fabrik`,
-  Ziel zu teuer → `Zu teuer: n €`, Richtungskonflikt → `Schleifenbildung`. Bestehende
-  Bandzellen werden umdirigiert (ohne Kosten), alles oder nichts – danach ist die Strecke eine
+  Klick `buildBeltPath()` ab. `planBeltPath()` (`belt-path.js`) plant **Diagonale + gerader
+  Rest** (beide Reihenfolgen, die freie gewinnt) und nimmt die erste freie; belegt →
+  `Blockiert: <Name> (x,y)`, außerhalb → `Außerhalb der Fabrik`, Ziel zu teuer →
+  `Zu teuer: n €`, Richtungskonflikt → `Schleifenbildung`. Bestehende Bandzellen werden
+  umdirigiert (ohne Kosten), alles oder nichts – danach ist die Strecke eine
   normale Reihe von 1×1-Bändern (Simulation unverändert).
 
 ### Blut

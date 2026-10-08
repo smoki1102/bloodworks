@@ -1,13 +1,13 @@
 /**
- * Bandstrecke von einem Start- zu einem Endpunkt: Plant eine gerade oder
- * L-förmige Route (beide Knickvarianten, die freie gewinnt) und baut sie
- * auf einmal. Bestehende Bandzellen werden übernommen (nur umdirigiert,
- * keine Kosten), alles andere blockiert die Strecke komplett.
+ * Bandstrecke von einem Start- zu einem Endpunkt: Plant eine Route aus
+ * Diagonalen (45°) und geradem Rest – beide Reihenfolgen, die freie gewinnt
+ * – und baut sie auf einmal. Bestehende Bandzellen werden übernommen (nur
+ * umdirigiert, keine Kosten), alles andere blockiert die Strecke komplett.
  *
  * Die Simulation bleibt unverändert: eine Strecke ist eine Reihe von
  * Einzelbändern (1 × 1) wie bisher.
  */
-import { DX, DY, opp } from '../config/constants.js';
+import { DX, DY, dirOf, opp } from '../config/constants.js';
 import { DEF } from '../config/building-defs.js';
 import { bldAtCell, inGrid } from './grid.js';
 import { addBuilding, autoDir, costOf, pushGroup } from './placement.js';
@@ -31,24 +31,35 @@ function line(x0, y0, x1, y1) {
   return cells;
 }
 
-/** L-Route: erst waagerecht, dann senkrecht (bzw. umgekehrt), Ecke nicht doppelt. */
-function route(x0, y0, x1, y1, horizFirst) {
+/** Route: Diagonalanteil (45°) + gerader Rest; `diagFirst` bestimmt die Reihenfolge. */
+function route(x0, y0, x1, y1, diagFirst) {
   if (y0 === y1 || x0 === x1) return line(x0, y0, x1, y1);
-  const first = horizFirst ? line(x0, y0, x1, y0) : line(x0, y0, x0, y1);
-  const second = horizFirst ? line(x1, y0 + Math.sign(y1 - y0), x1, y1) : line(x0 + Math.sign(x1 - x0), y1, x1, y1);
-  return first.concat(second);
+  const sx = Math.sign(x1 - x0),
+    sy = Math.sign(y1 - y0);
+  const diagLen = Math.min(Math.abs(x1 - x0), Math.abs(y1 - y0));
+  // Rest entlang der längeren Achse:
+  const rx = Math.abs(x1 - x0) > Math.abs(y1 - y0) ? sx : 0;
+  const ry = Math.abs(y1 - y0) > Math.abs(x1 - x0) ? sy : 0;
+  const rest = Math.abs(Math.abs(x1 - x0) - Math.abs(y1 - y0));
+  const diag = [];
+  const straight = [];
+  if (diagFirst) {
+    for (let i = 1; i <= diagLen; i++) diag.push({ x: x0 + sx * i, y: y0 + sy * i });
+    for (let i = 1; i <= rest; i++) straight.push({ x: x0 + sx * diagLen + rx * i, y: y0 + sy * diagLen + ry * i });
+    return [{ x: x0, y: y0 }, ...diag, ...straight];
+  }
+  for (let i = 1; i <= rest; i++) straight.push({ x: x0 + rx * i, y: y0 + ry * i });
+  for (let i = 1; i <= diagLen; i++) diag.push({ x: x0 + rx * rest + sx * i, y: y0 + ry * rest + sy * i });
+  return [{ x: x0, y: y0 }, ...straight, ...diag];
 }
 
 /** Richtungen entlang der Zellenliste (letzte Zelle: Richtung des letzten Segments). */
 function withDirs(cells) {
   if (cells.length === 1) return [{ ...cells[0], dir: autoDir(cells[0].x, cells[0].y, S.dir) }];
   return cells.map((c, i) => {
-    if (i === cells.length - 1) {
-      const p = cells[i - 1];
-      return { ...c, dir: p.x !== c.x ? Math.sign(c.x - p.x) > 0 ? 0 : 2 : Math.sign(c.y - p.y) > 0 ? 1 : 3 };
-    }
-    const n = cells[i + 1];
-    return { ...c, dir: n.x !== c.x ? (n.x > c.x ? 0 : 2) : n.y > c.y ? 1 : 3 };
+    const a = i === cells.length - 1 ? cells[i - 1] : c;
+    const b = i === cells.length - 1 ? c : cells[i + 1];
+    return { ...c, dir: dirOf(b.x - a.x, b.y - a.y) };
   });
 }
 

@@ -1,5 +1,5 @@
 import { DEF } from '../config/building-defs.js';
-import { DX, DY, GRID_H, GRID_W, opp, rotL, rotR } from '../config/constants.js';
+import { DX, DY, GRID_H, GRID_W, isDiag, opp, rotL, rotR } from '../config/constants.js';
 import { toast } from './effects.js';
 import { bldAtCell, eachCell, idx, inGrid } from './grid.js';
 import { S, blds, bmap, occ, takeId } from './state.js';
@@ -39,14 +39,15 @@ export function dirOk(x, y, d) {
   return true;
 }
 
-/** Automatische Bandrichtung aus den Nachbarn. */
+/** Automatische Bandrichtung aus den Nachbarn (auch diagonal). */
 export function autoDir(x, y, preferred = 0) {
   const inputs = [];
-  for (let d = 0; d < 4; d++) {
+  for (let d = 0; d < 8; d++) {
     const n = bldAtCell(x + DX[d], y + DY[d]);
     if (n && n.t === 'belt' && n.dir === opp(d)) inputs.push(n.dir);
   }
   const base = inputs.length === 1 ? inputs[0] : preferred;
+  if (isDiag(base)) return dirOk(x, y, base) ? base : preferred;
   for (const d of [base, rotR(base), rotL(base), opp(base)]) if (dirOk(x, y, d)) return d;
   return base;
 }

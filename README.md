@@ -39,10 +39,10 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   (128 × 64 Zellen), überall baubar. Kamera frei verschiebbar und zoombar; große Anlagen
   bleiben durch die zentrierte Ansicht vollständig sichtbar.
 - **Förderband als Strecke:** Werkzeug wählen, auf die **Startzelle** klicken, dann auf die
-  **Zielzelle** – die Strecke zieht sich gerade oder um die Ecke, kostet pro Zelle und ist
-  mit einem Befehl rückgängig zu machen. Bestehende Bandzellen werden übernommen, Maschinen
-  oder die Weltkante stoppen den ganzen Pfad. Waren fallen ohne Band nach unten und verrotten
-  auf dem Boden.
+  **Zielzelle** – die Strecke zieht sich in echten 45°-Diagonalen mit geradem Rest, kostet
+  pro Zelle und ist mit einem Befehl rückgängig zu machen. Bestehende Bandzellen werden
+  übernommen, Maschinen oder die Weltkante stoppen den ganzen Pfad. Waren fallen ohne Band
+  nach unten und verrotten auf dem Boden.
 - **Sticks mit Körperteilen:** Kopf, Torso, Arme, Beine mit Lebenspunkten; Maschinen
   verursachen Teilschaden, der Stick läuft weiter, bis Kopf/Torso weg sind oder die LP
   auf 0 fallen. Abgetrennte Teile sind eigene Waren (Behälter, Verbrenner, Säurebad, Verkauf)
@@ -74,7 +74,7 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 - **Aufträge:** die bestehende Quest-Kette bleibt erhalten; die Forschungsumfragen stehen
   im großen Forschungsfenster (Reiter Upgrades).
 - **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
-- **Qualität:** 81 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Qualität:** 89 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

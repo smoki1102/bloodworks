@@ -1,7 +1,7 @@
 import { DEF } from '../config/building-defs.js';
-import { BELT_SPEED, CELL, GRID_W, PH, PW } from '../config/constants.js';
+import { BELT_SPEED, CELL, DX, DY, GRID_W, PH, PW, isDiag, opp } from '../config/constants.js';
 import { bloodColor, reducedMotion } from '../core/effects.js';
-import { itemPos } from '../core/belts.js';
+import { edgePoint, itemPos } from '../core/belts.js';
 import { planBeltPath } from '../core/belt-path.js';
 import { costOf, originOf, placeReason } from '../core/placement.js';
 import { bldAtCell, bldRect, viewCells } from '../core/grid.js';
@@ -263,6 +263,7 @@ const bandRect = (b) => {
 };
 
 function drawBandStrip(b, inner) {
+  if (isDiag(b.dir)) return drawBandDiag(b, inner);
   const s = bandRect(b);
   ctx.fillStyle = C.dark;
   ctx.fillRect(s.x, s.y, s.w, s.h);
@@ -305,6 +306,47 @@ function drawBandStrip(b, inner) {
   }
 }
 
+/** Diagonales Band: gestreckter Streifen (Ecke zu Ecke), per 45°/135° gedreht. */
+function drawBandDiag(b, inner) {
+  const r = bldRect(b);
+  const cx = r.x + r.w / 2,
+    cy = r.y + r.h / 2;
+  const len = CELL * Math.SQRT2;
+  const w = 18;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(Math.atan2(DY[b.dir], DX[b.dir]));
+  ctx.fillStyle = C.dark;
+  ctx.fillRect(-len / 2, -w / 2, len, w);
+  ctx.fillStyle = C.body;
+  ctx.fillRect(-len / 2 + 1.5, -w / 2 + 1.5, len - 3, w - 3);
+  ctx.strokeStyle = C.light;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  const off = ((S.t * BELT_SPEED) % 20) - 20;
+  for (let i = -1; i < len / 20 + 1; i++) {
+    const px = i * 20 - off;
+    if (px < -len / 2 + 2 || px > len / 2 - 4) continue;
+    ctx.moveTo(px, -6);
+    ctx.lineTo(px + 5, 0);
+    ctx.lineTo(px, 6);
+  }
+  ctx.stroke();
+  if (inner) {
+    ctx.fillStyle = 'rgba(30,44,60,.35)';
+    ctx.fillRect(-len / 2, -w / 2, len, w);
+  }
+  if (b.dirt > 4) {
+    ctx.fillStyle = 'rgba(70,40,25,' + Math.min(0.4, b.dirt / 260) + ')';
+    ctx.fillRect(-len / 2, -w / 2, len, w);
+  }
+  if (b.on === false) {
+    ctx.fillStyle = 'rgba(10,14,20,.45)';
+    ctx.fillRect(-len / 2, -w / 2, len, w);
+  }
+  ctx.restore();
+}
+
 /* -------------------------------- Gebäude -------------------------------- */
 
 function housing(r, col) {
@@ -323,7 +365,7 @@ function drawPorts(b) {
   const d = DEF[b.t];
   if (b.t === 'belt') {
     outs.push(b.dir);
-    ins.push((b.dir + 2) & 3);
+    ins.push(opp(b.dir));
   } else {
     const dir = b.dir ?? 0;
     for (const r of d.in || []) ins.push((dir + r + 4) & 3);
@@ -333,12 +375,14 @@ function drawPorts(b) {
   const arrow = (dd, col) => {
     const cx = r.x + r.w / 2,
       cy = r.y + r.h / 2;
-    const px = cx + [r.w / 2, 0, -r.w / 2, 0][dd];
-    const py = cy + [0, r.h / 2, 0, -r.h / 2][dd];
+    const dx = DX[dd] * (r.w / 2),
+      dy = DY[dd] * (r.h / 2);
+    const px = cx + dx,
+      py = cy + dy;
     ctx.fillStyle = col;
     ctx.beginPath();
-    const ax = [8, 0, -8, 0][dd],
-      ay = [0, 8, 0, -8][dd];
+    const ax = DX[dd] * 8,
+      ay = DY[dd] * 8;
     ctx.moveTo(px + ax * 0.5, py + ay * 0.5);
     ctx.lineTo(px - ay * 0.6 + ax * 0.1, py + ax * 0.6 + ay * 0.1);
     ctx.lineTo(px + ay * 0.6 + ax * 0.1, py - ax * 0.6 + ay * 0.1);
@@ -746,6 +790,22 @@ function drawBeltGhost(cx, cy) {
       : costOf('belt');
   const bad = !!reason;
   for (const c of cells) ghostCell(c.x, c.y, bad);
+  if (plan && plan.cells.some((c) => c.dir != null)) {
+    ctx.strokeStyle = bad ? 'rgba(229,72,58,.9)' : 'rgba(47,129,248,.9)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const c of cells) {
+      if (c.dir == null) continue;
+      const cell = { x: c.x, y: c.y, spanW: 1, spanH: 1 };
+      const a = edgePoint(cell, c.dir, 0, false);
+      const e = edgePoint(cell, c.dir, 0, true);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(e.x, e.y);
+    }
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
   if (from) {
     const r = cellRect(from.x, from.y);
     ctx.strokeStyle = bad ? C.err : C.bright;

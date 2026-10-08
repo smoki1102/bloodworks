@@ -17,30 +17,47 @@ describe('Bandstrecke', () => {
     expect(plan.cost).toBe(4 * costOf('belt'));
   });
 
-  it('plant eine L-Strecke und setzt die Richtungen um die Ecke', () => {
+  it('plant eine reine Diagonalstrecke und setzt die Richtungen entlang der Ecken', () => {
     const plan = planBeltPath(10, 20, 12, 22);
+    expect(plan.reason).toBeNull();
+    expect(plan.cells.map((c) => [c.x, c.y])).toEqual([
+      [10, 20],
+      [11, 21],
+      [12, 22],
+    ]);
+    expect(plan.cells.map((c) => c.dir)).toEqual([5, 5, 5]);
+  });
+
+  it('plant gemischt: Diagonale zuerst, gerader Rest danach', () => {
+    const plan = planBeltPath(10, 20, 13, 21);
+    expect(plan.reason).toBeNull();
+    expect(plan.cells.map((c) => [c.x, c.y])).toEqual([
+      [10, 20],
+      [11, 21],
+      [12, 21],
+      [13, 21],
+    ]);
+    expect(plan.cells.map((c) => c.dir)).toEqual([5, 0, 0, 0]);
+  });
+
+  it('nimmt den geraden Knick, wenn die Diagonale blockiert ist', () => {
+    put('bin', 11, 21);
+    const plan = planBeltPath(10, 20, 13, 21);
     expect(plan.reason).toBeNull();
     expect(plan.cells.map((c) => [c.x, c.y])).toEqual([
       [10, 20],
       [11, 20],
       [12, 20],
-      [12, 21],
-      [12, 22],
+      [13, 21],
     ]);
-    expect(plan.cells.map((c) => c.dir)).toEqual([0, 0, 1, 1, 1]);
+    expect(plan.cells.map((c) => c.dir)).toEqual([0, 0, 5, 5]);
   });
 
-  it('nimmt den freien Knick, wenn der erste blockiert ist', () => {
-    put('bin', 11, 20);
-    const plan = planBeltPath(10, 20, 12, 22);
-    expect(plan.reason).toBeNull();
-    expect(plan.cells.map((c) => [c.x, c.y])).toEqual([
-      [10, 20],
-      [10, 21],
-      [10, 22],
-      [11, 22],
-      [12, 22],
-    ]);
+  it('plant Diagonalen in alle vier Richtungen', () => {
+    expect(planBeltPath(10, 20, 12, 22).cells.map((c) => c.dir)).toEqual([5, 5, 5]); // SO
+    expect(planBeltPath(12, 20, 10, 22).cells.map((c) => c.dir)).toEqual([6, 6, 6]); // SW
+    expect(planBeltPath(12, 22, 10, 20).cells.map((c) => c.dir)).toEqual([7, 7, 7]); // NW
+    expect(planBeltPath(10, 22, 12, 20).cells.map((c) => c.dir)).toEqual([4, 4, 4]); // NO
   });
 
   it('lehnt eine Strecke komplett ab, wenn eine Zelle belegt ist', () => {
@@ -55,6 +72,11 @@ describe('Bandstrecke', () => {
   it('erkennt Schleifenbildung am Ende der Strecke', () => {
     put('belt', 12, 20, { dir: 2 });
     expect(planBeltPath(10, 20, 11, 20).reason).toBe('Schleifenbildung');
+  });
+
+  it('erkennt Schleifenbildung auch diagonal', () => {
+    put('belt', 12, 22, { dir: 7 });
+    expect(planBeltPath(10, 20, 11, 21).reason).toBe('Schleifenbildung');
   });
 
   it('meldet Ziele außerhalb der Fabrik und zu wenig Geld', () => {

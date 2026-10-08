@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.9.0 – Echte 45°-Bänder (08.10.2026)
+
+### Neu: Funktionen
+
+- **Diagonale Bandstrecken:** Der Streckenplaner (`belt-path.js`) plant keine L-Routen
+  mehr, sondern **Diagonale (45°) + gerader Rest** – beide Reihenfolgen (Diagonale zuerst,
+  gerader Rest danach; und umgekehrt), die freie gewinnt. Waren laufen auf Diagonalen von
+  Zellecke zur gegenüberliegenden Ecke, die Simulation bleibt eine Reihe von Einzelbändern.
+- **Richtungsmodell erweitert:** `dir` kennt jetzt 8 Werte – `0–3` unverändert orthogonal
+  (rechts, runter, links, hoch), `4–7` diagonal (NO, SO, SW, NW). Alte Spielstände laden
+  unverändert (`SAVE_VER` bleibt **v9**); Diagonale entstehen **nur** aus dem Streckenbau,
+  `R` dreht weiterhin nur Maschinen um 90°.
+- Neue Helfer in `constants.js`: `isDiag(d)`, `dirOf(sx, sy)` (Verschiebungsvektor →
+  Richtung) und `compsOf(d)` (orthogonale Anteile einer Diagonalen).
+
+### Änderungen an bestehendem Code
+
+- `belts.js`: `lenOf` auf Diagonalen `√2 × Zellbreite` (gleiche Geschwindigkeit, längere
+  Strecke), `edgePoint`/`exitCellOf` kennen die vier Ecken, `latOf` richtet die Spur eines
+  diagonalen Eingangs an der Achse des Maschinen-Ports aus. `feed()` akzeptiert einen
+  diagonalen Eingang über die **Komponentenregel**: passt eine der beiden orthogonalen
+  Anteile (`compsOf`) zu einem Eingangs-Port, wird die Ware angenommen – sonst gilt wie
+  bisher: Fehlausrichtung = Stau.
+- `placement.js`: `autoDir` scannt alle 8 Richtungen; eine diagonale Zufuhr wird erkannt
+  und fortgesetzt. `dirOk` prüft Ping-Pong über `opp()` (auch diagonal).
+- `belt-path.js`: `route()` ersetzt die L-Variante durch Diagonale + Rest, `withDirs`
+  rechnet über `dirOf(sx, sy)`; Prüfung, Kosten, alles-oder-nichts und Gruppen-Undo sind
+  unverändert.
+- `renderer.js`: Diagonale Bänder werden als gedrehter Streifen (Ecke zu Ecke, ±45°/±135°)
+  mit animierten Chevrons gezeichnet; Pfeile in `drawPorts` kommen aus `DX`/`DY` (für
+  orthogonal exakt identisch); die Pfad-Vorschau zeigt zusätzlich die echten Travel-Segmente
+  (Eintritts→Austrittspunkt je Zelle).
+- Maschinen bleiben orthogonal (`S.dir`, R-Taste, Spawn-`exitCellOf`); Pipes, Weichen und
+  Senken sind richtungsunabhängig oder orthogonal und bleiben unverändert.
+
+### Qualität
+
+- `npm run check` = ESLint + 89 Vitest-Tests (9 Dateien) + Vite-Build, fehlerfrei.
+- `tests/belt-path.test.js`: reine Diagonale, gemischte Route (Diagonale + Rest), freier
+  gerader Knick bei blockierter Diagonale, alle vier Diagonalrichtungen, Schleifenbildung
+  auch diagonal. `tests/belts.test.js`: Transport über die Diagonale, Übergabe ans Bandende
+  in eine Maschine, Komponentenregel für `feed`, Position auf der Diagonale (Ecken).
+  `tests/placement.test.js`: diagonales Ping-Pong. `tests/ui-smoke.test.js`: Zweiklick-Bau
+  einer diagonalen Strecke über echte Canvas-Eingabe.
+
+### Annahmen
+
+1. Eingangssprung ≤ halbe Zelle, wenn eine orthogonale Quelle (Spawn/Maschine) in eine
+   diagonale erste Zelle liefert – der Wareneintritt liegt an der Zellecke.
+2. `MIN_GAP` bleibt ein Anteil der Zelllänge; auf Diagonalen ist der Lückenabstand in
+   Pixeln entsprechend größer (`√2`).
+3. Maschinen nehmen diagonale Zufuhr über die Komponentenregel an; passt keine Komponente
+   zu ihren Eingangs-Ports, stockt die Ware wie bei falsch ausgerichteten Bändern bisher.
+
+
 ## 0.8.0 – Förderband als Strecke, Lift-Band entfällt (08.10.2026)
 
 ### Neu: Funktionen

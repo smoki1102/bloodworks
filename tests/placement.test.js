@@ -50,6 +50,12 @@ describe('Platzierung', () => {
     expect(placeReason('belt', 6, 5, 2)).toBe('Schleifenbildung');
   });
 
+  it('verbietet diagonale Band-Schleifen', () => {
+    put('belt', 5, 5, { dir: 5 });
+    expect(placeReason('belt', 6, 6, 5)).toBeNull();
+    expect(placeReason('belt', 6, 6, 7)).toBe('Schleifenbildung');
+  });
+
   it('zentriert große Gebäude auf die Zielzelle', () => {
     expect(originOf('bin', 10, 10)).toEqual({ x: 10, y: 10 });
     expect(originOf('spawn', 10, 10)).toEqual({ x: 10, y: 10 });
