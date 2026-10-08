@@ -54,7 +54,7 @@ describe('UI im DOM (Smoke)', () => {
       expect(S.running).toBe(true);
       step(600);
       expect(S.t).toBeGreaterThan(5);
-      expect(S.spawned).toBeGreaterThan(0);
+      expect(S.stats.spawned).toBeGreaterThan(0);
       step(1500);
       expect(S.ash).toBeGreaterThan(0);
 
@@ -143,7 +143,7 @@ describe('UI im DOM (Smoke)', () => {
     step(3);
   });
 
-  it('speichert und lädt den Speicherstand v9', () => {
+  it('speichert und lädt den Speicherstand v10', () => {
     const before = { n: blds.length, money: S.money, t: S.t, spike: !!blds.find((b) => b.t === 'spike') };
     save(true);
     expect(hasSave()).toBe(true);
@@ -160,6 +160,43 @@ describe('UI im DOM (Smoke)', () => {
     expect(load()).toBeFalsy();
     localStorage.removeItem('bloodworks_v9');
     expect(hasSave()).toBe(false);
+  });
+
+  it('migriert einen v9-Spielstand auf S.stats (v10)', () => {
+    localStorage.setItem(
+      'bloodworks_v9',
+      JSON.stringify({
+        v: 9,
+        money: 500,
+        energy: 100,
+        blood: 10,
+        ash: 2,
+        t: 12,
+        gore: 100,
+        kills: 7,
+        sold: 30,
+        escaped: 1,
+        ejected: 2,
+        caught: 3,
+        toggled: 4,
+        quest: 2,
+        up: { lv: {} },
+        skill: { lv: {} },
+        blds: [],
+      }),
+    );
+    expect(hasSave()).toBe(true);
+    expect(load()).toBe(true);
+    expect(S.stats.kills).toBe(7);
+    expect(S.stats.sold).toBe(30);
+    expect(S.stats.escaped).toBe(1);
+    expect(S.stats.ejected).toBe(2);
+    expect(S.stats.caught).toBe(3);
+    expect(S.stats.toggled).toBe(4);
+    expect(S.stats.partsSold).toBe(0);
+    expect(S.stats.schleuder).toBe(0);
+    expect(S.quest).toBe(2);
+    localStorage.removeItem('bloodworks_v9');
   });
 
   it('Startmenü und das große Forschungsfenster lassen sich öffnen', () => {

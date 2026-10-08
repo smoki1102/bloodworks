@@ -44,7 +44,7 @@ describe('Bandtransport', () => {
     const a = put('belt', 127, 20, { dir: 0 });
     a.items.push(limb());
     run(2);
-    expect(S.escaped).toBe(1);
+    expect(S.stats.escaped).toBe(1);
     expect(a.items.length).toBe(0);
   });
 

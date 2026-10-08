@@ -17,9 +17,9 @@ export const QUESTS = [
   },
   {
     n: 'Schleudertest',
-    d: 'Baue einen Abschleuderer über das Band.',
+    d: 'Schleudere 3 Sticks mit dem Abschleuderer vom Band.',
     metric: 'schleuder',
-    goal: 1,
+    goal: 3,
     reward: 200,
   },
   {
@@ -42,6 +42,13 @@ export const QUESTS = [
     metric: 'upg',
     goal: 1,
     reward: 200,
+  },
+  {
+    n: 'Teilehandel',
+    d: 'Verkaufe 15 Körperteile über die Verkaufsstelle.',
+    metric: 'partsSold',
+    goal: 15,
+    reward: 250,
   },
   {
     n: 'Serienausstoß',

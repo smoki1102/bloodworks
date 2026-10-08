@@ -31,15 +31,15 @@ describe('Simulation', () => {
   it('liefert die volle Kette vom Stick bis zum Blutverkauf', () => {
     fullLine();
     run(60);
-    expect(S.spawned).toBeGreaterThan(3);
-    expect(S.kills).toBeGreaterThan(0);
+    expect(S.stats.spawned).toBeGreaterThan(3);
+    expect(S.stats.kills).toBeGreaterThan(0);
     expect(partPoints()).toBeGreaterThan(0);
     expect(bloodTotal()).toBeGreaterThanOrEqual(0);
     expect(nets.length).toBe(1);
     expect(nets[0].cap).toBeGreaterThan(0);
-    expect(S.sold).toBeGreaterThan(0);
+    expect(S.stats.sold).toBeGreaterThan(0);
     expect(S.money).toBeGreaterThan(90000);
-    expect(S.escaped).toBe(0);
+    expect(S.stats.escaped).toBe(0);
     expect(Object.values(S.parts).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
   });
 
@@ -48,13 +48,13 @@ describe('Simulation', () => {
     S.energyMax = 0;
     S.energy = 0;
     run(10);
-    expect(S.spawned).toBe(0);
-    expect(S.kills).toBe(0);
+    expect(S.stats.spawned).toBe(0);
+    expect(S.stats.kills).toBe(0);
     expect(S.pf).toBe(0);
     S.energyMax = 200;
     S.energy = 120;
     run(10);
-    expect(S.spawned).toBeGreaterThan(0);
+    expect(S.stats.spawned).toBeGreaterThan(0);
   });
 
   it('Bodenblut sickert nach unten', () => {
@@ -101,7 +101,7 @@ describe('Simulation', () => {
     put('belt', 15, 20, { dir: 0 });
     put('bin', 16, 20);
     run(30);
-    expect(S.kills).toBeGreaterThan(0);
+    expect(S.stats.kills).toBeGreaterThan(0);
     expect(partPoints()).toBe(0);
   });
 
@@ -125,7 +125,7 @@ describe('Simulation', () => {
 
   it('schreitet die Auftragskette fort', () => {
     expect(questProgress()).toBe(0);
-    S.kills = 10;
+    S.stats.kills = 10;
     expect(questProgress()).toBe(10);
     const m0 = S.money;
     const q = questStep();

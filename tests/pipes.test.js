@@ -165,7 +165,7 @@ describe('Pipe-Netze', () => {
     expect(nets[0].v).toBeLessThan(100);
     expect(nets[0].v).toBeGreaterThanOrEqual(60 - 1e-6);
     expect(S.money).toBeGreaterThan(m0);
-    expect(S.sold).toBeGreaterThan(0);
+    expect(S.stats.sold).toBeGreaterThan(0);
     void MARKET_RESERVE;
   });
 

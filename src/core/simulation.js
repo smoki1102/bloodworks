@@ -43,7 +43,7 @@ function catchSink(x, y, obj) {
     prog: 0,
     bleed: obj.bleed ?? 0.6,
   });
-  S.caught++;
+  S.stats.caught++;
   burst(x, y, bloodColor(), nBurst(5), 120);
   return true;
 }
@@ -59,7 +59,7 @@ export function moveSticks(dt) {
     s.rot = (s.rot || 0) + (s.spin || 0) * dt;
     if (outOfWorld(s.x)) {
       sticks.splice(i, 1);
-      S.escaped++;
+      S.stats.escaped++;
       continue;
     }
     if (s.body && bleedOut(s.body, dt)) {

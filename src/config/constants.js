@@ -40,8 +40,9 @@ export const BELT_H = 14, // sichtbare Banddicke in einer Zelle
 export const BASE_CAP = 100,
   TANK_CAP = 250,
   BASE_REGEN = 4,
+  /* Schlüssel-Name ist historisch (v9); maßgeblich ist SAVE_VER + migrate(). */
   SAVE_KEY = 'bloodworks_v9',
-  SAVE_VER = 9,
+  SAVE_VER = 10,
   START_MONEY = 1600;
 
 /* ------------------------------ Balance ------------------------------ */

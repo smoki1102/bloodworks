@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.11.0 – Quests: S.stats, Ereignismetriken, Auftrags-Log (08.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **`S.stats` (SAVE_VER 10):** alle Spielzähler (`spawned`, `kills`, `sold`,
+  `escaped`, `ejected`, `caught`, `toggled`, `partsSold`, `schleuder`) liegen
+  jetzt in einem Objekt `S.stats` statt als Einzelfelder auf `S`. `migrate()`
+  zieht v9-Stände hoch (alte Zähler wandern ins neue Objekt, neue Metriken
+  starten bei 0). `SAVE_KEY` bleibt historisch `bloodworks_v9`; maßgeblich ist
+  `SAVE_VER` + Migration.
+- **Quest-Metriken:** `METRIC` in `core/quests.js` liest nur noch `S.stats`
+  (plus `upg` über `upgCount()`). Metrik `schleuder` zählt jetzt Ereignisse
+  (abgeworfene Sticks vom Abschleuderer) statt gebauter Gebäude – der
+  Abschleuderer-Auftrag „Schleudertest" verlangt daher 3 Würfe, nicht mehr
+  nur den Bau. Neue Metrik `partsSold` (Waren an der Verkaufsstelle).
+- **Auftragskette (9 statt 8):** neue Quest „Teilehandel" (15 Körperteile
+  verkaufen, +250 €) vor „Serienausstoß" eingefügt.
+- **Auftrags-Log (`ui/quests.js`):** unter der Statuskarte erscheint eine
+  Liste aller Aufträge mit Zustandsmarkierung (✓ erledigt, ▸ aktiv, · offen)
+  und Mini-Fortschritt der aktiven Quest.
+- **Inspektor/HUD:** `S.toggled++` → `S.stats.toggled++`;
+  `renderHUD()`-Zeile liest `S.stats.*`.
+
+### Qualität
+
+- `npm run check` = ESLint + 101 Vitest-Tests (11 Dateien) + Vite-Build,
+  fehlerfrei. Neue Datei `tests/quests.test.js`: Metrik-Konsistenz (jede
+  Quest hat eine existierende Metrik), Ziel-/Belohnungsprüfung,
+  Abschleuderer-Ereignis, Teilehandel, Kettenfortschritt und -Ende.
+  `tests/ui-smoke.test.js`: Save-Test auf v10 umbenannt, neuer
+  Migrationstest v9 → v10 (`S.stats` wird aus Einzelfeldern gefüllt).
+
+### Annahmen
+
+- Reihenfolge der neuen Quest: „Teilehandel" vor „Serienausstoß", weil der
+  Gesamtausstoß logisch der Abschluss bleibt.
+- `partsSold` zählt jede abgewickelte Ware an der Verkaufsstelle (auch
+  ganze Leichen), nicht nur abgetrennte Teile – die Verkaufsstelle nimmt
+  beides.
+- SAVE_KEY-Behaltung: alter localStorage-Schlüssel bleibt `bloodworks_v9`,
+  weil ein Schlüsselwechsel alte Stände orphanen würde; die Formatversion
+  steckt in `raw.v`.
+
 ## 0.10.0 – Dokumentation overhaul-2 (08.10.2026)
 
 ### Geplante Arbeit (nur Doku, kein Spielcode)

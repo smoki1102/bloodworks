@@ -33,10 +33,10 @@ describe('Quelle', () => {
   it('setzt nur Sticks, wenn ein Band am Ausgang steht', () => {
     put('spawn', 10, 20, { dir: 0 });
     run(6);
-    expect(S.spawned).toBe(0);
+    expect(S.stats.spawned).toBe(0);
     put('belt', 12, 20, { dir: 0 });
     run(6);
-    expect(S.spawned).toBeGreaterThan(0);
+    expect(S.stats.spawned).toBeGreaterThan(0);
   });
 });
 
@@ -46,7 +46,7 @@ describe('Maschinen', () => {
   it('Spikes-Walze tötet und sammelt Körperteile', () => {
     killLine('spike');
     run(40);
-    expect(S.kills).toBeGreaterThan(0);
+    expect(S.stats.kills).toBeGreaterThan(0);
     const parts = Object.values(S.parts).reduce((a, b) => a + b, 0);
     expect(parts).toBeGreaterThan(0);
     expect(Object.values(S.parts).some((v) => v > 0)).toBe(true);
@@ -55,7 +55,7 @@ describe('Maschinen', () => {
   it('Presse hält Sticks fest und quetscht sie im Takt tot', () => {
     killLine('press');
     run(40);
-    expect(S.kills).toBeGreaterThan(0);
+    expect(S.stats.kills).toBeGreaterThan(0);
   });
 
   it('Klingenpresse schneidet nur mit freigeschaltetem Skill', () => {
@@ -63,7 +63,7 @@ describe('Maschinen', () => {
     S.skill.lv.prec_blade = 1;
     killLine('blade');
     run(40);
-    expect(S.kills).toBeGreaterThan(0);
+    expect(S.stats.kills).toBeGreaterThan(0);
   });
 
   it('Mehrfachziele (Skill) trennen zusätzlich Teile der Zielgruppe', () => {
@@ -97,7 +97,7 @@ describe('Maschinen', () => {
   it('Abschleuderer schleudert Sticks vom Band', () => {
     killLine('schleuder');
     run(25);
-    expect(S.ejected).toBeGreaterThan(0);
+    expect(S.stats.ejected).toBeGreaterThan(0);
   });
 
   it('Labor reinigt schmutzige Maschinen', () => {

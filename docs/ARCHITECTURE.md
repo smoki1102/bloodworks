@@ -161,18 +161,23 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 
 ## Spielstand
 
-`localStorage`, Schlüssel `bloodworks_v9` (`v: 9`). Enthält Geld, Energie, Blut, Aufträge,
-Forschung, Skill-Stufen samt Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera sowie alle
-Gebäude inklusive Zielen, Filterregeln, Reserve und Waren (Stick-Leichen zusätzlich `body` mit
-`limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`). `load()` zieht ältere Stände über die
-`migrate()`-Stufenliste hoch; unbekannte/ neuere Versionen werden abgelehnt und als Toast
-gemeldet. Bei Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in `migrate()`
-ergänzen und `save()`/`load()`/`hasSave()` anpassen.
+`localStorage`, Schlüssel `bloodworks_v9` (historisch; Formatversion steckt in `raw.v`,
+aktuell `v: 10`). Enthält Geld, Energie, Blut, Aufträge, Forschung, Skill-Stufen samt
+Körperteil-Vorrat, Gore-Level, Tutorialstand, Kamera, die Spielzähler in `S.stats`
+(`spawned`, `kills`, `sold`, `escaped`, `ejected`, `caught`, `toggled`, `partsSold`,
+`schleuder`) sowie alle Gebäude inklusive Zielen, Filterregeln, Reserve und Waren
+(Stick-Leichen zusätzlich `body` mit `limbs`/`hp`/`bleeding`/`lost`/`hits`/`php`).
+`load()` zieht ältere Stände über die `migrate()`-Stufenliste hoch (v9→v10 zieht die
+alten Einzelfelder in `S.stats`); unbekannte/neuere Versionen werden abgelehnt und als
+Toast gemeldet. Bei Formatänderungen `SAVE_VER` erhöhen, einen Migrationsschritt in
+`migrate()` ergänzen und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 93 Tests, reines Node (kein DOM nötig).
+- `npm test` – 101 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
+- `tests/quests.test.js`: Quest-Metriken existieren und sind erreichbar, Abschleuderer-Ereignis,
+  Teilehandel, Kettenfortschritt, v9→v10-Migration.
 - `tests/skill-layout.test.js`: `skillLayout()` ohne DOM – keine Überlappung, Kanten
   verbinden die Vorgänger nach rechts (lädt `dom-stub.js`, weil `skill.js` einen
   Klick-Handler auf `document` registriert).

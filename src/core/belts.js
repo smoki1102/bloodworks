@@ -145,7 +145,7 @@ export function tryHandoff(b, it) {
   const d = portsOf(b).out[0] ?? b.dir;
   const c = exitCellOf(b, d, it.lat || 0);
   if (!inGrid(c.x, c.y)) {
-    S.escaped++;
+    S.stats.escaped++;
     return true;
   }
   const target = bldAtCell(c.x, c.y);

@@ -18,19 +18,19 @@ mit explizitem OK.
 ## Paket 0 – Dokumentation (Version 0.10.0)
 
 - [x] Phase 0: Code-Audit aller vier Pakete, Bericht, Stop auf OK.
-- [ ] `docs/PLAN.md` anlegen (diese Datei) und Phase 0 abhaken.
-- [ ] `README.md`: aktueller Stand (93 Tests, Palette/Icons/Tooltip, overhaul-2-Workflow).
-- [ ] `docs/ARCHITECTURE.md`: palette/icons/tooltip/Diagonalbänder/Dirty-Rect nachtragen.
-- [ ] `npm run check`, visuelle Prüfung, CHANGELOG-Eintrag 0.10.0, Commit, Push.
+- [x] `docs/PLAN.md` anlegen (diese Datei) und Phase 0 abhaken.
+- [x] `README.md`: aktueller Stand (93 Tests, Palette/Icons/Tooltip, overhaul-2-Workflow).
+- [x] `docs/ARCHITECTURE.md`: palette/icons/tooltip/Diagonalbänder/Dirty-Rect nachtragen.
+- [x] `npm run check`, visuelle Prüfung, CHANGELOG-Eintrag 0.10.0, Commit, Push.
 
 ## Paket 1 – Quests (Version 0.11.0)
 
-- [ ] Metriken in `S.stats` umziehen (statt Einzelfelder auf `S`), `migrate()`.
-- [ ] Neue Metriken: Körperteil-Verkäufe, Asche, Bandzellen usw.
-- [ ] Auftrags-Log statt reiner Statuskarte (`ui/quests.js`).
-- [ ] Metrik `schleuder` von Gebäudezählung auf Ereignis umstellen.
-- [ ] Tests: Quest-Konsistenz (jede Quest hat eine existierende Metrik, Ziele erreichbar).
-- [ ] Visuelle Prüfung: Quest-Panel, Fortschritt, Abschluss-Toast.
+- [x] Metriken in `S.stats` umziehen (statt Einzelfelder auf `S`), `migrate()`.
+- [x] Neue Metriken: `partsSold` (Verkaufsstelle); `schleuder` als Ereignis.
+- [x] Auftrags-Log statt reiner Statuskarte (`ui/quests.js`).
+- [x] Metrik `schleuder` von Gebäudezählung auf Ereignis umstellen.
+- [x] Tests: Quest-Konsistenz (jede Quest hat eine existierende Metrik, Ziele erreichbar).
+- [x] Visuelle Prüfung: Quest-Panel, Fortschritt, Abschluss-Toast.
 
 ## Paket 2 – Maschinen-Design (Version 0.12.0)
 

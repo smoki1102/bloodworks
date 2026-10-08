@@ -1,14 +1,15 @@
 import { QUESTS } from '../config/quest-defs.js';
-import { S, blds } from './state.js';
+import { S } from './state.js';
 import { upgCount } from './upgrades.js';
 
-const METRIC = {
-  kills: () => S.kills,
-  caught: () => S.caught,
-  sold: () => S.sold,
-  ejected: () => S.ejected,
-  toggled: () => S.toggled,
-  schleuder: () => blds.filter((b) => b.t === 'schleuder').length,
+export const METRIC = {
+  kills: () => S.stats.kills,
+  caught: () => S.stats.caught,
+  sold: () => S.stats.sold,
+  ejected: () => S.stats.ejected,
+  toggled: () => S.stats.toggled,
+  schleuder: () => S.stats.schleuder,
+  partsSold: () => S.stats.partsSold,
   upg: () => upgCount(),
 };
 

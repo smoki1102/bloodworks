@@ -557,6 +557,49 @@ canvas {
   margin-top: 3px;
   text-align: right;
 }
+#quest .qLog {
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  max-height: 150px;
+  overflow-y: auto;
+}
+#quest .qLogRow {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+#quest .qLogRow .qMark {
+  width: 10px;
+  flex: none;
+  font: 10px var(--mono);
+}
+#quest .qLogRow.done .qMark {
+  color: var(--ok);
+}
+#quest .qLogRow.now .qMark {
+  color: var(--accent2);
+}
+#quest .qLogRow.todo .qMark {
+  color: var(--line2);
+}
+#quest .qLogRow.done .qLogName {
+  color: var(--dim);
+}
+#quest .qLogRow.now .qLogName {
+  color: var(--bright);
+  font-weight: 600;
+}
+#quest .qLogRow.todo .qLogName {
+  color: var(--line2);
+}
+#quest .qMiniProg {
+  margin-left: auto;
+  font: 9.5px var(--mono);
+  color: var(--dim);
+}
 #forschung {
   position: absolute;
   left: 16px;

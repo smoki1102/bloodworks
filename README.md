@@ -71,8 +71,9 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Im Tutorial ist nichts vorgebaut – man baut die komplette Kette selbst, jeder Schritt
   markiert Item, Zielzelle und Begründung; jederzeit überspringbar. Am Ende gibt es einen
   Startvorrat an Blut und Körperteilen für den ersten Skill-Knoten.
-- **Aufträge:** acht feste Aufträge (Kills, Fänge, Verkäufe, Abschleuderer, Abwürfe,
-  Schalter, Forschung, Gesamtausstoß) als Karte mit Fortschrittsbalken.
+- **Aufträge:** neun feste Aufträge (Kills, Fänge, Verkäufe, Abschleuderer-Würfe, Abwürfe,
+  Schalter, Teilehandel, Forschung, Gesamtausstoß) als Karte mit Fortschrittsbalken und
+  Auftrags-Log; Zähler liegen zentral in `S.stats`.
 - **Eigenes Icon-Set:** 27 handgezeichnete 16×16-Vektor-Icons (Canvas und Inline-SVG),
   keine Emojis und keine Fremd-Assets.
 - **Einheitliches Farbsystem:** `src/config/palette.js` ist die einzige Farbquelle;
@@ -80,8 +81,9 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Gelb-Grün als Aktionsfarbe, Blut-Rot als einziger Akzent.
 - **Bodenmuster:** Hallenboden mit Diagonalbändern und feinem Raster, damit Bewegung
   und Geschwindigkeit auf dem Band ablesbar sind.
-- **Speicherstand v9:** alte Stände (v8 und älter) werden verworfen mit Hinweis im Spiel.
-- **Qualität:** 93 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Speicherstand v10:** Spielzähler in `S.stats`; alte Stände (v8 und älter) werden
+  verworfen mit Hinweis im Spiel, v9 wird automatisch migriert.
+- **Qualität:** 101 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel und Pulse werden reduziert).
 
 Aufbau und Erweiterung: siehe [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

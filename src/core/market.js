@@ -44,7 +44,7 @@ export function stepMarket(b, dt, pf, run) {
   const got = takeBlood(b, q);
   if (got <= 0) return 0;
   S.money += got * priceOf();
-  S.sold += got;
+  S.stats.sold += got;
   noteRate(b, got / dt, dt);
   return got;
 }
