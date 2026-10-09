@@ -7,7 +7,7 @@ import {
   PH,
   PW,
 } from '../config/constants.js';
-import { addBeltBlood, addFloorBlood, bloodColor, burst, fluids, nBurst } from './effects.js';
+import { addBeltBlood, addFloorBlood, bloodColor, burst, fluids, freePart, nBurst } from './effects.js';
 import { bleedOut, bodyToFloorCorpse } from './anatomy.js';
 import { machine, killInPlace } from './machines.js';
 import { flow, updateLinks } from './flow.js';
@@ -158,11 +158,16 @@ function stepItems(dt) {
 }
 
 function stepParticles(dt) {
-  for (let i = parts.length - 1; i >= 0; i--) {
+  // Swap-Remove (aufsteigend, damit kein Partikel übersprungen wird) + Pool –
+  // vermeidet das O(n)-Spleißen und Objekt-GC durch Wiederverwendung.
+  for (let i = 0; i < parts.length; i++) {
     const p = parts[i];
     p.life -= dt;
     if (p.life <= 0) {
-      parts.splice(i, 1);
+      freePart(p);
+      parts[i] = parts[parts.length - 1];
+      parts.pop();
+      i--;
       continue;
     }
     if (p.grav) p.vy += 620 * dt;

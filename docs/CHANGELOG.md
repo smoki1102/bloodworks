@@ -50,6 +50,20 @@ größere Fabriken und glättet Spitzen.
   `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
   Pause und `S.speed` (1×/2×/4×) wirken unverändert.
 
+### 1.5 Partikel-Pool gegen GC-Spitzen
+
+- **Diagnose:** Neue GC-/Heap-Probe in `scripts/profile.mjs` (Chrome-Flags
+  `--enable-precise-memory-info` und `--expose-gc`): erzwungene `gc()`-Pausen bis
+  ~13 ms und wachsender Heap (Stress-Szenario +5,8 MB in 300 Frames) bestätigten
+  Objekt-Churn als Ursache der gemessenen Einzelspitzen.
+- **`effects.js`:** `spawnPart()` holt Partikel aus einem wiederverwendenden Pool
+  (max. 256 Objekte) statt Objektliterale; `burst`, `floatText` und Umgebungstaub
+  nutzen ihn. **`simulation.js`:** `stepParticles` entfernt tote Partikel per
+  swap-remove statt O(n)-`splice` und gibt sie mit `freePart()` an den Pool zurück.
+- **Messung:** Heap-Wachstum pro 300 Frames Stress 5,8 → 0,5 MB (Standard ~0,6 MB);
+  FPS und JS-Zeiten unverändert. 2 neue Tests (`tests/simulation.test.js`):
+  Wiederverwendung des Pools + 256-Objekt-Limit.
+
 ### 1.4 Sichtbarer Bildausschnitt statt Weltflächen
 
 - **`renderer.js`:** Hallenboden, Bodenmuster und die beiden Welt-Verlaufflächen

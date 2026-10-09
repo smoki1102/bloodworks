@@ -138,6 +138,35 @@ async function measure(cdp, frames) {
 }
 
 /**
+ * GC-/Heap-Probe: Allokations-Churn (Heap-Wachstum ohne GC) und die Pausendauer
+ * eines erzwungenen `gc()` je Szenario – so lässt sich klären, ob die
+ * gemessenen Einzelspitzen vom Garbage Collector kommen.
+ */
+async function gcProbe(cdp, bench) {
+  await cdp.cmd('Page.navigate', { url: url(bench) });
+  await waitReady(cdp);
+  const heap = await cdp.eval('performance.memory.usedJSHeapSize');
+  await measure(cdp, 300); // Churn ohne GC
+  const heap2 = await cdp.eval('performance.memory.usedJSHeapSize');
+  const pauses = JSON.parse(
+    await cdp.eval(
+      `(() => { const r = [];
+        for (let i = 0; i < 30; i++) {
+          globalThis.__bwT += 16.667;
+          globalThis.__bwFrame(globalThis.__bwT);
+          const t0 = performance.now();
+          gc();
+          r.push(performance.now() - t0);
+        }
+        return JSON.stringify(r); })()`,
+    ),
+  );
+  pauses.sort((a, b) => b - a);
+  console.log(`  GC: Heap wuchs ${((heap2 - heap) / 1048576).toFixed(1)} MB in 300 Frames · ` +
+    `gc()-Pause max ${pauses[0].toFixed(1)} ms (Ø ${(pauses.reduce((a, b) => a + b, 0) / pauses.length).toFixed(2)} ms, n=${pauses.length})`);
+}
+
+/**
  * Echtzeitmessung: Seite mit `&live` neu laden, damit die normale rAF-Schleife
  * läuft – gemessen wird der echte Frame-Abstand inklusive Rasterisierung.
  */
@@ -194,6 +223,8 @@ async function main() {
       '--hide-scrollbars',
       '--window-size=1280,720',
       '--enable-unsafe-swiftshader',
+      '--enable-precise-memory-info',
+      '--js-flags=--expose-gc',
       'about:blank',
     ],
     { stdio: 'ignore' },
@@ -237,6 +268,8 @@ async function main() {
       }
       table('D Echtzeit (rAF + Rasterisierung, 5 s)', await realtime(cdp, scene.bench));
       console.log('  Szene:', JSON.stringify(await cdp.eval('globalThis.__bwStats()')));
+      console.log(`\nE GC/Heap (${scene.name}):`);
+      await gcProbe(cdp, scene.bench);
     }
 
     const errors = cdp.events.filter((e) => e.method === 'Runtime.exceptionThrown');

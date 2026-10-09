@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { boot, put, run } from './helpers.js';
-import { S, corpses, sticks, nets, floorBlood } from '../src/core/state.js';
-import { addFloorBlood } from '../src/core/effects.js';
+import { S, corpses, sticks, nets, floorBlood, parts } from '../src/core/state.js';
+import { addFloorBlood, burst, partPoolLength, resetPartPool } from '../src/core/effects.js';
 import { idx } from '../src/core/grid.js';
 import { questStep, questProgress } from '../src/core/quests.js';
 import { buyUpgrade, upgEff, upgLevel } from '../src/core/upgrades.js';
@@ -26,7 +26,10 @@ function fullLine() {
 }
 
 describe('Simulation', () => {
-  beforeEach(() => boot());
+  beforeEach(() => {
+    boot();
+    resetPartPool();
+  });
 
   it('liefert die volle Kette vom Stick bis zum Blutverkauf', () => {
     fullLine();
@@ -135,5 +138,26 @@ describe('Simulation', () => {
     expect(questStep()).toBeNull();
     expect(sticks.length).toBe(0);
     void CORPSE_FLOOR_LIFE;
+  });
+
+  it('gibt sterbende Partikel in den Pool zurück (Wiederverwendung)', () => {
+    S.running = false; // kein Umgebungstaub, der die Pool-Größe verfälscht
+    burst(100, 100, '#f00', 1);
+    run(2);
+    expect(partPoolLength()).toBe(1);
+    burst(100, 100, '#f00', 10);
+    expect(partPoolLength()).toBe(0);
+    run(2);
+    expect(parts.length).toBe(0);
+  });
+
+  it('begrenzt den Partikel-Pool auf 256 Objekte', () => {
+    S.running = false;
+    for (let i = 0; i < 40; i++) {
+      burst(100, 100, '#f00', 10);
+      run(2);
+    }
+    expect(partPoolLength()).toBeLessThanOrEqual(256);
+    expect(parts.length).toBe(0);
   });
 });

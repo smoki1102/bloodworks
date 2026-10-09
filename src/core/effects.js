@@ -21,10 +21,35 @@ export function reducedMotion() {
       matchMedia('(prefers-reduced-motion: reduce)').matches;
   return _reduced;
 }
+/** Partikel-Pool: löschen/dist nicht allokieren, sondern Objekte wiederverwenden. */
+const partPool = [];
+const POOL_MAX = 256;
+export function freePart(p) {
+  if (partPool.length < POOL_MAX) partPool.push(p);
+}
+/** Poolgröße (für Tests). */
+export const partPoolLength = () => partPool.length;
+/** Pool leeren (für Test-Isolation). */
+export const resetPartPool = () => (partPool.length = 0);
+function spawnPart(o) {
+  const p = partPool.pop() || {};
+  p.x = o.x;
+  p.y = o.y;
+  p.vx = o.vx || 0;
+  p.vy = o.vy || 0;
+  p.life = o.life;
+  p.max = o.max || o.life;
+  p.color = o.color;
+  p.size = o.size || 2;
+  p.grav = o.grav || 0;
+  p.text = o.text;
+  parts.push(p);
+  return p;
+}
 export function burst(x, y, c, n, sp) {
   if (reducedMotion()) n = Math.max(1, Math.round(n * 0.35));
   for (let i = 0; i < n; i++)
-    parts.push({
+    spawnPart({
       x,
       y,
       vx: (rnd() - 0.5) * (sp || 170),
@@ -37,7 +62,7 @@ export function burst(x, y, c, n, sp) {
     });
 }
 export function floatText(x, y, t, c) {
-  parts.push({
+  spawnPart({
     x,
     y,
     vx: 0,
@@ -185,7 +210,7 @@ export function ambient(dt) {
   if (parts.length > 90) return;
   const cam = S.cam;
   const life = 5 + rnd() * 4;
-  parts.push({
+  spawnPart({
     x: cam.x + rnd() * 1400,
     y: cam.y + rnd() * 900,
     vx: -3 - rnd() * 5,
