@@ -153,51 +153,72 @@ function markDirty() {
   S.netDirty = true;
 }
 
-/* Rückgängig machen */
+/* Rückgängig machen und Wiederherstellen */
 export const history = [];
-export function pushHistory(add, b, amount) {
-  history.push({
-    add,
-    cost: amount,
-    snap: {
-      id: b.id,
-      t: b.t,
-      x: b.x,
-      y: b.y,
-      spanW: b.spanW,
-      spanH: b.spanH,
-      dir: b.dir,
-      fromDir: b.fromDir,
-      flip: b.flip,
-      dirt: b.dirt,
-      on: b.on !== false,
-      buf: b.buf,
-      target: b.target,
-      filter: { ...b.filter },
-      reserve: b.reserve ? { ...b.reserve } : null,
-      reserveTouched: b.reserveTouched,
-      items: b.items.map((i) => ({ rot: i.rot, kind: i.kind, part: i.part })),
-    },
+export const redoHistory = [];
+const LIMIT = 64;
+
+function snapOf(b) {
+  return {
+    id: b.id,
+    t: b.t,
+    x: b.x,
+    y: b.y,
+    spanW: b.spanW,
+    spanH: b.spanH,
+    dir: b.dir,
+    fromDir: b.fromDir,
+    flip: b.flip,
+    dirt: b.dirt,
+    on: b.on !== false,
+    buf: b.buf,
+    target: b.target,
+    filter: { ...b.filter },
+    reserve: b.reserve ? { ...b.reserve } : null,
+    reserveTouched: b.reserveTouched,
+    items: b.items.map((i) => ({ rot: i.rot, kind: i.kind, part: i.part })),
+  };
+}
+
+/** Setzt ein Gebäude aus einer Momentaufnahme zurück; aktualisiert die neue id. */
+function placeFromSnap(snap) {
+  const b = addBuilding(snap.t, snap.x, snap.y, {
+    free: true,
+    dir: snap.dir,
+    fromDir: snap.fromDir,
   });
-  if (history.length > 64) history.shift();
+  if (!b) return null;
+  b.flip = snap.flip;
+  b.dirt = snap.dirt;
+  b.on = snap.on;
+  b.buf = snap.buf;
+  b.items = snap.items.map((i) => ({ ...i }));
+  b.target = snap.target;
+  b.filter = { ...snap.filter };
+  b.reserve = snap.reserve ? { ...snap.reserve } : null;
+  b.reserveTouched = snap.reserveTouched;
+  snap.id = b.id;
+  return b;
+}
+
+export function pushHistory(add, b, amount) {
+  redoHistory.length = 0;
+  history.push({ add, cost: amount, snap: snapOf(b) });
+  if (history.length > LIMIT) history.shift();
 }
 export function clearHistory() {
   history.length = 0;
+  redoHistory.length = 0;
 }
 
-/** Eine Rückgängig-Einheit für mehrere Gebäude (Bandstrecke). */
+/** Eine Rückgängig-Einheit für mehrere Gebäude (Bandstrecke, Bauplan). */
 export function pushGroup(add, list, amount) {
-  history.push({
-    add,
-    cost: amount,
-    multi: list.map((b) => ({ id: b.id, t: b.t })),
-  });
-  if (history.length > 64) history.shift();
+  redoHistory.length = 0;
+  history.push({ add, cost: amount, multi: list.map(snapOf) });
+  if (history.length > LIMIT) history.shift();
 }
 
-export function undo() {
-  const h = history.pop();
-  if (!h) return toast('Nichts rückgängig zu machen', 'bad');
+function undoRecord(h) {
   if (h.multi) {
     let n = 0;
     for (const m of h.multi) {
@@ -209,31 +230,53 @@ export function undo() {
     }
     S.money += h.cost;
     toast('Rückgängig: Bandstrecke (' + n + ' Zellen)', 'good');
-    return;
+    return true;
   }
   if (h.add) {
     const b = bmap.get(h.snap.id);
     if (b) removeBuilding(b);
     S.money += h.cost;
     toast('Rückgängig: ' + DEF[h.snap.t].n, 'good');
-  } else {
-    const b = addBuilding(h.snap.t, h.snap.x, h.snap.y, {
-      free: true,
-      dir: h.snap.dir,
-      fromDir: h.snap.fromDir,
-    });
-    if (!b) return toast('Kein Platz mehr zum Wiederherstellen', 'bad');
-    b.dirt = h.snap.dirt;
-    b.on = h.snap.on;
-    b.buf = h.snap.buf;
-    b.items = h.snap.items;
-    b.target = h.snap.target;
-    b.filter = h.snap.filter;
-    b.reserve = h.snap.reserve;
-    b.reserveTouched = h.snap.reserveTouched;
-    S.money -= h.cost;
-    toast('Verkauf rückgängig · ' + DEF[h.snap.t].n, 'good');
+    return true;
   }
+  if (!placeFromSnap(h.snap)) return toast('Kein Platz mehr zum Wiederherstellen', 'bad');
+  S.money -= h.cost;
+  toast('Verkauf rückgängig · ' + DEF[h.snap.t].n, 'good');
+  return true;
+}
+
+function redoRecord(h) {
+  if (h.multi) {
+    let n = 0;
+    for (const m of h.multi) if (placeFromSnap(m)) n++;
+    S.money -= h.cost;
+    toast('Wiederhergestellt: Bandstrecke (' + n + ' Zellen)', 'good');
+    return;
+  }
+  if (h.add) {
+    if (!placeFromSnap(h.snap)) return toast('Kein Platz mehr zum Wiederherstellen', 'bad');
+    S.money -= h.cost;
+    toast('Wiederhergestellt: ' + DEF[h.snap.t].n, 'good');
+  } else {
+    const b = bmap.get(h.snap.id);
+    if (b) removeBuilding(b);
+    S.money += h.cost;
+    toast('Erneut verkauft · ' + DEF[h.snap.t].n, 'good');
+  }
+}
+
+export function undo() {
+  const h = history.pop();
+  if (!h) return toast('Nichts rückgängig zu machen', 'bad');
+  if (undoRecord(h)) redoHistory.push(h);
+}
+
+export function redo() {
+  const h = redoHistory.pop();
+  if (!h) return toast('Nichts wiederherzustellen', 'bad');
+  redoRecord(h);
+  history.push(h);
+  if (history.length > LIMIT) history.shift();
 }
 
 /** Wasserzeichen für die Leerraum-Bauvorschau. */

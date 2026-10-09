@@ -18,7 +18,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/utils/perf.js`       | Zeitmessung der Spielschleife (`setPerf`, `perfBegin`/`perfEnd`, `perfCount`, `perfFrame`, `perfSnapshot`); aus, bis `?perf`/`?bench` es einschaltet – siehe „Messung und Bench“ |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
-| `src/core/placement.js`   | `addBuilding`, `removeBuilding`, `originOf`, `placeReason`, Locks, Kosten, Verkauf, Historie (`pushHistory`/`pushGroup`), Undo |
+| `src/core/placement.js`   | `addBuilding`, `removeBuilding`, `originOf`, `placeReason`, Locks, Kosten, Verkauf, Historie (`pushHistory`/`pushGroup`, Undo **und** Redo) |
 | `src/core/blueprint.js`   | Baupläne: Bereich erfassen (`captureBlueprint`), drehen (`rotateBlueprint`), prüfen (`pasteReason`) und gesammelt einsetzen (`pasteBlueprint`, alles oder nichts, eine Undo-Einheit) |
 | `src/core/rates.js`       | Gleitende Kennzahlen (`stepRates` je Tick, `ratePerMin`/`rateWindow`) über ein 60-s-Fenster – Basis des Statistik-Dashboards |
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
@@ -201,9 +201,9 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   Pfeiltasten/`±` Kamera, Rad zoomen.
 - Band: erster Klick = Start, zweiter Klick oder Drag-Loslassen = Ende; Klick auf den Start
   bricht ab (`S.beltFrom`, `clearTool()` setzt auch den Start zurück).
-- `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo, `Shift+Ziehen` Bereich
-  markieren, `Strg/Cmd+C`/`Strg/Cmd+V` Bauplan kopieren/einfügen (`R` dreht, `Esc` bricht ab),
-  `I` Statistik-Dashboard.
+- `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo, `Strg/Cmd+Shift+Z`/`Strg/Cmd+Y`
+  Redo, `Shift+Ziehen` Bereich markieren, `Strg/Cmd+C`/`Strg/Cmd+V` Bauplan kopieren/einfügen
+  (`R` dreht, `Esc` bricht ab), `I` Statistik-Dashboard.
 - Inspektor zeigt Status, Auslastung, Zielkörperteil mit Trefferquote, Filterregel,
   Marktreserve und Absaugung/Verbindung; der Inhalt wird nur ersetzt, solange kein
   `INPUT`/`SELECT`/`TEXTAREA` darin den Fokus hat (sonst wäre das Zielauswahl-Dropdown sofort

@@ -221,6 +221,18 @@ describe('UI im DOM (Smoke)', () => {
     expect(el('statsPanel').classList.contains('hide')).toBe(true);
   });
 
+  it('macht per Strg+Z rückgängig und per Strg+Shift+Z wieder her (Redo)', () => {
+    newGame('free');
+    S.money = 1000;
+    const base = blds.length;
+    addBuilding('spike', 20, 20);
+    expect(blds.length).toBe(base + 1);
+    fireWin('keydown', { key: 'z', ctrlKey: true, preventDefault() {} });
+    expect(blds.length).toBe(base);
+    fireWin('keydown', { key: 'z', ctrlKey: true, shiftKey: true, preventDefault() {} });
+    expect(blds.length).toBe(base + 1);
+  });
+
   it('Kategorien, Werkzeuge und Kamera reagieren auf Eingaben', () => {    fireWin('keydown', { code: 'Digit2', key: '2', preventDefault() {} });
     expect(S.cat).toBe('masch');
     fireWin('keydown', { code: 'Digit1', key: '1', preventDefault() {} });

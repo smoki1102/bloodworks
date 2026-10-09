@@ -31,6 +31,7 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 | E                       | Gewähltes Gerät an/aus                             |
 | Entf                    | Gewähltes Gerät verkaufen                          |
 | Strg/Cmd+Z              | Rückgängig                                         |
+| Strg/Cmd+Shift+Z / +Y   | Wiederherstellen (Redo)                            |
 | Shift+Ziehen            | Bereich markieren und als Bauplan kopieren         |
 | Strg/Cmd+C              | Bauplan/Wahl kopieren                              |
 | Strg/Cmd+V              | Bauplan einfügen (Klick platziert, R dreht)        |

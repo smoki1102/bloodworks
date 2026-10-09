@@ -8,6 +8,7 @@ import {
   isUnlocked,
   originOf,
   placeReason,
+  redo,
   removeBuilding,
   sellBuilding,
   undo,
@@ -75,6 +76,42 @@ describe('Platzierung', () => {
     expect(blds.length).toBe(1);
     expect(S.money).toBe(afterBuy);
     expect(S.money).toBe(1000 - costOf('tank'));
+  });
+
+  it('stellt einen Verkauf wieder her und macht ihn erneut rückgängig (Redo)', () => {
+    S.money = 1000;
+    const b = addBuilding('tank', 20, 20);
+    const afterBuy = S.money;
+    sellBuilding(b);
+    expect(blds.length).toBe(0);
+    undo();
+    expect(blds.length).toBe(1);
+    expect(S.money).toBe(afterBuy);
+    redo();
+    expect(blds.length).toBe(0);
+    expect(S.money).toBe(1000 - costOf('tank') + Math.round(costOf('tank') * 0.5));
+  });
+
+  it('stellt ein gebautes Gebäude per Redo erneut her', () => {
+    S.money = 1000;
+    addBuilding('spike', 10, 10);
+    const cost = costOf('spike');
+    expect(blds.length).toBe(1);
+    undo();
+    expect(blds.length).toBe(0);
+    expect(S.money).toBe(1000);
+    redo();
+    expect(blds.length).toBe(1);
+    expect(S.money).toBe(1000 - cost);
+  });
+
+  it('verwirft Redo, sobald eine neue Aktion beginnt', () => {
+    S.money = 1000;
+    addBuilding('spike', 10, 10);
+    undo();
+    addBuilding('spike', 12, 10);
+    redo();
+    expect(blds.length).toBe(1);
   });
 });
 

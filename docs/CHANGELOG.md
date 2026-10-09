@@ -2,6 +2,17 @@
 
 ## 0.17.0 – Phase 2: Komfort & Statistik (09.10.2026)
 
+### 2.3 Wiederherstellen (Redo)
+
+- **`src/core/placement.js`:** Rückgängig-Historie um einen Redo-Stapel ergänzt. Jede
+  Aktion (Bauen, Verkaufen, Bandstrecke, Bauplan) bekommt eine vollständige
+  Momentaufnahme; `undo` verschiebt sie auf den Redo-Stapel, `redo` stellt den exakten
+  Zustand (inkl. Richtung, Inhalt, Filter, Reservierung) wieder her. Eine **neue** Aktion
+  verwirft den Redo-Stapel; die Historie bleibt weiterhin auf 64 Schritte begrenzt.
+- **Bedienung:** `Strg/Cmd+Shift+Z` oder `Strg/Cmd+Y` stellt wieder her.
+- **Tests:** drei neue Fälle in `tests/placement.test.js` (Verkauf-Redo, Bau-Redo,
+  Verwerfen bei neuer Aktion) und ein `tests/ui-smoke.test.js` für die Tastenkürzel.
+
 ### 2.2 Statistik-Dashboard
 
 - **`src/core/rates.js` (neu):** hält gleitende Momentaufnahmen der Zähler aus `S.stats`

@@ -18,6 +18,7 @@ import {
   isUnlocked,
   originOf,
   placeReason,
+  redo,
   undo,
 } from '../core/placement.js';
 import { netHasTank, bloodCapTotal, bloodTotal } from '../core/pipes.js';
@@ -410,7 +411,15 @@ addEventListener('keydown', (e) => {
     } else startPaste();
   } else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) {
     e.preventDefault();
-    undo();
+    if (e.shiftKey) redo();
+    else undo();
+    lastList = null;
+    renderList();
+    renderInspector();
+    renderHUD();
+  } else if ((e.key === 'y' || e.key === 'Y') && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    redo();
     lastList = null;
     renderList();
     renderInspector();
