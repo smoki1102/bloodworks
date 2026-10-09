@@ -50,16 +50,21 @@ größere Fabriken und glättet Spitzen.
   `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
   Pause und `S.speed` (1×/2×/4×) wirken unverändert.
 
-### 1.6 Speichern/Laden: Eckenrichtung (`fromDir`) ging verloren
+### 1.3 Culling für lose Objekte und Partikel
 
-- **Bug:** v12-Ladecode las `fromDir: o.from`, aber `save()` schreibt `b.fromDir`;
-  die v11→v12-Migration setzte nur `b.from`. Beim Neuladen starteten U-Ecken entgegen
-  der eingebauten Richtung.
-- **Fix (`src/ui/ui.js`):** Migration setzt `fromDir = from ?? dir`; `load()` liest
-  `o.fromDir ?? o.from ?? o.dir`. Kein `SAVE_VER`-Bump nötig (Feldname bleibt gleich).
-- **Tests (`tests/ui-smoke.test.js`, +2):** Roundtrip Ecke → Speichern → Laden erhält
-  `fromDir`; v11-Migration übernimmt Ecken (`from`), gerade Bänder (`dir`) und neue
-  Stände (`fromDir`) korrekt. Gesamt 131 Tests.
+- **`renderer.js`:** Leichen, stickmen und Partikel werden nur noch gezeichnet, wenn
+  ihre Position (mit 96 px Rand für die Figurengröße) im sichtbaren `viewCells`-Ausschnitt
+  liegt – vorher liefen alle über den Bildrand hinaus. Die Blut-/Bandschleifen und Gebäude
+  waren bereits geschnitten.
+
+### 1.4 Sichtbarer Bildausschnitt statt Weltflächen
+
+- **`renderer.js`:** Hallenboden, Bodenmuster und die beiden Welt-Verlaufflächen
+  (Hortengrad-Übergang oben/unten und links/rechts) füllten bisher die **ganze Welt**
+  (`PW × PH` = 6144 × 3072 px) pro Frame; sie werden jetzt nur noch im sichtbaren
+  `viewCells`-Ausschnitt gezeichnet (auf die Welt begrenzt). Die Verläufe bleiben
+  weltbezogen definiert – die Pixel im Ausschnitt sind identisch. Rasterarbeit entfällt
+  vor allem bei gezoomten Ansichten; JS-Zeit und Echtzeit (60 fps) unverändert.
 
 ### 1.5 Partikel-Pool gegen GC-Spitzen
 
@@ -75,28 +80,35 @@ größere Fabriken und glättet Spitzen.
   FPS und JS-Zeiten unverändert. 2 neue Tests (`tests/simulation.test.js`):
   Wiederverwendung des Pools + 256-Objekt-Limit.
 
-### 1.4 Sichtbarer Bildausschnitt statt Weltflächen
+### 1.6 Speichern/Laden: Eckenrichtung (`fromDir`) ging verloren
 
-- **`renderer.js`:** Hallenboden, Bodenmuster und die beiden Welt-Verlaufflächen
-  (Hortengrad-Übergang oben/unten und links/rechts) füllten bisher die **ganze Welt**
-  (`PW × PH` = 6144 × 3072 px) pro Frame; sie werden jetzt nur noch im sichtbaren
-  `viewCells`-Ausschnitt gezeichnet (auf die Welt begrenzt). Die Verläufe bleiben
-  weltbezogen definiert – die Pixel im Ausschnitt sind identisch. Rasterarbeit entfällt
-  vor allem bei gezoomten Ansichten; JS-Zeit und Echtzeit (60 fps) unverändert.
-
-### 1.3 Culling für lose Objekte und Partikel
-
-- **`renderer.js`:** Leichen, stickmen und Partikel werden nur noch gezeichnet, wenn
-  ihre Position (mit 96 px Rand für die Figurengröße) im sichtbaren `viewCells`-Ausschnitt
-  liegt – vorher liefen alle über den Bildrand hinaus. Die Blut-/Bandschleifen und Gebäude
-  waren bereits geschnitten.
+- **Bug:** v12-Ladecode las `fromDir: o.from`, aber `save()` schreibt `b.fromDir`;
+  die v11→v12-Migration setzte nur `b.from`. Beim Neuladen starteten U-Ecken entgegen
+  der eingebauten Richtung.
+- **Fix (`src/ui/ui.js`):** Migration setzt `fromDir = from ?? dir`; `load()` liest
+  `o.fromDir ?? o.from ?? o.dir`. Kein `SAVE_VER`-Bump nötig (Feldname bleibt gleich).
+- **Tests (`tests/ui-smoke.test.js`, +2):** Roundtrip Ecke → Speichern → Laden erhält
+  `fromDir`; v11-Migration übernimmt Ecken (`from`), gerade Bänder (`dir`) und neue
+  Stände (`fromDir`) korrekt. Gesamt 131 Tests.
 
 ### Qualität
 
-- `npm run check` = ESLint + 127 Vitest-Tests + Vite-Build, fehlerfrei.
-- Messung (`scripts/profile.mjs`, 900 Frames): Nah-Ausschnitte Standard 0,21 → 0,14 ms,
-  Stress 0,30 → 0,16 ms; Überblick fast unverändert (dort sind alle Objekte sichtbar);
-  Echtzeit weiter 60 fps.
+- `npm run check` = ESLint + **131** Vitest-Tests + Vite-Build, fehlerfrei.
+- `package.json` auf **0.16.0** angehoben.
+
+#### Ergebnis Phase 1 (Headless-Chrome, 900 Frames)
+
+| Szene | Baseline | nach 1.3 | nach 1.4/1.5 | Echtzeit |
+| --- | --- | --- | --- | --- |
+| Standard Detail | 0,18 ms | 0,14 ms | 0,14 ms | 60 fps |
+| Standard Überblick | 0,64 ms | 0,63 ms | 0,52 ms | 60 fps |
+| Standard Nah | 0,21 ms | 0,14 ms | 0,14 ms | 60 fps |
+| Stress Detail | 0,34 ms | 0,29 ms | 0,27 ms | 60 fps |
+| Stress Überblick | 0,86 ms | 0,80 ms | 0,83 ms | 60 fps |
+| Stress Nah | 0,30 ms | 0,16 ms | 0,15 ms | 60 fps |
+
+Heap-Wachstum (Stress, 300 Frames): 5,8 → 0,5 MB. Einzelspitzen aus GC-Churn und
+Voll-Welt-Flächen sind weg; die JS-Renderzeit ist in Nah-Ansichten ~30–45 % geringer.
 
 ## 0.15.0 – Förderband-Ecken: durchgehender Bogen, sprunghafte Ware (09.10.2026)
 
