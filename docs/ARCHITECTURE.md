@@ -65,8 +65,18 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   `__bwFrame`, `__bwPerf`, `__bwStats()`, `__bwCam(x, y, z)`.
 - `node scripts/profile.mjs` baut das Projekt, startet `vite preview` und Chrome im
   Headless-Modus, navigiert per CDP und misst je Szene drei Kameraausschnitte
-  (Detail/Überblick/Nah) über 900 Frames nach 900 Frames Aufwärmen. Reine
-  Node-Bordmittel (`fetch`, `WebSocket`), keine neuen Dependencies.
+  (Detail/Überblick/Nah) über 900 Frames nach 900 Frames Aufwärmen sowie 5 s Echtzeit
+  (`&live`, rAF inkl. Rasterisierung). Reine Node-Bordmittel (`fetch`, `WebSocket`),
+  keine neuen Dependencies.
+
+## Spielschleife
+
+- `main.js/frame(ts)` (exportiert, von Tests und Bench-Treiber nutzbar) treibt die
+  Simulation in **festen** `FIXED_DT = 1/30`-Sekunden-Schritten: `simAcc += dt * S.speed`,
+  dann `while (simAcc >= FIXED_DT) tick(FIXED_DT)`. `MAX_DT = 0.05` kappt die gemessene
+  Framezeit (Resize, Hintergrund-Tab), `MAX_STEPS = 10` bricht das Aufholen nach einem
+  Hänger ab (Rest wird verworfen statt stundenlang nachsimuliert). `S.speed` (1×/2×/4×)
+  und Pause wirken unverändert; Rendering läuft weiter in jedem Frame.
 
 ## Raster und Koordinaten
 

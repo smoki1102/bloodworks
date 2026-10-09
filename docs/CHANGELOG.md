@@ -40,10 +40,21 @@ Culling, auf den sichtbaren Ausschnitt begrenzte Flächen statt Weltflächen und
 Partikel-Pools. Echtzeit läuft durchgehend mit 60 fps – die Phase schafft Headroom für
 größere Fabriken und glättet Spitzen.
 
+### 1.2 Feste Simulations-Schrittweite
+
+- **`main.js`:** Die Schleife simuliert nicht mehr in variablen (max. 0,033 s)
+  Stücken, sondern in **festen** `FIXED_DT = 1/30`-Sekunden-Schritten über einen
+  Akkumulator (`simAcc += dt * S.speed`, dann `while (simAcc >= FIXED_DT)
+  tick(FIXED_DT)`). Das macht die Simulation deterministischer und präziser messbar.
+  `MAX_DT = 0.05` kappt weiter die gemessene Framezeit (Resize, Hintergrund-Tab),
+  `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
+  Pause und `S.speed` (1×/2×/4×) wirken unverändert.
+
 ### Qualität
 
-- `npm run check` = ESLint + 126 Vitest-Tests + Vite-Build, fehlerfrei (Tests
-  unverändert; die Messung ist ohne `?perf` aus).
+- `npm run check` = ESLint + 127 Vitest-Tests + Vite-Build, fehlerfrei. Neu:
+  Fixed-Timestep-Test in `tests/ui-smoke.test.js` (Spielzeitrate bei 1× und 4× über
+  mehrere Frames bleibt erhalten, Sprünge höchstens ein Schritt).
 
 ## 0.15.0 – Förderband-Ecken: durchgehender Bogen, sprunghafte Ware (09.10.2026)
 

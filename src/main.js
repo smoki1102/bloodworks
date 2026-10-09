@@ -20,22 +20,32 @@ import { $ } from './utils/helpers.js';
 
 let lastTS = 0,
   hudTimer = 0,
-  tutTimer = 0;
+  tutTimer = 0,
+  simAcc = 0;
 
-/** Ein Frame: Simulation (variable Schrittweite), Darstellung, HUD-Takt. */
+/** Feste Simulations-Schrittweite (nähert das alte 0,033-Chunking an). */
+export const FIXED_DT = 1 / 30;
+/** Notbremse: nach einem Hänger wird nicht stundenlang aufgeholt. */
+export const MAX_STEPS = 10;
+/** Obergrenze für die gemessene Framezeit (Resize, Tab im Hintergrund). */
+export const MAX_DT = 0.05;
+
+/** Ein Frame: Simulation in festen 1/30-s-Schritten, Darstellung, HUD-Takt. */
 export function frame(ts) {
   perfFrame(ts);
-  const dt = Math.min(0.05, (ts - lastTS) / 1000 || 0);
+  const dt = Math.min(MAX_DT, (ts - lastTS) / 1000 || 0);
   lastTS = ts;
   if (S.running) {
     perfBegin('sim');
-    let rem = dt * S.speed;
-    while (rem > 0) {
-      const s = Math.min(rem, 0.033);
-      tick(s);
-      rem -= s;
+    simAcc += dt * S.speed;
+    let steps = 0;
+    while (simAcc >= FIXED_DT && steps < MAX_STEPS) {
+      tick(FIXED_DT);
+      simAcc -= FIXED_DT;
+      steps++;
       perfCount('tick');
     }
+    if (steps === MAX_STEPS) simAcc = 0;
     perfEnd('sim');
   }
   perfBegin('render');

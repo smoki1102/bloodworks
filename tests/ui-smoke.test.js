@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { frames, el, fireDoc, fireWin } from './dom-stub.js';
 import '../src/main.js';
+import { FIXED_DT } from '../src/main.js';
 import { S, blds, corpses, sticks } from '../src/core/state.js';
 import { CELL } from '../src/config/constants.js';
 import { setReducedMotion } from '../src/core/effects.js';
@@ -106,6 +107,23 @@ describe('UI im DOM (Smoke)', () => {
     },
     20000,
   );
+
+  it('integriert Spielzeit in festen 1/30-s-Schritten (Fixed Timestep)', () => {
+    newGame('free');
+    S.running = true;
+    const before = S.t;
+    frames(30, 16.7); // ≈ 0,501 s Spielzeit bei 1×
+    const elapsed1 = S.t - before;
+    expect(elapsed1).toBeGreaterThan(0.47);
+    expect(elapsed1).toBeLessThanOrEqual(0.501 + FIXED_DT);
+    S.speed = 4;
+    const before2 = S.t;
+    frames(5, 16.7); // ≈ 0,334 s Spielzeit bei 4×
+    const elapsed4 = S.t - before2;
+    expect(elapsed4).toBeGreaterThan(0.334 - FIXED_DT);
+    expect(elapsed4).toBeLessThanOrEqual(0.334 + FIXED_DT);
+    toggleRun();
+  });
 
   it('baut eine Förderband-Strecke mit zwei Klicks', () => {
     const money0 = S.money;
