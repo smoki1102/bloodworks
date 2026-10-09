@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.17.0 – Phase 2: Komfort & Statistik (09.10.2026)
+
+### 2.1 Baupläne: Bereiche kopieren und einfügen
+
+- **`src/core/blueprint.js` (neu):** markierte Gebäude als Bauplan erfassen
+  (`captureBlueprint`, Ursprung normalisiert), 90° drehen (`rotateBlueprint`,
+  auch diagonale Bandrichtungen 0–7), Platzierung prüfen (`pasteReason`) und in einem
+  Rutsch einsetzen (`pasteBlueprint`). Der Einsatz ist **alles oder nichts**: Ist eine
+  Zelle blockiert, zu teuer oder außerhalb, ändert sich nichts. Die Gesamtkosten werden
+  als **eine** Rückgängig-Einheit gebucht (`pushGroup`).
+- **Eingabe (`src/ui/ui.js`):** `Shift+Ziehen` markiert ein Rechteck (Auswahlrahmen);
+  beim Loslassen wandert es als Bauplan in die Zwischenablage. `Strg/Cmd+C` kopiert die
+  Auswahl (oder das gewählte Gebäude), `Strg/Cmd+V` startet den Einfügemodus mit Vorschau,
+  `R` dreht, `Esc`/Rechtsklick bricht ab; ein Klick setzt den Plan zentriert am Cursor.
+- **`src/render/renderer.js`:** Auswahlrahmen (`drawSelect`) und Bauplan-Vorschau
+  (`drawPasteGhost`) mit Zellmarkierungen, Gesamtkosten und Blockerungsgrund.
+- **Tests:** `tests/blueprint.test.js` (8) prüfen Erfassung, Normalisierung, Kosten,
+  Alles-oder-nichts, Geld-/Platzmeldungen und Rotation; ein `tests/ui-smoke.test.js`
+  deckt Shift-Auswahl + `Strg+V` + Platzierungsklick ab.
+
 ## 0.16.0 – Phase 1: technische Grundlage (09.10.2026)
 
 ### 1.1 Zeitmessung und Profiling

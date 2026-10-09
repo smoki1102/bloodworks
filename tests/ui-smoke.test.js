@@ -171,8 +171,43 @@ describe('UI im DOM (Smoke)', () => {
     expect(S.tool).toBeNull();
   });
 
-  it('Kategorien, Werkzeuge und Kamera reagieren auf Eingaben', () => {
-    fireWin('keydown', { code: 'Digit2', key: '2', preventDefault() {} });
+  it('kopiert einen markierten Bereich und fügt ihn wieder ein (Strg+V)', () => {
+    newGame('free');
+    addBuilding('belt', 30, 40, { free: true, dir: 0 });
+    addBuilding('spike', 31, 40, { free: true, dir: 0 });
+    const at = (x, y) => toScreen(x * CELL + CELL / 2, y * CELL + CELL / 2);
+    const a = at(30, 40),
+      b = at(31, 40);
+    el('cv').dispatch('pointerdown', {
+      button: 0,
+      shiftKey: true,
+      clientX: a.clientX,
+      clientY: a.clientY,
+      pointerId: 10,
+    });
+    el('cv').dispatch('pointermove', { clientX: b.clientX, clientY: b.clientY, pointerId: 10 });
+    fireWin('pointerup', { target: el('cv') });
+    expect(S.select).toBeNull();
+    expect(S.bp).toBeTruthy();
+    expect(S.bp.cells).toHaveLength(2);
+    fireWin('keydown', { key: 'v', ctrlKey: true, preventDefault() {} });
+    expect(S.paste).toBeTruthy();
+    const money0 = S.money;
+    const c = at(40, 40);
+    el('cv').dispatch('pointerdown', {
+      button: 0,
+      clientX: c.clientX,
+      clientY: c.clientY,
+      pointerId: 11,
+    });
+    fireWin('pointerup', { target: el('cv') });
+    expect(S.paste).toBeNull();
+    expect(blds.find((x) => x.t === 'belt' && x.x === 40 && x.y === 40)).toBeTruthy();
+    expect(blds.find((x) => x.t === 'spike' && x.x === 41 && x.y === 40)).toBeTruthy();
+    expect(S.money).toBe(money0 - (costOf('belt') + costOf('spike')));
+  });
+
+  it('Kategorien, Werkzeuge und Kamera reagieren auf Eingaben', () => {    fireWin('keydown', { code: 'Digit2', key: '2', preventDefault() {} });
     expect(S.cat).toBe('masch');
     fireWin('keydown', { code: 'Digit1', key: '1', preventDefault() {} });
     expect(S.cat).toBe('band');

@@ -18,7 +18,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/utils/perf.js`       | Zeitmessung der Spielschleife (`setPerf`, `perfBegin`/`perfEnd`, `perfCount`, `perfFrame`, `perfSnapshot`); aus, bis `?perf`/`?bench` es einschaltet – siehe „Messung und Bench“ |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
-| `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo (auch Gruppen)  |
+| `src/core/placement.js`   | `addBuilding`, `removeBuilding`, `originOf`, `placeReason`, Locks, Kosten, Verkauf, Historie (`pushHistory`/`pushGroup`), Undo |
+| `src/core/blueprint.js`   | Baupläne: Bereich erfassen (`captureBlueprint`), drehen (`rotateBlueprint`), prüfen (`pasteReason`) und gesammelt einsetzen (`pasteBlueprint`, alles oder nichts, eine Undo-Einheit) |
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
 | `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint`, `beltPathPoints` (Eintritt → Mitte → Austritt), `entryDirOf` (`fromDir`), `lenOf` |
@@ -198,7 +199,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   Pfeiltasten/`±` Kamera, Rad zoomen.
 - Band: erster Klick = Start, zweiter Klick oder Drag-Loslassen = Ende; Klick auf den Start
   bricht ab (`S.beltFrom`, `clearTool()` setzt auch den Start zurück).
-- `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo.
+- `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo, `Shift+Ziehen` Bereich
+  markieren, `Strg/Cmd+C`/`Strg/Cmd+V` Bauplan kopieren/einfügen (`R` dreht, `Esc` bricht ab).
 - Inspektor zeigt Status, Auslastung, Zielkörperteil mit Trefferquote, Filterregel,
   Marktreserve und Absaugung/Verbindung; der Inhalt wird nur ersetzt, solange kein
   `INPUT`/`SELECT`/`TEXTAREA` darin den Fokus hat (sonst wäre das Zielauswahl-Dropdown sofort

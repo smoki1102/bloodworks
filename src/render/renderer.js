@@ -3,6 +3,7 @@ import { CELL, DX, DY, GRID_W, PH, PW, opp } from '../config/constants.js';
 import { bloodColor, reducedMotion } from '../core/effects.js';
 import { itemPos, beltPathPoints } from '../core/belts.js';
 import { planBeltPath } from '../core/belt-path.js';
+import { blueprintCost, pasteOrigin, pasteReason } from '../core/blueprint.js';
 import { costOf, originOf, placeReason } from '../core/placement.js';
 import { bldAtCell, bldRect, viewCells } from '../core/grid.js';
 import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
@@ -320,6 +321,43 @@ function drawGhost() {
   if (reason) ghostLabel(x0 + (d.w - 1) / 2, y0, reason.toUpperCase(), true, 15);
 }
 
+function drawSelect() {
+  const s = S.select;
+  if (!s) return;
+  const x0 = Math.min(s.x0, s.x1),
+    x1 = Math.max(s.x0, s.x1),
+    y0 = Math.min(s.y0, s.y1),
+    y1 = Math.max(s.y0, s.y1);
+  ctx.fillStyle = rgba(C.accent, 0.08);
+  ctx.fillRect(x0 * CELL, y0 * CELL, (x1 - x0 + 1) * CELL, (y1 - y0 + 1) * CELL);
+  ctx.strokeStyle = C.accent2;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(x0 * CELL + 2, y0 * CELL + 2, (x1 - x0 + 1) * CELL - 4, (y1 - y0 + 1) * CELL - 4);
+  ctx.setLineDash([]);
+}
+
+function drawPasteGhost() {
+  const bp = S.paste;
+  if (!bp) return;
+  const cx = Math.floor(S.wx / CELL),
+    cy = Math.floor(S.wy / CELL);
+  const o = pasteOrigin(bp, cx, cy);
+  const reason = pasteReason(bp, o.x, o.y);
+  for (const c of bp.cells) {
+    const d = DEF[c.t];
+    for (let yy = 0; yy < d.h; yy++)
+      for (let xx = 0; xx < d.w; xx++) ghostCell(o.x + c.dx + xx, o.y + c.dy + yy, !!reason);
+  }
+  ghostLabel(
+    o.x + (bp.w - 1) / 2,
+    o.y,
+    'BAUPLAN · ' + bp.cells.length + ' · ' + blueprintCost(bp) + ' €',
+    !!reason,
+  );
+  if (reason) ghostLabel(o.x + (bp.w - 1) / 2, o.y, reason.toUpperCase(), true, 15);
+}
+
 function drawHints() {
   if (!S.tutCells || !S.tutCells.length) return;
   const a = reducedMotion() ? 0.6 : 0.35 + 0.3 * Math.sin(S.t * 4);
@@ -501,6 +539,8 @@ export function render() {
     ctx.setLineDash([]);
   }
   if (S.tool) drawGhost();
+  drawSelect();
+  if (S.paste) drawPasteGhost();
   perfEnd('render.overlay');
 }
 

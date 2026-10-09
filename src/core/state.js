@@ -51,6 +51,9 @@ export function freshState() {
     dir: 0,
     beltFrom: null,
     sel: null,
+    bp: null,
+    paste: null,
+    select: null,
     spawnTimer: SPAWN_FIRST,
     netDirty: false,
     stats: {

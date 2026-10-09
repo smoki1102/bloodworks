@@ -2,6 +2,13 @@ import { CATS, DEF } from '../config/building-defs.js';
 import { TUT_STEPS } from '../config/tutorial-defs.js';
 import { CELL, PH, PW, SAVE_KEY, SAVE_VER } from '../config/constants.js';
 import { buildBeltPath } from '../core/belt-path.js';
+import {
+  blueprintCost,
+  captureBlueprint,
+  pasteBlueprint,
+  pasteOrigin,
+  rotateBlueprint,
+} from '../core/blueprint.js';
 import { resetBloodBounds, setReducedMotion, toast } from '../core/effects.js';
 import { bldAt, inGrid } from '../core/grid.js';
 import {
@@ -182,6 +189,41 @@ function clearTool() {
   S.beltFrom = null;
 }
 
+/** Shift-Ziehen beendet: markierte Gebäude als Bauplan in die Zwischenablage. */
+function finishSelect() {
+  const r = S.select;
+  S.select = null;
+  const bp = captureBlueprint(r);
+  if (!bp) return toast('Keine Gebäude im Bereich', 'bad');
+  S.bp = bp;
+  toast('Bauplan kopiert · ' + bp.cells.length + ' Gebäude · ' + blueprintCost(bp) + ' €', 'good');
+}
+
+/** Ein Klick im Einfügemodus setzt den kopierten Bauplan an der Cursorzelle ab. */
+function doPaste(cx, cy) {
+  const bp = S.paste;
+  if (!bp) return;
+  const o = pasteOrigin(bp, cx, cy);
+  const reason = pasteBlueprint(bp, o.x, o.y);
+  if (reason) return toast(reason, 'bad');
+  toast('Bauplan eingesetzt · ' + bp.cells.length + ' Gebäude', 'good');
+  S.paste = null;
+  lastList = null;
+  renderList();
+  renderInspector();
+}
+
+/** Einfügemodus starten (Auswahl aufheben, Vorschau übernimmt). */
+function startPaste() {
+  if (!S.bp) return toast('Kein Bauplan kopiert', 'bad');
+  S.paste = S.bp;
+  clearTool();
+  S.sel = null;
+  renderList();
+  renderInspector();
+  toast('Einfügen: Klick platziert · R dreht · Esc bricht ab', 'good');
+}
+
 /**
  * Bandstrecke: erster Klick setzt den Start, zweiter das Ende (oder ein Drag
  * loslassen). Klick auf die Startzelle bricht ab.
@@ -224,6 +266,18 @@ cv.addEventListener('pointerdown', (e) => {
   S.wy = p.y;
   S.down = true;
   moved = 0;
+  const cx = Math.floor(p.x / CELL),
+    cy = Math.floor(p.y / CELL);
+  if (e.button === 0 && S.paste) {
+    doPaste(cx, cy);
+    return;
+  }
+  if (e.button === 0 && !S.tool && e.shiftKey) {
+    S.select = { x0: cx, y0: cy, x1: cx, y1: cy };
+    panning = null;
+    lastCell = null;
+    return;
+  }
   if (e.button === 1 || (e.button === 0 && !S.tool)) {
     panning = { x: e.clientX, y: e.clientY };
     lastCell = null;
@@ -239,6 +293,7 @@ cv.addEventListener('pointerdown', (e) => {
     placeAt(S.tool, cx, cy);
   } else if (e.button === 2) {
     clearTool();
+    S.paste = null;
     S.sel = null;
     renderList();
     renderInspector();
@@ -249,6 +304,11 @@ cv.addEventListener('pointermove', (e) => {
   const p = toWorld(e);
   S.wx = p.x;
   S.wy = p.y;
+  if (S.select && S.down) {
+    S.select.x1 = Math.floor(p.x / CELL);
+    S.select.y1 = Math.floor(p.y / CELL);
+    return;
+  }
   if (panning) {
     panBy(e.clientX - panning.x, e.clientY - panning.y);
     panning = { x: e.clientX, y: e.clientY };
@@ -267,6 +327,13 @@ cv.addEventListener('pointermove', (e) => {
 });
 
 addEventListener('pointerup', (e) => {
+  if (S.select) {
+    finishSelect();
+    panning = null;
+    S.down = false;
+    lastCell = null;
+    return;
+  }
   const wasPan = panning && moved < 4;
   panning = null;
   S.down = false;
@@ -309,6 +376,8 @@ addEventListener('keydown', (e) => {
     toggleRun();
   } else if (e.key === 'Escape') {
     clearTool();
+    S.paste = null;
+    S.select = null;
     S.sel = null;
     renderList();
     renderInspector();
@@ -317,6 +386,25 @@ addEventListener('keydown', (e) => {
     sellSelected(S.sel);
     lastList = null;
     renderList();
+  } else if ((e.key === 'c' || e.key === 'C') && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    if (S.select) finishSelect();
+    else if (S.sel) {
+      const b = S.sel;
+      S.bp = captureBlueprint({
+        x0: b.x,
+        y0: b.y,
+        x1: b.x + (b.spanW || 1) - 1,
+        y1: b.y + (b.spanH || 1) - 1,
+      });
+      toast('Bauplan kopiert · 1 Gebäude · ' + blueprintCost(S.bp) + ' €', 'good');
+    } else toast('Nichts markiert', 'bad');
+  } else if ((e.key === 'v' || e.key === 'V') && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    if (S.paste) {
+      S.paste = null;
+      toast('Einfügen abgebrochen', 'good');
+    } else startPaste();
   } else if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) {
     e.preventDefault();
     undo();
@@ -327,7 +415,10 @@ addEventListener('keydown', (e) => {
   } else if (e.key === 'e' || e.key === 'E') {
     toggleSelected();
   } else if (e.key === 'r' || e.key === 'R') {
-    if (S.tool) {
+    if (S.paste) {
+      S.paste = rotateBlueprint(S.paste);
+      toast('Bauplan gedreht', 'good');
+    } else if (S.tool) {
       S.dir = (S.dir + 1) & 3;
       toast('Richtung: ' + ['Rechts', 'Runter', 'Links', 'Hoch'][S.dir], 'good');
     }
