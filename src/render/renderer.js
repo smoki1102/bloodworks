@@ -339,14 +339,22 @@ export function render() {
   ctx.fillRect(0, 0, cv.width, cv.height);
   applyCam();
 
+  const vis = viewCells(S.cam, vw, vh);
+  // Sichtbarer Welt-Ausschnitt in Pixeln (Flächen nur dort statt über PW×PH –
+  // Verläufe bleiben weltbezogen, Pixel identisch).
+  const vx0 = Math.max(0, vis.x0 * CELL),
+    vy0 = Math.max(0, vis.y0 * CELL),
+    vw1 = Math.min(PW, (vis.x1 + 1) * CELL) - vx0,
+    vh1 = Math.min(PH, (vis.y1 + 1) * CELL) - vy0;
+
   perfBegin('render.bg');
   // Hallenboden
   ctx.fillStyle = C.hall;
-  ctx.fillRect(0, 0, PW, PH);
+  ctx.fillRect(vx0, vy0, vw1, vh1);
   const pat = floorPattern();
   if (pat) {
     ctx.fillStyle = pat;
-    ctx.fillRect(0, 0, PW, PH);
+    ctx.fillRect(vx0, vy0, vw1, vh1);
   }
   // Weicher Übergang zum Dunkeln statt hartem Randstrich
   const grad = ctx.createLinearGradient(0, 0, 0, PH);
@@ -355,20 +363,18 @@ export function render() {
   grad.addColorStop(0.88, rgba(C.bg, 0));
   grad.addColorStop(1, rgba(C.bg, 0.55));
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, PW, PH);
+  ctx.fillRect(vx0, vy0, vw1, vh1);
   const gradL = ctx.createLinearGradient(0, 0, PW, 0);
   gradL.addColorStop(0, rgba(C.bg, 0.55));
   gradL.addColorStop(0.06, rgba(C.bg, 0));
   gradL.addColorStop(0.94, rgba(C.bg, 0));
   gradL.addColorStop(1, rgba(C.bg, 0.55));
   ctx.fillStyle = gradL;
-  ctx.fillRect(0, 0, PW, PH);
+  ctx.fillRect(vx0, vy0, vw1, vh1);
   // Dezente Hallenkante
   ctx.strokeStyle = rgba(C.hallEdge, 0.22);
   ctx.lineWidth = 2;
   ctx.strokeRect(1, 1, PW - 2, PH - 2);
-
-  const vis = viewCells(S.cam, vw, vh);
 
   // Raster
   ctx.lineWidth = 1;

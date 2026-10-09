@@ -50,6 +50,15 @@ größere Fabriken und glättet Spitzen.
   `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
   Pause und `S.speed` (1×/2×/4×) wirken unverändert.
 
+### 1.4 Sichtbarer Bildausschnitt statt Weltflächen
+
+- **`renderer.js`:** Hallenboden, Bodenmuster und die beiden Welt-Verlaufflächen
+  (Hortengrad-Übergang oben/unten und links/rechts) füllten bisher die **ganze Welt**
+  (`PW × PH` = 6144 × 3072 px) pro Frame; sie werden jetzt nur noch im sichtbaren
+  `viewCells`-Ausschnitt gezeichnet (auf die Welt begrenzt). Die Verläufe bleiben
+  weltbezogen definiert – die Pixel im Ausschnitt sind identisch. Rasterarbeit entfällt
+  vor allem bei gezoomten Ansichten; JS-Zeit und Echtzeit (60 fps) unverändert.
+
 ### 1.3 Culling für lose Objekte und Partikel
 
 - **`renderer.js`:** Leichen, stickmen und Partikel werden nur noch gezeichnet, wenn
