@@ -107,6 +107,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   Bogenlänge – Ware läuft ohne Sprung um die Ecke. Gerade/diagonale Zellen bleiben zweipunktig.
   `planBeltPath`/`withDirs` setzen `from` je Zelle, `drawBandStrip` rendert Eckzellen als
   `drawBandCorner` (dicker Bogen mit runden Enden, Chevrons entlang des Pfads).
+  Beim Speichern/Laden wird `fromDir` über die Verkettung `fromDir ?? from ?? dir`
+  wiederhergestellt (v12-Fix, siehe CHANGELOG 1.6).
 - `MIN_GAP` sichert Abstand zwischen *bewegten* Waren; Waren, die am Eingang warten, dürfen
   enger liegen (sonst blockiert eine Weiche schon den Zulauf).
 - Auf dem Band liegende Waren mit `p == null` sind gehalten (Maschinen wie Presse/Klinge).
