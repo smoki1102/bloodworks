@@ -9,6 +9,7 @@ import { costOf } from '../src/core/placement.js';
 import { save, load, hasSave, newGame, toggleRun, renderInspector } from '../src/ui/ui.js';
 import { addBuilding } from '../src/core/placement.js';
 import { rebuildNets } from '../src/core/pipes.js';
+import { renderStats } from '../src/ui/stats.js';
 import { DEF } from '../src/config/building-defs.js';
 import { entryDirOf } from '../src/core/belts.js';
 
@@ -205,6 +206,19 @@ describe('UI im DOM (Smoke)', () => {
     expect(blds.find((x) => x.t === 'belt' && x.x === 40 && x.y === 40)).toBeTruthy();
     expect(blds.find((x) => x.t === 'spike' && x.x === 41 && x.y === 40)).toBeTruthy();
     expect(S.money).toBe(money0 - (costOf('belt') + costOf('spike')));
+  });
+
+  it('öffnet das Statistik-Dashboard und zeigt Kennzahlen', () => {
+    newGame('free');
+    expect(el('statsPanel').classList.contains('hide')).toBe(true);
+    fireDoc('click', { target: fake({ a: 'openStats' }) });
+    expect(el('statsPanel').classList.contains('hide')).toBe(false);
+    renderStats();
+    expect(el('statPane').innerHTML).toContain('DURCHSATZ');
+    expect(el('statPane').innerHTML).toContain('WIRTSCHAFT');
+    expect(el('statPane').innerHTML).toContain('WELT');
+    fireDoc('click', { target: fake({ a: 'closeStats' }) });
+    expect(el('statsPanel').classList.contains('hide')).toBe(true);
   });
 
   it('Kategorien, Werkzeuge und Kamera reagieren auf Eingaben', () => {    fireWin('keydown', { code: 'Digit2', key: '2', preventDefault() {} });

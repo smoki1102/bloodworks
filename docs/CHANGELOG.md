@@ -2,6 +2,21 @@
 
 ## 0.17.0 – Phase 2: Komfort & Statistik (09.10.2026)
 
+### 2.2 Statistik-Dashboard
+
+- **`src/core/rates.js` (neu):** hält gleitende Momentaufnahmen der Zähler aus `S.stats`
+  über ein 60-Sekunden-Fenster (`stepRates` je Simulationsschritt, spielzeit- und
+  pausensicher) und liefert Raten pro Minute (`ratePerMin`, `rateWindow`).
+- **`src/ui/stats.js` (neu):** Dashboard mit vier Karten – Durchsatz pro Minute
+  (erledigt, Teile/Blut verkauft, gefangen, abgeworfen, entkommen), Gesamt, Wirtschaft
+  (Geld, Blut, Teile, Asche, Energie) und Welt (Gebäude, Bänder, Rohre, Sticks, Leichen,
+  Partikel) plus Spielzeit. Nur lesend, kein Einfluss auf die Simulation.
+- **Bedienung:** Button **Statistik** in der Kopfleiste oder Taste **I**; `Esc` schließt.
+  Beim Neustart/Laden werden die Raten zurückgesetzt.
+- **Tests:** `tests/rates.test.js` (4) prüfen Ratenbildung, Leerlauf, 60-s-Fenster und
+  Spielzeit-Bezug; ein `tests/ui-smoke.test.js` öffnet/schließt das Dashboard und prüft
+  die gerenderten Karten.
+
 ### 2.1 Baupläne: Bereiche kopieren und einfügen
 
 - **`src/core/blueprint.js` (neu):** markierte Gebäude als Bauplan erfassen

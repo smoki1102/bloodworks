@@ -20,6 +20,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
 | `src/core/placement.js`   | `addBuilding`, `removeBuilding`, `originOf`, `placeReason`, Locks, Kosten, Verkauf, Historie (`pushHistory`/`pushGroup`), Undo |
 | `src/core/blueprint.js`   | Baupläne: Bereich erfassen (`captureBlueprint`), drehen (`rotateBlueprint`), prüfen (`pasteReason`) und gesammelt einsetzen (`pasteBlueprint`, alles oder nichts, eine Undo-Einheit) |
+| `src/core/rates.js`       | Gleitende Kennzahlen (`stepRates` je Tick, `ratePerMin`/`rateWindow`) über ein 60-s-Fenster – Basis des Statistik-Dashboards |
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
 | `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint`, `beltPathPoints` (Eintritt → Mitte → Austritt), `entryDirOf` (`fromDir`), `lenOf` |
@@ -46,6 +47,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/ui/inspector.js`     | Geräte-Panel: Status, Zielkörperteil, Trefferquote, Reserve, An/Aus     |
 | `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
+| `src/ui/stats.js`         | Statistik-Dashboard (`openStats`/`closeStats`/`renderStats`) aus `rates.js`, nur lesend |
 | `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
 | `src/dev/bench.js`        | Bench-Welt (`buildBench(mode)`) für `?bench=std|big` – deterministische Fabrik, nur über `main.js` erreichbar |
 | `src/main.js`             | Spielschleife (`frame(ts)` exportiert), HUD- und Tutorial-Intervalle, `?perf`/`?bench`-Modus |
@@ -200,7 +202,8 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 - Band: erster Klick = Start, zweiter Klick oder Drag-Loslassen = Ende; Klick auf den Start
   bricht ab (`S.beltFrom`, `clearTool()` setzt auch den Start zurück).
 - `Space` Pause, `E` An/Aus, `Entf` Verkaufen, `Strg/Cmd+Z` Undo, `Shift+Ziehen` Bereich
-  markieren, `Strg/Cmd+C`/`Strg/Cmd+V` Bauplan kopieren/einfügen (`R` dreht, `Esc` bricht ab).
+  markieren, `Strg/Cmd+C`/`Strg/Cmd+V` Bauplan kopieren/einfügen (`R` dreht, `Esc` bricht ab),
+  `I` Statistik-Dashboard.
 - Inspektor zeigt Status, Auslastung, Zielkörperteil mit Trefferquote, Filterregel,
   Marktreserve und Absaugung/Verbindung; der Inhalt wird nur ersetzt, solange kein
   `INPUT`/`SELECT`/`TEXTAREA` darin den Fokus hat (sonst wäre das Zielauswahl-Dropdown sofort

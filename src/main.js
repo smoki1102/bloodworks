@@ -13,6 +13,7 @@ import {
   updateTutorial,
 } from './ui/ui.js';
 import { renderForschung } from './ui/research.js';
+import { renderStats } from './ui/stats.js';
 import { updateQuest } from './ui/quests.js';
 import { openGallery } from './ui/gallery.js';
 import { installPerfHook, perfBegin, perfCount, perfEnd, perfFrame, setPerf } from './utils/perf.js';
@@ -59,6 +60,7 @@ export function frame(ts) {
     renderList();
     renderInspector();
     renderForschung();
+    renderStats();
   }
   if ((tutTimer -= dt) <= 0) {
     tutTimer = 0.4;

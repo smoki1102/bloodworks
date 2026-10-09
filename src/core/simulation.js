@@ -14,6 +14,7 @@ import { flow, updateLinks } from './flow.js';
 import { rebuildNets, refreshCaps, suctionCells } from './pipes.js';
 import { bldAtCell, cellAt, cellY, supportBelow } from './grid.js';
 import { S, blds, corpses, floorBlood, parts, sticks } from './state.js';
+import { stepRates } from './rates.js';
 import { perfBegin, perfEnd } from '../utils/perf.js';
 
 export { machine };
@@ -178,6 +179,7 @@ function stepParticles(dt) {
 
 export function tick(dt) {
   S.t += dt;
+  stepRates();
   perfBegin('sim.nets');
   if (S.netDirty) rebuildNets();
   refreshCaps();

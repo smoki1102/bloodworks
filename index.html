@@ -53,6 +53,7 @@
           >
             Forschung
           </button>
+          <button id="btnStats" data-a="openStats" data-tip="Statistik (I)">Statistik</button>
           <button id="btnSave" data-tip="Spielstand speichern">Speichern</button>
           <button id="btnLoad" data-tip="Spielstand laden">Laden</button>
           <button id="btnSkipTut" hidden data-tip="Tutorial überspringen">
@@ -88,6 +89,20 @@
           </div>
           <div id="fNet" class="fpane"></div>
           <div id="fUpg" class="fpane hide"></div>
+        </div>
+        <div id="statsPanel" class="hide">
+          <div class="resHead">
+            <b class="ftitle">STATISTIK</b>
+            <span class="fcur">Spielzeit <b id="stTime">0:00</b></span>
+            <button
+              class="close"
+              data-a="closeStats"
+              data-icon="close"
+              data-tip="Schließen (Esc)"
+              aria-label="Schließen"
+            ></button>
+          </div>
+          <div id="statPane" class="statGrid"></div>
         </div>
         <div id="inspector"></div>
         <div id="toasts"></div>

@@ -35,6 +35,7 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 | Strg/Cmd+C              | Bauplan/Wahl kopieren                              |
 | Strg/Cmd+V              | Bauplan einfügen (Klick platziert, R dreht)        |
 | K                       | Forschung öffnen: Skill-Netz & Upgrades (pausiert) |
+| I                       | Statistik-Dashboard öffnen                         |
 
 ## Features
 

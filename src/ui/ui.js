@@ -37,6 +37,8 @@ import {
   toggleSelected,
 } from './inspector.js';
 import { closeForschung, forschungOpen, openForschung } from './research.js';
+import { closeStats, openStats, statsOpen } from './stats.js';
+import { resetRates } from '../core/rates.js';
 export { renderInspector };
 
 /* ------------------------------ Karten / HUD ------------------------------ */
@@ -379,6 +381,7 @@ addEventListener('keydown', (e) => {
     S.paste = null;
     S.select = null;
     S.sel = null;
+    closeStats();
     renderList();
     renderInspector();
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) {
@@ -424,6 +427,9 @@ addEventListener('keydown', (e) => {
     }
   } else if (e.key === 'k' || e.key === 'K') {
     document.querySelector('[data-a="openForschung"]')?.click();
+  } else if (e.key === 'i' || e.key === 'I') {
+    if (statsOpen()) closeStats();
+    else openStats();
   } else if (e.key >= '1' && e.key <= '5') {
     S.cat = CATS[+e.key - 1][0];
     clearTool();
@@ -488,6 +494,10 @@ document.addEventListener('click', (e) => {
     if (forschungOpen()) closeForschungUI();
     else openForschungUI('net');
   } else if (a === 'closeForschung') closeForschungUI();
+  else if (a === 'openStats') {
+    if (statsOpen()) closeStats();
+    else openStats();
+  } else if (a === 'closeStats') closeStats();
 });
 
 document.addEventListener('change', (e) => {
@@ -752,6 +762,7 @@ export function load() {
   if (S.running) toggleRun();
   initSim();
   resetBloodBounds();
+  resetRates();
   Object.assign(S, {
     money: raw.money,
     energy: raw.energy,
@@ -870,11 +881,13 @@ export function newGame(mode = 'tutorial') {
   clearHistory();
   initSim();
   resetBloodBounds();
+  resetRates();
   setupWorld(mode);
   lastList = null;
   lastHint = null;
   skillPaused = false;
   closeForschung();
+  closeStats();
   renderTabs();
   renderList();
   renderInspector();
