@@ -7,6 +7,7 @@ import { costOf, originOf, placeReason } from '../core/placement.js';
 import { bldAtCell, bldRect, viewCells } from '../core/grid.js';
 import { S, beltBlood, blds, corpses, floorBlood, parts, sticks } from '../core/state.js';
 import { clamp } from '../utils/helpers.js';
+import { perfBegin, perfEnd } from '../utils/perf.js';
 import { rgba } from '../config/palette.js';
 import { C, ctx, cv } from './canvas.js';
 import { drawCorpse, drawItemShape, drawStickFigure } from './figures.js';
@@ -338,6 +339,7 @@ export function render() {
   ctx.fillRect(0, 0, cv.width, cv.height);
   applyCam();
 
+  perfBegin('render.bg');
   // Hallenboden
   ctx.fillStyle = C.hall;
   ctx.fillRect(0, 0, PW, PH);
@@ -393,7 +395,10 @@ export function render() {
   }
   ctx.stroke();
 
+  perfEnd('render.bg');
+
   // Bodenblut – weiche Flecken statt Rechteckstreifen
+  perfBegin('render.blood');
   const bc = bloodColor();
   for (let y = vis.y0; y < vis.y1; y++)
     for (let x = vis.x0; x < vis.x1; x++) {
@@ -417,15 +422,19 @@ export function render() {
       ctx.fill();
     }
   ctx.globalAlpha = 1;
+  perfEnd('render.blood');
 
   // Gebäude
+  perfBegin('render.blds');
   const showPorts = !!S.sel;
   for (const b of blds) {
     if (b.x + b.spanW < vis.x0 || b.x > vis.x1 || b.y + b.spanH < vis.y0 || b.y > vis.y1) continue;
     drawBuilding(b, showPorts && S.sel === b);
   }
+  perfEnd('render.blds');
 
   // Blut auf Bändern
+  perfBegin('render.blood');
   for (let y = vis.y0; y < vis.y1; y++)
     for (let x = vis.x0; x < vis.x1; x++) {
       const v = beltBlood[y * GRID_W + x];
@@ -436,12 +445,16 @@ export function render() {
       ctx.fillRect(x * CELL + 2, (y + 1) * CELL - h - 2, CELL - 4, h);
     }
   ctx.globalAlpha = 1;
+  perfEnd('render.blood');
 
   // Lose Objekte
+  perfBegin('render.ents');
   for (const c of corpses) drawCorpse(c);
   for (const s of sticks) drawStickFigure(s.x, s.y, s.body, (s.anim || 0) + S.t, false, s.chair && s.state !== 'fall');
+  perfEnd('render.ents');
 
   // Partikel
+  perfBegin('render.fx');
   for (const p of parts) {
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
     ctx.fillStyle = p.color;
@@ -457,7 +470,9 @@ export function render() {
     }
   }
   ctx.globalAlpha = 1;
+  perfEnd('render.fx');
 
+  perfBegin('render.overlay');
   drawHints();
 
   // Auswahl
@@ -472,6 +487,7 @@ export function render() {
     ctx.setLineDash([]);
   }
   if (S.tool) drawGhost();
+  perfEnd('render.overlay');
 }
 
 export function resize() {

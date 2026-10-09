@@ -14,6 +14,7 @@ import { flow, updateLinks } from './flow.js';
 import { rebuildNets, refreshCaps, suctionCells } from './pipes.js';
 import { bldAtCell, cellAt, cellY, supportBelow } from './grid.js';
 import { S, blds, corpses, floorBlood, parts, sticks } from './state.js';
+import { perfBegin, perfEnd } from '../utils/perf.js';
 
 export { machine };
 
@@ -172,6 +173,7 @@ function stepParticles(dt) {
 
 export function tick(dt) {
   S.t += dt;
+  perfBegin('sim.nets');
   if (S.netDirty) rebuildNets();
   refreshCaps();
   updateLinks();
@@ -190,14 +192,26 @@ export function tick(dt) {
     } else S.energy -= need;
   }
   S.pf = pf;
+  perfEnd('sim.nets');
 
+  perfBegin('sim.machines');
   for (const b of blds) machine(b, dt, pf);
+  perfEnd('sim.machines');
+
+  perfBegin('sim.flow');
   flow(dt);
   stepItems(dt);
+  perfEnd('sim.flow');
+
+  perfBegin('sim.fluids');
   fluids(dt);
+  perfEnd('sim.fluids');
+
+  perfBegin('sim.ents');
   moveSticks(dt);
   moveCorpses(dt);
   stepParticles(dt);
+  perfEnd('sim.ents');
 }
 
 /** Blut aus dem Boden in ein Netz pumpen (Debug/Hilfe). */

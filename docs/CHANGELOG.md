@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.16.0 – Phase 1: technische Grundlage (09.10.2026)
+
+### 1.1 Zeitmessung und Profiling
+
+- **`src/utils/perf.js` (neu):** leichte Zeitmessung der Spielschleife. Marks über
+  `perfBegin`/`perfEnd` (verschachtelbar, z. B. `render` > `render.blds`), Zähler über
+  `perfCount`, Frame-Dauer über `perfFrame`; alle `REPORT_MS` (2,5 s) eine `[perf] …`-Zeile.
+  Alles ist aus, bis `setPerf(true)` (`?perf`/`?bench`) es einschaltet – ausgeschaltet
+  kostet jeder Aufruf nur einen Booleschen Vergleich; `perfSnapshot()` liefert die Zahlen
+  strukturiert für Tests und CDP.
+- **Instrumentierung:** `main.js` extrahiert `export function frame(ts)` und misst
+  `sim`/`render`/`ui` sowie den `tick`-Zähler (Aufrufe/Frame); `simulation.js` unterteilt
+  `sim.nets`/`sim.machines`/`sim.flow`/`sim.fluids`/`sim.ents`, `renderer.js`
+  `render.bg`/`render.blood`/`render.blds`/`render.ents`/`render.fx`/`render.overlay`.
+- **Bench-Welten (`src/dev/bench.js`, neu):** deterministische Fabriken über
+  `?bench=std` (207 Gebäude, 135 Bänder) und `?bench=big` (307/210) – Linien aus
+  Eingang, Maschinen, Weichen, Senken/Verkauf, Merge-/Filter-Module und ein Rohrnetz;
+  Skill- und Eichfreischaltungen gesetzt. `?bench=…` hält die rAF-Schleife an (der
+  Profiler treibt `__bwFrame` selbst), `?bench=…&live` lässt sie laufen (Echtzeitmessung
+  inkl. Rasterisierung). Hilfen auf `globalThis`: `__bwFrame`, `__bwPerf`, `__bwStats()`,
+  `__bwCam()`.
+- **`scripts/profile.mjs` (neu):** baut das Projekt, startet `vite preview` und Chrome
+  im Headless-Modus und misst per CDP (nur Node-Bordmittel) je Szene drei
+  Kameraausschnitte (900 Frames) und 5 s Echtzeit.
+- **`eslint.config.js`:** `scripts/**/*.mjs` erhält Node-Globals.
+
+#### Baseline v0.15.0 (Apple-Silicon, Headless-Chrome, 1280×720, je 900 Frames)
+
+| Szene | Detail | Überblick (alles sichtbar) | Nah | Echtzeit (rAF) |
+| --- | --- | --- | --- | --- |
+| Standard (5 Linien) | 0,18 ms | 0,64 ms | 0,21 ms | 60 fps |
+| Stress (10 Linien) | 0,34 ms | 0,86 ms | 0,30 ms | 60 fps |
+
+Größter Einzelposten `render.blds` (bis 72 % der JS-Zeit im Überblick, skaliert mit den
+sichtbaren Gebäuden); Simulation < 36 % (~0,1 ms); Einzelspitzen bis 48 ms (GC bzw.
+erste Frames nach Kamerawechsel). Rendering dominiert → als Ziele der nächsten Schritte:
+Culling, auf den sichtbaren Ausschnitt begrenzte Flächen statt Weltflächen und
+Partikel-Pools. Echtzeit läuft durchgehend mit 60 fps – die Phase schafft Headroom für
+größere Fabriken und glättet Spitzen.
+
+### Qualität
+
+- `npm run check` = ESLint + 126 Vitest-Tests + Vite-Build, fehlerfrei (Tests
+  unverändert; die Messung ist ohne `?perf` aus).
+
 ## 0.15.0 – Förderband-Ecken: durchgehender Bogen, sprunghafte Ware (09.10.2026)
 
 ### Änderungen an bestehendem Code

@@ -5,7 +5,10 @@ export default [
   { ignores: ['dist', 'node_modules', 'coverage'] },
   js.configs.recommended,
   { files: ['src/**/*.js'], languageOptions: { globals: globals.browser } },
-  { files: ['tests/**/*.js', '*.js'], languageOptions: { globals: globals.node } },
+  {
+    files: ['tests/**/*.js', 'scripts/**/*.mjs', '*.js'],
+    languageOptions: { globals: globals.node },
+  },
   {
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none' }],

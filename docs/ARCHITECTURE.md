@@ -15,6 +15,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/config/upgrade-defs.js`, `quest-defs.js` | Bestehende Forschung und Aufträge (unverändert)    |
 | `src/config/palette.js`   | Kanonische Quellen: `UI` (DOM-Farben), `METRICS` (Abstände/Radien/Schatten/Font/Dauer), `CANVAS` (Canvas-Palette `C`, inkl. Material-/Blut-/Effektfarben), `CSS_MAP`, `rgba(hex, a)`. `applyTokens()` schreibt `UI`+`METRICS` auf `:root` |
 | `src/utils/helpers.js`    | Mathe-, Format- und DOM-Helfer (`$`, `fmt` mit deutscher Tausendertrennung, `clamp`, `rnd`) |
+| `src/utils/perf.js`       | Zeitmessung der Spielschleife (`setPerf`, `perfBegin`/`perfEnd`, `perfCount`, `perfFrame`, `perfSnapshot`); aus, bis `?perf`/`?bench` es einschaltet – siehe „Messung und Bench“ |
 | `src/core/state.js`       | Globaler Spielzustand `S`, Listen (`blds`, `sticks`, `corpses`, `parts` = Partikel, `floorBlood`, `nets`), `defaultFx`, `setState`, `initSim` |
 | `src/core/grid.js`        | Raster: `cellAt`, `bldAtCell`, `bldRect`, `viewCells`, `visibleRect`, `supportBelow` |
 | `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo (auch Gruppen)  |
@@ -45,8 +46,27 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/ui/skill.js`         | Skill-Netz als Diagramm im Forschungsfenster: `skillLayout()` (reines Layout: Spalten/Slots), Knoten, Kanten, Kauf |
 | `src/ui/research.js`      | Forschungsfenster: Owner, Reiter (Skill-Netz/Upgrades), Header, Pause   |
 | `src/ui/quests.js`        | Auftrags-Panel (bestehend)                                              |
-| `src/main.js`             | Spielschleife, HUD- und Tutorial-Intervalle                             |
+| `src/dev/bench.js`        | Bench-Welt (`buildBench(mode)`) für `?bench=std|big` – deterministische Fabrik, nur über `main.js` erreichbar |
+| `src/main.js`             | Spielschleife (`frame(ts)` exportiert), HUD- und Tutorial-Intervalle, `?perf`/`?bench`-Modus |
 | `tests/`                  | Vitest: `helpers.js`, `dom-stub.js`, `helpers.test`, `placement`, `belt-path`, `belts`, `machines`, `pipes`, `skill`, `skill-layout`, `simulation`, `ui-smoke` |
+
+## Messung und Bench
+
+- `?perf` schaltet `utils/perf.js` ein: Die Schleife misst `sim` (unterteilt in
+  `sim.nets`/`sim.machines`/`sim.flow`/`sim.fluids`/`sim.ents`), `render`
+  (`render.bg`/`render.blood`/`render.blds`/`render.ents`/`render.fx`/`render.overlay`)
+  und `ui` je Frame, zählt `tick` (Aufrufe/Frame) und meldet alle 2,5 s eine Zeile
+  `[perf] …` in die Konsole. `perfSnapshot()` liefert dieselben Zahlen strukturiert.
+  Ausgeschaltet kostet jeder Aufruf nur einen Booleschen Vergleich.
+- `?bench=std|big` baut zusätzlich über `src/dev/bench.js` eine deterministische
+  Fabrik (Standard: 5 Linien + Merge/Filter + Rohrnetz; `big`: 10 Linien) und **unterdrückt
+  die rAF-Schleife** – `scripts/profile.mjs` treibt `globalThis.__bwFrame(ts)` selbst,
+  damit gemessen und gespielt nicht doppelt simuliert wird. Hilfen auf `globalThis`:
+  `__bwFrame`, `__bwPerf`, `__bwStats()`, `__bwCam(x, y, z)`.
+- `node scripts/profile.mjs` baut das Projekt, startet `vite preview` und Chrome im
+  Headless-Modus, navigiert per CDP und misst je Szene drei Kameraausschnitte
+  (Detail/Überblick/Nah) über 900 Frames nach 900 Frames Aufwärmen. Reine
+  Node-Bordmittel (`fetch`, `WebSocket`), keine neuen Dependencies.
 
 ## Raster und Koordinaten
 
