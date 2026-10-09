@@ -31,7 +31,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/effects.js`     | Partikel, Toasts, `fluids()` (Sickerung + Absaugung ins Netz, iteriert nur über ein Schmutz-Rechteck statt aller 8192 Zellen – `touch()` bei Zufluss, `resetBloodBounds()` nach `initSim()`), `reducedMotion()`/`setReducedMotion()` (Systemwert oder Nutzer-Override aus dem Einstellungs-Popover) |
 | `src/core/simulation.js`  | `tick(dt)`: Netze, Energie, Maschinen, Flow, Bänder, Flüssigkeiten, Sticks, Leichen, Partikel |
 | `src/core/upgrades.js`, `quests.js` | Bestehende Forschung und Auftragskette                  |
-| `src/render/renderer.js`  | Canvas: Kamera, Culling, Hallenboden (Diagonalbänder + Raster), Gebäude-Regie, Waren, Sticks, Rohre, Hinweise. Re-exportiert `cv`/`C` aus `canvas.js` |
+| `src/render/renderer.js`  | Canvas: Kamera, Culling (Gebäude, Zellen, lose Objekte/Partikel mit 96-px-Rand), Hallenboden (Diagonalbänder + Raster), Gebäude-Regie, Waren, Sticks, Rohre, Hinweise. Re-exportiert `cv`/`C` aus `canvas.js` |
 | `src/render/canvas.js`    | Gemeinsamer Kontext `cv`/`ctx` und Palette `C` (kein Import-Zyklus mit `renderer.js`) |
 | `src/render/figures.js`   | Figuren/Items: `drawStickFigure`, `drawCorpse`, `drawCorpseShape`, `drawLimbShape`, `drawItemShape` |
 | `src/render/prims.js`     | Grundformen für Geräte: `housing`, `bar`, `machineOn`, `queuedItems` |

@@ -50,11 +50,19 @@ größere Fabriken und glättet Spitzen.
   `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
   Pause und `S.speed` (1×/2×/4×) wirken unverändert.
 
+### 1.3 Culling für lose Objekte und Partikel
+
+- **`renderer.js`:** Leichen, stickmen und Partikel werden nur noch gezeichnet, wenn
+  ihre Position (mit 96 px Rand für die Figurengröße) im sichtbaren `viewCells`-Ausschnitt
+  liegt – vorher liefen alle über den Bildrand hinaus. Die Blut-/Bandschleifen und Gebäude
+  waren bereits geschnitten.
+
 ### Qualität
 
-- `npm run check` = ESLint + 127 Vitest-Tests + Vite-Build, fehlerfrei. Neu:
-  Fixed-Timestep-Test in `tests/ui-smoke.test.js` (Spielzeitrate bei 1× und 4× über
-  mehrere Frames bleibt erhalten, Sprünge höchstens ein Schritt).
+- `npm run check` = ESLint + 127 Vitest-Tests + Vite-Build, fehlerfrei.
+- Messung (`scripts/profile.mjs`, 900 Frames): Nah-Ausschnitte Standard 0,21 → 0,14 ms,
+  Stress 0,30 → 0,16 ms; Überblick fast unverändert (dort sind alle Objekte sichtbar);
+  Echtzeit weiter 60 fps.
 
 ## 0.15.0 – Förderband-Ecken: durchgehender Bogen, sprunghafte Ware (09.10.2026)
 

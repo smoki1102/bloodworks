@@ -447,15 +447,23 @@ export function render() {
   ctx.globalAlpha = 1;
   perfEnd('render.blood');
 
-  // Lose Objekte
+  // Lose Objekte – nur sichtbare (Culling; Figuren werden ~96 px groß gezeichnet)
   perfBegin('render.ents');
-  for (const c of corpses) drawCorpse(c);
-  for (const s of sticks) drawStickFigure(s.x, s.y, s.body, (s.anim || 0) + S.t, false, s.chair && s.state !== 'fall');
+  const cx0 = vis.x0 * CELL - 96,
+    cx1 = (vis.x1 + 1) * CELL + 96,
+    cy0 = vis.y0 * CELL - 96,
+    cy1 = (vis.y1 + 1) * CELL + 96;
+  const inView = (x, y) => x >= cx0 && x <= cx1 && y >= cy0 && y <= cy1;
+  for (const c of corpses) if (inView(c.x, c.y)) drawCorpse(c);
+  for (const s of sticks)
+    if (inView(s.x, s.y))
+      drawStickFigure(s.x, s.y, s.body, (s.anim || 0) + S.t, false, s.chair && s.state !== 'fall');
   perfEnd('render.ents');
 
-  // Partikel
+  // Partikel – nur sichtbare
   perfBegin('render.fx');
   for (const p of parts) {
+    if (!inView(p.x, p.y)) continue;
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
     ctx.fillStyle = p.color;
     if (p.text) {
