@@ -50,6 +50,17 @@ größere Fabriken und glättet Spitzen.
   `MAX_STEPS = 10` verhindert langes Aufholen nach einem Hänger (Rest wird verworfen).
   Pause und `S.speed` (1×/2×/4×) wirken unverändert.
 
+### 1.6 Speichern/Laden: Eckenrichtung (`fromDir`) ging verloren
+
+- **Bug:** v12-Ladecode las `fromDir: o.from`, aber `save()` schreibt `b.fromDir`;
+  die v11→v12-Migration setzte nur `b.from`. Beim Neuladen starteten U-Ecken entgegen
+  der eingebauten Richtung.
+- **Fix (`src/ui/ui.js`):** Migration setzt `fromDir = from ?? dir`; `load()` liest
+  `o.fromDir ?? o.from ?? o.dir`. Kein `SAVE_VER`-Bump nötig (Feldname bleibt gleich).
+- **Tests (`tests/ui-smoke.test.js`, +2):** Roundtrip Ecke → Speichern → Laden erhält
+  `fromDir`; v11-Migration übernimmt Ecken (`from`), gerade Bänder (`dir`) und neue
+  Stände (`fromDir`) korrekt. Gesamt 131 Tests.
+
 ### 1.5 Partikel-Pool gegen GC-Spitzen
 
 - **Diagnose:** Neue GC-/Heap-Probe in `scripts/profile.mjs` (Chrome-Flags

@@ -10,6 +10,7 @@ import { save, load, hasSave, newGame, toggleRun, renderInspector } from '../src
 import { addBuilding } from '../src/core/placement.js';
 import { rebuildNets } from '../src/core/pipes.js';
 import { DEF } from '../src/config/building-defs.js';
+import { entryDirOf } from '../src/core/belts.js';
 
 const step = (n) => frames(n);
 /** Ziel mit `data`-Attributen, das `closest()` wie im Browser beantwortet. */
@@ -203,6 +204,53 @@ describe('UI im DOM (Smoke)', () => {
     expect(load()).toBeFalsy();
     localStorage.removeItem('bloodworks_v9');
     expect(hasSave()).toBe(false);
+  });
+
+  it('erhält die Eckenrichtung (fromDir) über Speichern/Laden (v12)', () => {
+    newGame('free');
+    const b = addBuilding('belt', 10, 2, { dir: 0 });
+    b.fromDir = 2;
+    expect(entryDirOf(b)).toBe(2);
+    save(true);
+    newGame('free');
+    expect(load()).toBe(true);
+    const r = blds.find((x) => x.t === 'belt' && x.x === 10 && x.y === 2);
+    expect(r).toBeTruthy();
+    expect(r.fromDir).toBe(2);
+    expect(entryDirOf(r)).toBe(2);
+  });
+
+  it('migriert v11-Bänder auf fromDir (Ecke bzw. gerade)', () => {
+    newGame('free');
+    localStorage.setItem(
+      'bloodworks_v9',
+      JSON.stringify({
+        v: 11,
+        money: 0,
+        energy: 200,
+        blood: 0,
+        ash: 0,
+        t: 0,
+        gore: 100,
+        stats: { spawned: 0, kills: 0, sold: 0, escaped: 0, ejected: 0, caught: 0, toggled: 0 },
+        quest: 0,
+        up: { lv: {} },
+        skill: { lv: {} },
+        blds: [
+          { t: 'belt', x: 10, y: 2, dir: 0, from: 2 },
+          { t: 'belt', x: 11, y: 2, dir: 0 },
+          { t: 'belt', x: 12, y: 2, dir: 0, fromDir: 3 },
+        ],
+      }),
+    );
+    expect(hasSave()).toBe(true);
+    expect(load()).toBe(true);
+    const at = (x) => blds.find((b) => b.x === x && b.y === 2 && b.t === 'belt');
+    expect(at(10).fromDir).toBe(2);
+    expect(at(11).fromDir).toBe(0);
+    expect(at(12).fromDir).toBe(3);
+    expect(entryDirOf(at(10))).toBe(2);
+    localStorage.removeItem('bloodworks_v9');
   });
 
   it('migriert einen v9-Spielstand auf S.stats (v12)', () => {

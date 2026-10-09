@@ -630,8 +630,9 @@ function migrate(raw) {
   }
   if (raw.v === 11) {
     // Paket v0.15.0: Förderbänder können um die Ecke führen (`fromDir`).
-    // Alte Zellen starten gerade: Eingangsrichtung = Ausgangsrichtung.
-    for (const b of raw.blds || []) if (b.from == null) b.from = b.dir;
+    // Alte Zellen starten gerade: Eingangsrichtung = Ausgangsrichtung
+    // (zur Sicherheit auch `from` aus älteren Builds berücksichtigen).
+    for (const b of raw.blds || []) if (b.fromDir == null) b.fromDir = b.from ?? b.dir;
     raw.v = 12;
   }
   if (raw.v !== SAVE_VER) return null;
@@ -694,7 +695,7 @@ export function load() {
   });
   for (const o of raw.blds || []) {
     if (!DEF[o.t]) continue;
-    const b = addBuilding(o.t, o.x, o.y, { free: true, dir: o.dir, fromDir: o.from });
+    const b = addBuilding(o.t, o.x, o.y, { free: true, dir: o.dir, fromDir: o.fromDir ?? o.from ?? o.dir });
     if (!b) continue;
     b.dirt = o.dirt || 0;
     b.on = o.on !== false;
