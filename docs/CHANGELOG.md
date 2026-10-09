@@ -46,6 +46,13 @@
   Alles-oder-nichts, Geld-/Platzmeldungen und Rotation; ein `tests/ui-smoke.test.js`
   deckt Shift-Auswahl + `Strg+V` + Platzierungsklick ab.
 
+### Qualität
+
+- **149 Tests** grün (`npm run check`: ESLint, Vitest, `vite build`); keine neuen
+  Abhängigkeiten.
+- Das Speicherformat bleibt **v12** (Baupläne, Raten und Auswahl sind zur Laufzeit und
+  werden nicht gespeichert); Laden/Migrieren unverändert.
+
 ## 0.16.0 – Phase 1: technische Grundlage (09.10.2026)
 
 ### 1.1 Zeitmessung und Profiling
