@@ -20,7 +20,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/core/placement.js`   | `addBuilding`, `placeReason`, `originOf`, Locks, Kosten, Verkauf, Undo (auch Gruppen)  |
 | `src/core/parts.js`       | Körperteil-Vorrat (`collectPart`, `partPoints`) – Skill-Währung         |
 | `src/core/anatomy.js`     | Stickman: `makeBody`, `severPart`, `isDead`, `filterMatch`, `makeBody`  |
-| `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint` |
+| `src/core/belts.js`       | Waren auf Bändern: `feed`, `stepTransport`, `roomIn`, `itemPos`, `edgePoint`, `beltPathPoints` (Eintritt → Mitte → Austritt), `entryDirOf` (`fromDir`), `lenOf` |
 | `src/core/belt-path.js`   | Bau einer Bandstrecke: `planBeltPath` (Diagonale + gerader Rest, beide Reihenfolgen) und `buildBeltPath` (alles-oder-nichts, eine Rückgängig-Einheit) |
 | `src/core/pipes.js`       | Rohrnetze: `rebuildNets`, Absaug-Indiz (`suckNet`, `suctionNetOf`), `addBlood`/`takeBlood`/`spendBlood`, `bloodTotal` |
 | `src/core/skill.js`       | Skill-Stufen, `buySkill`, `recomputeFx` (setzt `S.fx`), `giveSkillGift` |
@@ -34,7 +34,7 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
 | `src/render/canvas.js`    | Gemeinsamer Kontext `cv`/`ctx` und Palette `C` (kein Import-Zyklus mit `renderer.js`) |
 | `src/render/figures.js`   | Figuren/Items: `drawStickFigure`, `drawCorpse`, `drawCorpseShape`, `drawLimbShape`, `drawItemShape` |
 | `src/render/prims.js`     | Grundformen für Geräte: `housing`, `bar`, `machineOn`, `queuedItems` |
-| `src/render/bands.js`     | Bandraster (`bandRect`, `drawBandStrip`, `drawBandDiag`) für Bänder und Pass-Maschinen; Scroll friert bei reduzierter Bewegung ein |
+| `src/render/bands.js`     | Bandraster (`bandRect`, `drawBandStrip`, `drawBandDiag`, `drawBandCorner`) für Bänder und Pass-Maschinen; Eckzellen als durchgehender Bogen; Scroll friert bei reduzierter Bewegung ein |
 | `src/render/anim/poses.js`| Reine Posen-Mathematik (`spin`, `swing`, `pressStroke`, `pose`, `moving`) für Walze/Presse/Klinge/Abschleuderer; kein Zustand, kein Canvas |
 | `src/render/machines/*.js`| Ein Modul je Gerätetyp; `index.js` dispatcht `drawMachineBody`; Animationsmodule lesen ihre Pose aus `anim/poses.js` |
 | `src/render/icons.js`     | Eigenes Icon-Set (27 Icons, 16×16-Vektor): eine Shape-Definition pro Icon, zwei Renderer – `drawIcon` (Canvas) und `iconSvg` (Inline-SVG für DOM-UI). Keine Emoji/Sonderglyphen, keine Fremd-Assets |
@@ -71,6 +71,12 @@ Abhängigkeiten laufen strikt in eine Richtung (keine Zyklen):
   **Komponentenregel** angenommen (`compsOf(d)` schneidet auf 0–3, passt eine Anteils-
   Richtung zu einem Eingangs-Port). Auf Diagonalen ist die Bandlänge `√2 × Zellbreite`
   (`lenOf`), Ware läuft von Zellecke zur gegenüberliegenden Ecke (`edgePoint`).
+- **Band-Ecken:** Jede Bandzelle speichert neben `dir` (Ausgang) auch `fromDir` (Eingang,
+  Default `dir`). Knickt der Pfad (diagonal → gerade), hat die Eckzelle `fromDir ≠ dir`;
+  `beltPathPoints()` führt sie Eintritt → Zellmitte → Austritt, `itemPos` interpoliert nach
+  Bogenlänge – Ware läuft ohne Sprung um die Ecke. Gerade/diagonale Zellen bleiben zweipunktig.
+  `planBeltPath`/`withDirs` setzen `from` je Zelle, `drawBandStrip` rendert Eckzellen als
+  `drawBandCorner` (dicker Bogen mit runden Enden, Chevrons entlang des Pfads).
 - `MIN_GAP` sichert Abstand zwischen *bewegten* Waren; Waren, die am Eingang warten, dürfen
   enger liegen (sonst blockiert eine Weiche schon den Zulauf).
 - Auf dem Band liegende Waren mit `p == null` sind gehalten (Maschinen wie Presse/Klinge).
@@ -182,7 +188,7 @@ und `save()`/`load()`/`hasSave()` anpassen.
 
 ## Tests
 
-- `npm test` – 123 Tests, reines Node (kein DOM nötig).
+- `npm test` – 126 Tests, reines Node (kein DOM nötig).
 - `tests/helpers.js`: `boot()` (frische Welt), `put()` (regelkonform bauen), `run(sec)` (takten).
 - `tests/quests.test.js`: Quest-Metriken existieren und sind erreichbar, Abschleuderer-Ereignis,
   Teilehandel, Kettenfortschritt, v9→v10-Migration.

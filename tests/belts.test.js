@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { boot, put, run } from './helpers.js';
 import { S, corpses, sticks } from '../src/core/state.js';
-import { feed, itemPos, roomIn, MIN_GAP } from '../src/core/belts.js';
+import { feed, itemPos, roomIn, MIN_GAP, beltPathPoints } from '../src/core/belts.js';
 import { buildBeltPath } from '../src/core/belt-path.js';
 import { bldAtCell } from '../src/core/grid.js';
 import { DEF } from '../src/config/building-defs.js';
@@ -128,5 +128,40 @@ describe('Bandtransport', () => {
     const mid = itemPos(b, { p: 0.5, lat: 0 });
     expect(mid.x).toBe(10 * 48 + 24);
     expect(mid.y).toBe(20 * 48 + 24);
+  });
+
+  it('führt Waren ohne Sprung um die Ecke (diagonal → gerade)', () => {
+    const diag = put('belt', 10, 20, { dir: 5 });
+    const corner = put('belt', 11, 21, { dir: 0, fromDir: 5 });
+    const straight = put('belt', 12, 21, { dir: 0 });
+
+    // Der Eckpunkt verbindet die vorige Zelle lückenlos.
+    expect(itemPos(diag, { p: 1, lat: 0 })).toEqual(itemPos(corner, { p: 0, lat: 0 }));
+    expect(itemPos(corner, { p: 1, lat: 0 })).toEqual(itemPos(straight, { p: 0, lat: 0 }));
+
+    // Drei Wegpunkte: Ecke → Zellmitte → Kantenmitte.
+    const pts = beltPathPoints(corner);
+    expect(pts.length).toBe(3);
+    expect(pts[1]).toEqual({ x: 11 * 48 + 24, y: 21 * 48 + 24 });
+
+    // Mittlere Ware liegt auf dem Bogen, nicht auf der Sehne.
+    const mid = itemPos(corner, { p: 0.5, lat: 0 });
+    expect(mid.x).toBeGreaterThan(11 * 48);
+    expect(mid.x).toBeLessThan(12 * 48);
+  });
+
+  it('transportiert diagonal um die Ecke weiter', () => {
+    const diag = put('belt', 10, 20, { dir: 5 });
+    put('belt', 11, 21, { dir: 0, fromDir: 5 });
+    const straight = put('belt', 12, 21, { dir: 0 });
+    const bin = put('bin', 13, 21);
+    diag.items.push(limb());
+    let fed = 0;
+    for (let i = 0; i < 120 && !fed; i++) {
+      run(0.1);
+      fed = bin.items.length;
+    }
+    expect(fed).toBe(1);
+    expect(straight.dir).toBe(0);
   });
 });

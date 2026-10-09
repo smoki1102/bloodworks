@@ -168,7 +168,7 @@ describe('UI im DOM (Smoke)', () => {
     step(3);
   });
 
-  it('speichert und lädt den Speicherstand v11', () => {
+  it('speichert und lädt den Speicherstand v12', () => {
     const before = { n: blds.length, money: S.money, t: S.t, spike: !!blds.find((b) => b.t === 'spike') };
     save(true);
     expect(hasSave()).toBe(true);
@@ -187,7 +187,7 @@ describe('UI im DOM (Smoke)', () => {
     expect(hasSave()).toBe(false);
   });
 
-  it('migriert einen v9-Spielstand auf S.stats (v11)', () => {
+  it('migriert einen v9-Spielstand auf S.stats (v12)', () => {
     localStorage.setItem(
       'bloodworks_v9',
       JSON.stringify({
@@ -224,7 +224,7 @@ describe('UI im DOM (Smoke)', () => {
     localStorage.removeItem('bloodworks_v9');
   });
 
-  it('migriert einen v10-Spielstand und setzt die Fabrik zurück (v11)', () => {
+  it('migriert einen v10-Spielstand und setzt die Fabrik zurück (v12)', () => {
     localStorage.setItem(
       'bloodworks_v9',
       JSON.stringify({
@@ -258,6 +258,37 @@ describe('UI im DOM (Smoke)', () => {
     expect(S.stats.kills).toBe(7);
     expect(S.stats.partsSold).toBe(5);
     expect(blds.length).toBe(0);
+    localStorage.removeItem('bloodworks_v9');
+  });
+
+  it('migriert einen v11-Spielstand und erhält Band-Ecken (v12)', () => {
+    localStorage.setItem(
+      'bloodworks_v9',
+      JSON.stringify({
+        v: 11,
+        money: 321,
+        energy: 100,
+        blood: 10,
+        ash: 2,
+        t: 12,
+        gore: 100,
+        stats: {},
+        quest: 0,
+        up: { lv: {} },
+        skill: { lv: {} },
+        blds: [
+          { t: 'belt', x: 30, y: 40, dir: 5 },
+          { t: 'belt', x: 31, y: 41, dir: 0, from: 5 },
+        ],
+      }),
+    );
+    expect(hasSave()).toBe(true);
+    expect(load()).toBe(true);
+    const a = blds.find((b) => b.x === 30 && b.y === 40);
+    const c = blds.find((b) => b.x === 31 && b.y === 41);
+    expect(a.fromDir).toBe(5);
+    expect(c.dir).toBe(0);
+    expect(c.fromDir).toBe(5);
     localStorage.removeItem('bloodworks_v9');
   });
 

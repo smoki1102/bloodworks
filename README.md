@@ -40,9 +40,10 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
   Ansicht vollständig sichtbar.
 - **Förderband als Strecke:** Werkzeug wählen, auf die **Startzelle** klicken, dann auf die
   **Zielzelle** – die Strecke zieht sich in echten 45°-Diagonalen mit geradem Rest, kostet
-  pro Zelle und ist mit einem Befehl rückgängig zu machen. Bestehende Bandzellen werden
-  übernommen, Maschinen oder die Weltkante stoppen den ganzen Pfad. Waren fallen ohne Band
-  nach unten und verrotten auf dem Boden.
+  pro Zelle und ist mit einem Befehl rückgängig zu machen. An Knicken führt das Band als
+  durchgehender Bogen um die Ecke, die Ware folgt ihm ohne Sprung. Bestehende Bandzellen
+  werden übernommen, Maschinen oder die Weltkante stoppen den ganzen Pfad. Waren fallen
+  ohne Band nach unten und verrotten auf dem Boden.
 - **Sticks mit Körperteilen:** Kopf, Torso, Arme, Beine mit Lebenspunkten; Maschinen
   verursachen Teilschaden, der Stick läuft weiter, bis Kopf/Torso weg sind oder die LP
   auf 0 fallen. Abgetrennte Teile sind eigene Waren (Behälter, Verbrenner, Säurebad, Verkauf)
@@ -84,10 +85,11 @@ Benötigt Node.js ≥ 20. Der Build in `dist/` kann auf jeden statischen Webspac
 - **Größere Maschinen:** Walze, Pressen, Abschleuderer, Ofen, Säurebad, Tank, Markt,
   Generator und Verkauf belegen mehrzellige Footprints; Ware und Gliedmaßen sind in
   den Gehäusen sichtbar.
-- **Speicherstand v11:** Spielzähler in `S.stats`; v10-Stände bleiben erhalten, verlieren
-  beim Laden aber einmalig ihr Fabrik-Layout (Fabrik-Reset), v9 wird über v10 migriert,
-  v8 und älter werden verworfen.
-- **Qualität:** 123 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
+- **Speicherstand v12:** Bandzellen kennen ihre Eingangsrichtung (`fromDir`) und führen so
+  auch um die Ecke; v11-Stände werden übernommen (alte Zellen bleiben gerade), v10-Stände
+  verlieren beim Laden einmalig ihr Fabrik-Layout (Fabrik-Reset), v9 wird über v10/v11
+  migriert, v8 und älter werden verworfen.
+- **Qualität:** 126 Vitest-Tests, `npm run check` (Lint + Tests + Build) fehlerfrei,
   `prefers-reduced-motion` respektiert (Partikel, Pulse und Maschinenposen/Bänder werden reduziert).
 - **Design-Tokens:** Farben (`UI`) und Maße/Typo/Bewegung (`METRICS`) zentral in
   `src/config/palette.js`, beim Start auf `:root` geschrieben. Dev-Galerie mit `?ui` / `?gallery`.

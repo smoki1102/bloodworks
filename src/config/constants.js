@@ -42,7 +42,7 @@ export const BASE_CAP = 100,
   BASE_REGEN = 4,
   /* Schlüssel-Name ist historisch (v9); maßgeblich ist SAVE_VER + migrate(). */
   SAVE_KEY = 'bloodworks_v9',
-  SAVE_VER = 11,
+  SAVE_VER = 12,
   START_MONEY = 1600;
 
 /* ------------------------------ Balance ------------------------------ */

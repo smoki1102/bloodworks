@@ -4,6 +4,7 @@ import { rgba } from '../config/palette.js';
 import { reducedMotion } from '../core/effects.js';
 import { S } from '../core/state.js';
 import { bldRect } from '../core/grid.js';
+import { beltPathPoints } from '../core/belts.js';
 
 /** Bandpfeile scrollen nur ohne reduzierte Bewegung. */
 const beltTime = () => (reducedMotion() ? 0 : S.t);
@@ -18,6 +19,7 @@ export const bandRect = (b) => {
 };
 
 export function drawBandStrip(b, inner) {
+  if ((b.fromDir ?? b.dir) !== b.dir) return drawBandCorner(b, inner);
   if (isDiag(b.dir)) return drawBandDiag(b, inner);
   const s = bandRect(b);
   ctx.fillStyle = C.dark;
@@ -99,5 +101,62 @@ export function drawBandDiag(b, inner) {
     ctx.fillStyle = rgba(C.beltOff, 0.45);
     ctx.fillRect(-len / 2, -w / 2, len, w);
   }
+  ctx.restore();
+}
+
+/* --------------------------------- Ecke ---------------------------------- */
+
+function strokePath(pts, color, w) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = w;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+}
+
+function pathChevrons(pts) {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++)
+    cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  const total = cum[cum.length - 1];
+  if (total <= 0) return;
+  const step = 20;
+  const off = (beltTime() * BELT_SPEED) % step;
+  ctx.beginPath();
+  for (let s = off; s <= total; s += step) {
+    let i = 1;
+    while (i < pts.length - 1 && cum[i] < s) i++;
+    const seg = cum[i] - cum[i - 1];
+    const k = seg > 0 ? (s - cum[i - 1]) / seg : 0;
+    const x = pts[i - 1].x + (pts[i].x - pts[i - 1].x) * k;
+    const y = pts[i - 1].y + (pts[i].y - pts[i - 1].y) * k;
+    const ang = Math.atan2(pts[i].y - pts[i - 1].y, pts[i].x - pts[i - 1].x);
+    const ux = Math.cos(ang),
+      uy = Math.sin(ang),
+      nx = -uy,
+      ny = ux;
+    ctx.moveTo(x + ux * 5, y + uy * 5);
+    ctx.lineTo(x + nx * 6, y + ny * 6);
+    ctx.moveTo(x + ux * 5, y + uy * 5);
+    ctx.lineTo(x - nx * 6, y - ny * 6);
+  }
+  ctx.stroke();
+}
+
+/** Eckzelle: durchgehender Bogen Eintritt → Zellmitte → Austritt. */
+export function drawBandCorner(b, inner) {
+  const pts = beltPathPoints(b);
+  ctx.save();
+  strokePath(pts, C.dark, 18);
+  strokePath(pts, C.body, 15);
+  ctx.strokeStyle = C.light;
+  ctx.lineWidth = 2.4;
+  pathChevrons(pts);
+  if (inner) strokePath(pts, rgba(C.beltInner, 0.35), 18);
+  if (b.dirt > 4) strokePath(pts, rgba(C.beltDirt, Math.min(0.4, b.dirt / 260)), 18);
+  if (b.on === false) strokePath(pts, rgba(C.beltOff, 0.45), 18);
   ctx.restore();
 }

@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.15.0 – Förderband-Ecken: durchgehender Bogen, sprunghafte Ware (09.10.2026)
+
+### Änderungen an bestehendem Code
+
+- **Band-Ecken (`fromDir`, SAVE_VER 12):** Jede Bandzelle merkt sich zusätzlich zu `dir`
+  (Ausgang) ihre Eingangsrichtung `fromDir`. Bisher hatte die Eckzelle eines gemischten
+  Pfads (Diagonale + gerader Rest) nur die gerade Richtung: die Ware verließ die Diagonale
+  an der **Zellecke** und lief auf der geraden Zelle in der **Kantenmitte** weiter – ein
+  sichtbarer ~24-px-Sprung ohne Übergang. `planBeltPath`/`withDirs` setzen `from` jetzt je
+  Zelle; `addBuilding` übernimmt `opts.fromDir` (Default `dir`), `save()`/`load()` und das
+  Undo-Snapshot führen das Feld mit.
+- **Warenweg (`src/core/belts.js`):** neue reine Geometrie `beltPathPoints()` (Eintritt →
+  optional Zellmitte → Austritt), `polylineLength()` und `pointAlongPolyline()`;
+  `entryDirOf()` liefert die Eingangsrichtung. `itemPos()` interpoliert nach Bogenlänge über
+  den Zellpfad, `lenOf()` misst genau diese Polylinie (Ecken dadurch minimal länger, gleiche
+  Geschwindigkeit). Gerade/diagonale Zellen bleiben zweipunktig – Erwartungen wie
+  „Diagonale: Ecke zu Ecke“ gelten unverändert.
+- **Rendering (`src/render/bands.js`):** Eckzellen zeichnen `drawBandCorner()` als dicken,
+  runden Bogen (18 px Dunkel + 15 px Band, `round` Caps/Joins) mit Chevrons entlang des
+  Pfads; gerade/diagonale Zellen und Pass-Maschinen bleiben unverändert. Die Bauvorschau
+  (`renderer.js`) zeichnet den geplanten Pfad über dieselben `beltPathPoints`.
+- **`grid.portsOf`:** der Eingangs-Port eines Bands kommt aus `fromDir` (Default `dir`).
+
+### Qualität
+
+- `npm run check` = ESLint + 126 Vitest-Tests + Vite-Build, fehlerfrei.
+- Neu in `tests/belts.test.js`: Ecke diagonal → gerade (Eckpunkt lückenlos, Mitte auf dem
+  Bogen, Transport bis zur Senke) und `beltPathPoints`-Struktur. `tests/belt-path.test.js`
+  prüft das gesetzte `from` der gemischten Route. `tests/ui-smoke.test.js`: Speicherstand
+  v12 benannt + neue v11→v12-Migration (Ecken bleiben erhalten).
+- Visuelle Prüfung: Headless-Chrome-DOM-Abzug (kein Bild an den Assistenten); der Fix ist
+  geometrisch/organisatorisch durch die Tests abgedeckt.
+
+### Annahmen
+
+- Der Knick bleibt in der **Zelle**, in der sich Diagonal- und Geradeabschnitt treffen (die
+  Zelle liegt bereits am Ende des Diagonalabschnitts); die Ware verlässt die Diagonale an
+  der Zellecke und wird über die Zellmitte auf die Kantenmitte geführt. Damit ist der Übergang
+  wie ein echtes Fließband: 45° bis zur Ecke, dann stetig in die Gerade.
+- Nur **plangebaute** Strecken setzen `fromDir`; ein einzelnes nachträglich per `R` gedrehtes
+  Band bleibt gerade (`fromDir = dir`). Manuell hinter eine Diagonale gesetzte Bänder folgen
+  weiter der Auto-Richtung (Diagonale fortsetzen) und sind daher ebenfalls stetig.
+- Keine neue Version der Legende/Balancedaten; `SAVE_VER` 12 nur wegen des Feldes `from`.
+
 ## 0.14.0 – UI: Design-Tokens, Galerie, Feinschliff (08.10.2026)
 
 ### Änderungen an bestehendem Code

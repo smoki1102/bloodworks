@@ -55,11 +55,16 @@ function route(x0, y0, x1, y1, diagFirst) {
 
 /** Richtungen entlang der Zellenliste (letzte Zelle: Richtung des letzten Segments). */
 function withDirs(cells) {
-  if (cells.length === 1) return [{ ...cells[0], dir: autoDir(cells[0].x, cells[0].y, S.dir) }];
+  if (cells.length === 1) {
+    const dir = autoDir(cells[0].x, cells[0].y, S.dir);
+    return [{ ...cells[0], dir, from: dir }];
+  }
   return cells.map((c, i) => {
     const a = i === cells.length - 1 ? cells[i - 1] : c;
     const b = i === cells.length - 1 ? c : cells[i + 1];
-    return { ...c, dir: dirOf(b.x - a.x, b.y - a.y) };
+    const dir = dirOf(b.x - a.x, b.y - a.y);
+    const from = i === 0 ? dir : dirOf(c.x - cells[i - 1].x, c.y - cells[i - 1].y);
+    return { ...c, dir, from };
   });
 }
 
@@ -122,9 +127,10 @@ export function buildBeltPath(x0, y0, x1, y1) {
     const ex = bldAtCell(c.x, c.y);
     if (ex) {
       ex.dir = c.dir;
+      ex.fromDir = c.from;
       continue;
     }
-    const b = addBuilding('belt', c.x, c.y, { free: true, dir: c.dir });
+    const b = addBuilding('belt', c.x, c.y, { free: true, dir: c.dir, fromDir: c.from });
     if (b) created.push(b);
   }
   S.money -= plan.cost;

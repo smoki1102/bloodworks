@@ -73,7 +73,7 @@ export function exitCell(b, d) {
 /** Ports eines Gebäudes in absoluten Richtungen. */
 export function portsOf(b) {
   const d = DEF[b.t];
-  if (b.t === 'belt') return { in: [b.dir], out: [b.dir] };
+  if (b.t === 'belt') return { in: [b.fromDir ?? b.dir], out: [b.dir] };
   const dir = b.dir ?? 0;
   const abs = (rels) => (rels || []).map((r) => (dir + r + 4) & 3);
   return { in: abs(d.in), out: abs(d.out) };

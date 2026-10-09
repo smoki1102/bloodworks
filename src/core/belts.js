@@ -11,7 +11,8 @@ export const MIN_GAP = 0.45;
 export const beltSpeed = () =>
   BELT_SPEED * upgEff('speed') * (S.fx?.beltSpeed ?? 1);
 
-export const lenOf = (b, d) => (isDiag(d) ? b.spanW * Math.SQRT2 : (d & 1 ? b.spanH : b.spanW));
+/** Eingangsrichtung einer Zelle. Bänder können um die Ecke führen (`fromDir`). */
+export const entryDirOf = (b) => (b.t === 'belt' ? (b.fromDir ?? b.dir) : b.dir);
 
 /** Eintritts-/Austrittspunkt einer Ware: orthogonal auf der Kante, diagonal auf der Ecke. */
 export function edgePoint(b, d, lat, atExit) {
@@ -31,12 +32,49 @@ export function edgePoint(b, d, lat, atExit) {
   return { x: cx + ex + sy * k, y: cy + ey - sx * k };
 }
 
+/**
+ * Wegpunkte einer Zelle: Eintritt → (optional Zellmitte) → Austritt.
+ * Gerade/diagonale Zellen verbinden zwei Rand-/Eckpunkte; Eckzellen
+ * (Eingang anderes als Ausgang) laufen über die Zellmitte.
+ */
+export function beltPathPoints(b, lat = 0) {
+  const din = entryDirOf(b);
+  const dout = b.dir;
+  const a = edgePoint(b, din, lat, false);
+  const e = edgePoint(b, dout, lat, true);
+  if (din === dout) return [a, e];
+  const cx = (b.x + b.spanW / 2) * CELL;
+  const cy = (b.y + b.spanH / 2) * CELL;
+  return [a, { x: cx, y: cy }, e];
+}
+
+export const polylineLength = (pts) => {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  return len;
+};
+
+/** Punkt bei Parameter `t` (0..1) entlang einer Polylinie, nach Bogenlänge. */
+export function pointAlongPolyline(pts, t) {
+  const total = polylineLength(pts);
+  if (total <= 0) return { ...pts[pts.length - 1] };
+  let d = Math.max(0, Math.min(1, t)) * total;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    if (d <= seg || i === pts.length - 1) {
+      const k = seg > 0 ? d / seg : 0;
+      return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * k, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * k };
+    }
+    d -= seg;
+  }
+  return { ...pts[pts.length - 1] };
+}
+
+export const lenOf = (b) => polylineLength(beltPathPoints(b));
+
 export function itemPos(b, it) {
   if (it.p == null) return { x: (b.x + b.spanW / 2) * CELL, y: (b.y + b.spanH / 2) * CELL };
-  const d = b.dir;
-  const a = edgePoint(b, d, it.lat || 0, false);
-  const e = edgePoint(b, d, it.lat || 0, true);
-  return { x: a.x + (e.x - a.x) * it.p, y: a.y + (e.y - a.y) * it.p };
+  return pointAlongPolyline(beltPathPoints(b, it.lat || 0), it.p);
 }
 
 export function exitCellOf(b, d, lat) {
@@ -179,7 +217,7 @@ export function stepTransport(b, dt, work) {
       }
     }
   }
-  const len = lenOf(b, b.dir) * CELL;
+  const len = lenOf(b);
   const dp = (beltSpeed() * dt * (b.on === false ? 0 : 1)) / Math.max(1, len);
   for (let i = 0; i < items.length; i++) {
     const it = items[i];

@@ -1,7 +1,7 @@
 import { DEF } from '../config/building-defs.js';
 import { CELL, DX, DY, GRID_W, PH, PW, opp } from '../config/constants.js';
 import { bloodColor, reducedMotion } from '../core/effects.js';
-import { edgePoint, itemPos } from '../core/belts.js';
+import { itemPos, beltPathPoints } from '../core/belts.js';
 import { planBeltPath } from '../core/belt-path.js';
 import { costOf, originOf, placeReason } from '../core/placement.js';
 import { bldAtCell, bldRect, viewCells } from '../core/grid.js';
@@ -277,11 +277,10 @@ function drawBeltGhost(cx, cy) {
     ctx.beginPath();
     for (const c of cells) {
       if (c.dir == null) continue;
-      const cell = { x: c.x, y: c.y, spanW: 1, spanH: 1 };
-      const a = edgePoint(cell, c.dir, 0, false);
-      const e = edgePoint(cell, c.dir, 0, true);
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(e.x, e.y);
+      const cell = { x: c.x, y: c.y, spanW: 1, spanH: 1, t: 'belt', dir: c.dir, fromDir: c.from ?? c.dir };
+      const pts = beltPathPoints(cell);
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     }
     ctx.stroke();
     ctx.lineCap = 'butt';

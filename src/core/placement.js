@@ -96,6 +96,7 @@ export function addBuilding(t, x, y, opts = {}) {
     spanW: w0(t),
     spanH: h,
     dir: d,
+    fromDir: opts.fromDir ?? d,
     flip: false,
     netId: -1,
     dirt: 0,
@@ -166,6 +167,7 @@ export function pushHistory(add, b, amount) {
       spanW: b.spanW,
       spanH: b.spanH,
       dir: b.dir,
+      fromDir: b.fromDir,
       flip: b.flip,
       dirt: b.dirt,
       on: b.on !== false,
@@ -218,6 +220,7 @@ export function undo() {
     const b = addBuilding(h.snap.t, h.snap.x, h.snap.y, {
       free: true,
       dir: h.snap.dir,
+      fromDir: h.snap.fromDir,
     });
     if (!b) return toast('Kein Platz mehr zum Wiederherstellen', 'bad');
     b.dirt = h.snap.dirt;

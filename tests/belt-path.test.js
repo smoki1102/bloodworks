@@ -38,6 +38,7 @@ describe('Bandstrecke', () => {
       [13, 21],
     ]);
     expect(plan.cells.map((c) => c.dir)).toEqual([5, 0, 0, 0]);
+    expect(plan.cells.map((c) => c.from)).toEqual([5, 5, 0, 0]);
   });
 
   it('nimmt den geraden Knick, wenn die Diagonale blockiert ist', () => {
